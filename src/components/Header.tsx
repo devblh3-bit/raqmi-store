@@ -22,6 +22,15 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function UserIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <circle cx={12} cy={8} r={4} />
+      <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}
+
 function CartIcon({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
@@ -87,6 +96,14 @@ export default function Header({ locale }: { locale: Locale }) {
               className="relative hidden h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 sm:flex"
             >
               <CartIcon className="h-[16px] w-[16px]" />
+            </Link>
+
+            <Link
+              href={`${prefix}/login`}
+              aria-label={t("account")}
+              className="relative hidden h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 sm:flex"
+            >
+              <UserIcon className="h-[16px] w-[16px]" />
             </Link>
 
             <button

@@ -170,6 +170,18 @@ model User {
   updatedAt        DateTime      @updatedAt
 }
 
+// Magic-link tokens: only the SHA-256 hash is stored; the raw token lives in the emailed URL.
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
 model ResellerTier {
   id              String                   @id @default(cuid())
   name            String                   @unique

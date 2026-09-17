@@ -52,5 +52,16 @@
     "code": "Code de commande",
     "email": "Email",
     "check": "Vérifier"
+  },
+  "auth": {
+    "title": "Connexion",
+    "email": "E-mail",
+    "send": "Recevoir un lien de connexion",
+    "sent": "Vérifiez votre boîte mail — le lien est valable 15 minutes.",
+    "or": "ou",
+    "telegram": "Se connecter avec Telegram",
+    "errorInvalid": "Ce lien est invalide ou expiré. Demandez-en un nouveau.",
+    "errorTelegram": "Échec de la connexion Telegram. Réessayez.",
+    "errorSend": "Impossible d'envoyer l'e-mail. Réessayez."
   }
 }

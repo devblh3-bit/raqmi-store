@@ -52,5 +52,16 @@
     "code": "Order code",
     "email": "Email",
     "check": "Check"
+  },
+  "auth": {
+    "title": "Sign in",
+    "email": "Email",
+    "send": "Email me a sign-in link",
+    "sent": "Check your inbox — the link is valid for 15 minutes.",
+    "or": "or",
+    "telegram": "Sign in with Telegram",
+    "errorInvalid": "That link is invalid or expired. Request a new one.",
+    "errorTelegram": "Telegram sign-in failed. Try again.",
+    "errorSend": "Could not send the email. Try again."
   }
 }
