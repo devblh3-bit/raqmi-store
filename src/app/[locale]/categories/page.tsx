@@ -15,7 +15,7 @@ export default async function KategoriPage({ params }: { params: Promise<{ local
         {categories.map((c) => {
           const count = products.filter((p) => p.category === c.slug).length;
           return (
-            <Link key={c.slug} href={`/${locale}/categories/${c.slug}`} className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Link key={c.slug} href={`/${locale}/categories/${c.slug}`} className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <span className="text-sm font-semibold">{c.name[loc] ?? c.name.en}</span>
               <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-[var(--fg-muted)]">{count} items</span>
             </Link>

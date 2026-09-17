@@ -38,7 +38,7 @@ export default async function AplikasiPage({
           <select
             name="urutkan"
             defaultValue={urutkan ?? "terbaru"}
-            className="h-9 rounded-full border border-[var(--border)] bg-white px-3 text-sm font-medium"
+            className="h-9 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-medium"
           >
             <option value="terbaru">Newest</option>
             <option value="termurah">Cheapest</option>
@@ -48,7 +48,7 @@ export default async function AplikasiPage({
         </form>
       </div>
       {list.length === 0 ? (
-        <p className="mt-10 rounded-2xl border border-dashed border-[var(--border-strong)] bg-white p-8 text-center text-sm text-[var(--fg-muted)]">
+        <p className="mt-10 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--fg-muted)]">
           No products found for “{q}”.
         </p>
       ) : (

@@ -28,14 +28,51 @@
   --overlay: #0f0f0d73;
   --star: #f59e0b;
 
-  /* elevation */
   --elev-1: 0 1px 2px rgba(21, 21, 19, 0.06), 0 1px 3px rgba(21, 21, 19, 0.08);
-  --elev-2: 0 4px 12px rgba(21, 21, 19, 0.08), 0 1px 3px rgba(21, 21, 19, 0.06);
-  --elev-3: 0 12px 32px rgba(21, 21, 19, 0.12), 0 4px 12px rgba(21, 21, 19, 0.08);
-  --shadow-color: rgba(21, 21, 19, 0.08);
+  --elev-2: 0 8px 24px rgba(21, 21, 19, 0.08), 0 2px 8px rgba(21, 21, 19, 0.06);
+  --elev-3: 0 16px 40px rgba(21, 21, 19, 0.12), 0 4px 12px rgba(21, 21, 19, 0.08);
 
-  /* radius */
+  --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
   --radius: 1rem;
+  --mat-func-bg: linear-gradient(150deg,#fffc,#fff9 55%,#ffffffb8);
+  --mat-func-border: #ffffffbf;
+  --mat-func-shadow: 0 1px 2px #1515130a,0 8px 24px #15151314,inset 0 1px 0 #ffffffe6,inset 0 -1px 0 #1515130a;
+  --mat-func-blur: 24px;
+  --dur-base: .24s;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+/* Dark — exact gptluna dark tokens */
+.dark {
+  --bg: #0d0f11;
+  --bg-deep: #08090a;
+  --surface: #15181b;
+  --surface-2: #1e2227;
+  --surface-3: #282d34;
+  --fg: #f4f5f6;
+  --fg-muted: #9ba1a6;
+  --fg-faint: #636b72;
+  --border: #f4f5f617;
+  --border-strong: #f4f5f62e;
+  --border-subtle: #f4f5f610;
+  --accent: #10a37f;
+  --accent-hover: #0d8b6c;
+  --accent-fg: #ffffff;
+  --accent-soft: #10a37f29;
+  --ring: #10a37f59;
+  --overlay: #000000bf;
+  --star: #fbbf24;
+  --discount: #f43f5e;
+
+  --elev-1: 0 2px 6px #0006;
+  --elev-2: 0 4px 20px #0008, 0 1px 3px #0004;
+  --elev-3: 0 12px 32px #0009, 0 4px 12px #0006;
+  --mat-func-bg: linear-gradient(150deg,#1c2026cc,#14171cb3 55%,#181c22c2);
+  --mat-func-border: #ffffff1f;
+  --mat-func-shadow: 0 1px 2px #0009,0 12px 36px #00000073,inset 0 1px 0 #ffffff24,inset 0 -1px 0 #0000004d;
 }
 
 @theme inline {
@@ -51,14 +88,14 @@
   --font-sans: var(--font-sans);
 }
 
-* {
-  border-color: var(--border);
-}
+* { border-color: var(--border); }
 
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light;
 }
+html.dark { color-scheme: dark; }
 
 body {
   background: var(--bg);
@@ -66,38 +103,120 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01" 1, "kern" 1;
+  letter-spacing: -0.01em;
+  transition: background-color 300ms ease, color 300ms ease;
 }
 
-/* Focus ring */
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: 0.5rem;
 }
 
-/* Ambient background — subtle radial wash like gptluna */
 .ambient-bg {
   background:
-    radial-gradient(48% 44% at 10% 15%, color-mix(in srgb, var(--accent) 14%, transparent) 0, transparent 100%),
-    radial-gradient(40% 36% at 88% 8%, color-mix(in srgb, var(--star) 10%, transparent) 0, transparent 100%),
-    radial-gradient(44% 40% at 70% 90%, color-mix(in srgb, var(--accent) 10%, transparent) 0, transparent 100%),
+    radial-gradient(48% 44% at 10% 12%, color-mix(in srgb, var(--accent) 10%, transparent) 0, transparent 100%),
+    radial-gradient(36% 30% at 90% 8%, color-mix(in srgb, var(--star) 7%, transparent) 0, transparent 100%),
+    radial-gradient(42% 36% at 72% 88%, color-mix(in srgb, var(--accent) 7%, transparent) 0, transparent 100%),
     var(--bg);
 }
 
-/* Reveal animation — CSS-only, no JS motion lib needed for MVP */
+.dark .ambient-bg {
+  background:
+    radial-gradient(52% 48% at 8% 10%, color-mix(in srgb, var(--accent) 10%, transparent) 0, transparent 100%),
+    radial-gradient(40% 36% at 92% 6%, color-mix(in srgb, var(--star) 6%, transparent) 0, transparent 100%),
+    var(--bg);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 420ms ease, transform 420ms ease;
+    transform: translateY(14px);
+    filter: blur(6px);
+    transition:
+      opacity 720ms var(--ease-out-expo),
+      transform 720ms var(--ease-out-expo),
+      filter 720ms var(--ease-out-expo);
   }
   .reveal.in-view {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
+  .reveal[data-index="1"] { transition-delay: 70ms; }
+  .reveal[data-index="2"] { transition-delay: 140ms; }
+  .reveal[data-index="3"] { transition-delay: 210ms; }
+  .reveal[data-index="4"] { transition-delay: 280ms; }
+  .reveal[data-index="5"] { transition-delay: 350ms; }
 }
 
-/* Scrollbar: thin, muted like gptluna */
+.bezel {
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
+  padding: 6px;
+  border-radius: 1.75rem;
+}
+.bezel-inner {
+  background: var(--surface);
+  border-radius: calc(1.75rem - 6px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    var(--elev-1);
+}
+.dark .bezel-inner {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    var(--elev-1);
+}
+
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
+
+/* gptluna material — exact header glass */
+.mat-func {
+  background: var(--mat-func-bg);
+  backdrop-filter: blur(var(--mat-func-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(var(--mat-func-blur)) saturate(1.8);
+  border: 1px solid var(--mat-func-border);
+  box-shadow: var(--mat-func-shadow);
+  position: relative;
+}
+.mat-func::before {
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(130% 60% at 50% -14%, #fff6 0, #0000 55%);
+  position: absolute;
+  inset: 0;
+}
+.dark .mat-func::before {
+  background: radial-gradient(130% 60% at 50% -14%, #ffffff1a 0, #0000 55%);
+}
+
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: "";
+  width: 40%;
+  height: 100%;
+  transition: transform 0.7s var(--ease-premium);
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, #ffffff59, transparent);
+  position: absolute;
+  top: 0;
+  left: -60%;
+  transform: skew(-20deg);
+}
+.btn-shine:hover::after { transform: translate(320%) skew(-20deg); }
+
+/* shimmer that fires from an ancestor .group hover (card-wrapped CTAs) */
+.group:hover .btn-shine-group::after { transform: translate(320%) skew(-20deg); }

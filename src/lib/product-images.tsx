@@ -17,7 +17,7 @@ export function ProductArt({ id, size = 56 }: { id: string; size?: number }) {
   const g = gradients[id] ?? "from-zinc-700 via-zinc-800 to-zinc-900";
   return (
     <div
-      className={`bg-gradient-to-br ${g} flex items-center justify-center rounded-2xl text-white/90 font-black tracking-tight shadow-sm ring-1 ring-black/5`}
+      className={`bg-gradient-to-br ${g} flex items-center justify-center rounded-2xl text-white/90 font-black tracking-tight shadow-sm ring-1 ring-black/5 dark:ring-white/10`}
       style={{ width: size, height: size, fontSize: size * 0.28 }}
       aria-hidden
     >

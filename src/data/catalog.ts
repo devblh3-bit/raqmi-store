@@ -6,9 +6,10 @@ export type Category = {
 export type Offer = {
   id: string;
   label: Record<string, string>;
-  price: number; // minor USD cents for display; real pricing is cost+markup later
+  price: number;
   compareAt?: number;
   stock?: number;
+  sold?: number;
   badge?: string;
 };
 export type Product = {
@@ -17,8 +18,9 @@ export type Product = {
   name: string;
   description: string;
   image: string;
-  rating: number;
-  reviews: number;
+  sold: number;
+  rating?: number;
+  reviews?: number;
   offers: Offer[];
   isNew?: boolean;
   isFeatured?: boolean;
@@ -37,7 +39,6 @@ export const categories: Category[] = [
   { slug: "pendidikan", name: { en: "Education", fr: "Éducation", ar: "التعليم" }, count: 2 },
 ];
 
-// Placeholder images via picsum-style gradients — no external dependency
 export const products: Product[] = [
   {
     slug: "chatgpt-plus",
@@ -45,14 +46,13 @@ export const products: Product[] = [
     name: "ChatGPT Plus",
     description: "Official OpenAI ChatGPT Plus — GPT-5 access, priority, and plugins.",
     image: "chatgpt",
-    rating: 4.9,
-    reviews: 3421,
-    isFeatured: true,
+    sold: 3421,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1999, compareAt: 2999, stock: 48 },
-      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 5499, compareAt: 8997, badge: "Popular" },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 18999, compareAt: 35988 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1999, compareAt: 2999, stock: 48, sold: 1240 },
+      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 5499, compareAt: 8997, sold: 890, badge: "Popular" },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 18999, compareAt: 35988, sold: 410 },
     ],
+    isFeatured: true,
   },
   {
     slug: "claude-pro",
@@ -60,13 +60,12 @@ export const products: Product[] = [
     name: "Claude Pro",
     description: "Anthropic Claude Pro — extended context, faster, and priority.",
     image: "claude",
-    rating: 4.9,
-    reviews: 2144,
-    isFeatured: true,
+    sold: 2144,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 2199, compareAt: 3299, stock: 22 },
-      { id: "6m", label: { en: "6 months", fr: "6 mois", ar: "6 أشهر" }, price: 11999 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 2199, compareAt: 3299, stock: 22, sold: 980 },
+      { id: "6m", label: { en: "6 months", fr: "6 mois", ar: "6 أشهر" }, price: 11999, sold: 340 },
     ],
+    isFeatured: true,
   },
   {
     slug: "gemini-pro",
@@ -74,12 +73,11 @@ export const products: Product[] = [
     name: "Gemini Advanced",
     description: "Google Gemini Advanced with 2TB storage and workspace perks.",
     image: "gemini",
-    rating: 4.8,
-    reviews: 987,
+    sold: 987,
     isNew: true,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1499, compareAt: 2499, stock: 60 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 13999, compareAt: 29988 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1499, compareAt: 2499, stock: 60, sold: 520 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 13999, compareAt: 29988, sold: 210 },
     ],
   },
   {
@@ -88,13 +86,12 @@ export const products: Product[] = [
     name: "Spotify Premium",
     description: "Ad-free music, offline listening, and highest quality audio.",
     image: "spotify",
-    rating: 4.9,
-    reviews: 5102,
+    sold: 5102,
     isFeatured: true,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 899, compareAt: 1399 },
-      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 2399 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 7999, compareAt: 16788, stock: 5, badge: "Save 52%" },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 899, compareAt: 1399, sold: 2400 },
+      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 2399, sold: 1100 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 7999, compareAt: 16788, stock: 5, sold: 890, badge: "Save 52%" },
     ],
   },
   {
@@ -103,11 +100,10 @@ export const products: Product[] = [
     name: "Netflix Premium",
     description: "4K Ultra HD, 4 screens, downloads, and full catalog.",
     image: "netflix",
-    rating: 4.8,
-    reviews: 4820,
+    sold: 4820,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1299, compareAt: 1999 },
-      { id: "6m", label: { en: "6 months", fr: "6 mois", ar: "6 أشهر" }, price: 6999 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1299, compareAt: 1999, sold: 2100 },
+      { id: "6m", label: { en: "6 months", fr: "6 mois", ar: "6 أشهر" }, price: 6999, sold: 980 },
     ],
   },
   {
@@ -116,11 +112,10 @@ export const products: Product[] = [
     name: "YouTube Premium",
     description: "Ad-free YouTube, background play, and YouTube Music.",
     image: "youtube",
-    rating: 4.8,
-    reviews: 3201,
+    sold: 3201,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 799, compareAt: 1299 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 7499, compareAt: 15588 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 799, compareAt: 1299, sold: 1800 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 7499, compareAt: 15588, sold: 620 },
     ],
   },
   {
@@ -129,11 +124,10 @@ export const products: Product[] = [
     name: "Canva Pro",
     description: "Pro templates, brand kit, and magic studio.",
     image: "canva",
-    rating: 4.9,
-    reviews: 2844,
+    sold: 2844,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1099, compareAt: 1799 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 8999, compareAt: 21588 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1099, compareAt: 1799, sold: 1500 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 8999, compareAt: 21588, sold: 720 },
     ],
   },
   {
@@ -142,10 +136,9 @@ export const products: Product[] = [
     name: "Notion Plus",
     description: "Unlimited blocks, version history, and team collaboration.",
     image: "notion",
-    rating: 4.7,
-    reviews: 1203,
+    sold: 1203,
     isNew: true,
-    offers: [{ id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 999, compareAt: 1599 }],
+    offers: [{ id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 999, compareAt: 1599, sold: 800 }],
   },
   {
     slug: "nordvpn",
@@ -153,11 +146,10 @@ export const products: Product[] = [
     name: "NordVPN",
     description: "Secure VPN with threat protection and 5600+ servers.",
     image: "nordvpn",
-    rating: 4.8,
-    reviews: 2109,
+    sold: 2109,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1199, compareAt: 1899 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 5999, compareAt: 22788 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1199, compareAt: 1899, sold: 980 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 5999, compareAt: 22788, sold: 540 },
     ],
   },
   {
@@ -166,11 +158,10 @@ export const products: Product[] = [
     name: "Adobe Creative Cloud",
     description: "Photoshop, Illustrator, Premiere, and 20+ apps.",
     image: "adobe",
-    rating: 4.9,
-    reviews: 4210,
+    sold: 4210,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 3499, compareAt: 5999 },
-      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 9499 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 3499, compareAt: 5999, sold: 2100 },
+      { id: "3m", label: { en: "3 months", fr: "3 mois", ar: "3 أشهر" }, price: 9499, sold: 1200 },
     ],
   },
   {
@@ -179,11 +170,10 @@ export const products: Product[] = [
     name: "Microsoft 365",
     description: "Word, Excel, PowerPoint, Outlook, and 1TB OneDrive.",
     image: "microsoft",
-    rating: 4.7,
-    reviews: 3104,
+    sold: 3104,
     offers: [
-      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 899, compareAt: 1299 },
-      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 6999, compareAt: 15588 },
+      { id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 899, compareAt: 1299, sold: 1800 },
+      { id: "12m", label: { en: "12 months", fr: "12 mois", ar: "12 شهراً" }, price: 6999, compareAt: 15588, sold: 920 },
     ],
   },
   {
@@ -192,8 +182,7 @@ export const products: Product[] = [
     name: "Figma Professional",
     description: "Design, prototype, and collaborate — team plan.",
     image: "figma",
-    rating: 4.8,
-    reviews: 1876,
-    offers: [{ id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1499, compareAt: 2299 }],
+    sold: 1876,
+    offers: [{ id: "1m", label: { en: "1 month", fr: "1 mois", ar: "شهر واحد" }, price: 1499, compareAt: 2299, sold: 1100 }],
   },
 ];

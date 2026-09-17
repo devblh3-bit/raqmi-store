@@ -25,15 +25,14 @@ export default async function ProductDetail({
       </Link>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl border border-[var(--border)] bg-white p-6 shadow-[var(--elev-1)] sm:p-8">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
           <div className="flex items-start gap-4">
             <ProductArt id={p.image} size={72} />
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{p.name}</h1>
               <p className="mt-2 text-sm leading-6 text-[var(--fg-muted)]">{p.description}</p>
               <div className="mt-3 flex items-center gap-2 text-xs font-medium text-[var(--fg-muted)]">
-                <span className="text-amber-500">★ {p.rating.toFixed(1)}</span>
-                <span>· {p.reviews.toLocaleString()} reviews</span>
+                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />{p.sold.toLocaleString()} sold</span>
                 <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 capitalize">{p.category}</span>
               </div>
             </div>
@@ -47,7 +46,7 @@ export default async function ProductDetail({
           </div>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-white p-6 shadow-[var(--elev-1)]">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)]">
           <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>
           <div className="mt-3 flex flex-col gap-2">
             {p.offers.map((o) => (
@@ -62,7 +61,7 @@ export default async function ProductDetail({
                     <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[11px] font-bold text-white">{o.badge}</span>
                   )}
                   {o.stock !== undefined && o.stock <= 5 && (
-                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
                       Stock: {o.stock}
                     </span>
                   )}
@@ -77,11 +76,12 @@ export default async function ProductDetail({
           <div className="mt-6 flex flex-col gap-2">
             <Link
               href={`/${locale}/track-order`}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+              className="btn-shine group inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98]"
             >
               {t("buyNow")}
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs transition-transform duration-300 ease-[var(--ease-premium)] group-hover:translate-x-0.5">→</span>
             </Link>
-            <button className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--border)] bg-white px-6 text-sm font-semibold shadow-sm transition-all hover:shadow-md">
+            <button className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 text-sm font-semibold shadow-sm transition-all hover:shadow-md">
               {t("addToCart")}
             </button>
             <p className="text-center text-xs text-[var(--fg-faint)]">Checkout is mock for now — wallet + provider wiring next.</p>

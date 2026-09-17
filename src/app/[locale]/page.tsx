@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import { products } from "@/data/catalog";
 import type { Locale } from "@/i18n";
+import Reveal from "@/components/Reveal";
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -19,85 +20,100 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <div className="ambient-bg">
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 pb-8 pt-10 sm:px-6 sm:pt-14">
-        <div className="rounded-[28px] border border-[var(--border)] bg-white p-6 shadow-[var(--elev-2)] sm:p-10">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold tracking-wide text-[var(--fg-muted)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> Premium licenses · Instant delivery
-            </p>
-            <h1 className="mt-4 text-balance text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-              {t("heroTitle")}
-            </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-balance text-sm leading-6 text-[var(--fg-muted)] sm:text-base sm:leading-7">
-              {t("heroSubtitle")}
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link
-                href={`/${locale}/products`}
-                className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
-              >
-                {t("exploreCategories")} →
-              </Link>
-              <Link
-                href={`/${locale}/promo`}
-                className="rounded-full border border-[var(--border)] bg-white px-6 py-3 text-sm font-semibold shadow-sm transition-all hover:shadow-md"
-              >
-                View promo 🔥
-              </Link>
+      <section className="mx-auto max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
+        <Reveal>
+          <div className="overflow-hidden rounded-[2rem] border border-black/[0.06] dark:border-white/[0.09] bg-[var(--surface)] shadow-[var(--elev-2)]">
+            <div className="px-6 py-10 text-center sm:px-10 sm:py-14">
+              <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold tracking-wide text-[var(--fg-muted)] ring-1 ring-black/[0.04] dark:ring-white/10">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" aria-hidden />
+                Premium licenses · Instant delivery · Trusted by 12k+
+              </p>
+              <h1 className="mx-auto mt-5 max-w-3xl text-balance text-[2rem] font-black leading-[0.95] tracking-[-0.03em] sm:text-5xl md:text-[3.25rem]">
+                {t("heroTitle")}
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-balance text-sm leading-6 text-[var(--fg-muted)] sm:text-base sm:leading-7">
+                {t("heroSubtitle")}
+              </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <Link
+                  href={`/${locale}/products`}
+                  className="btn-shine group inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-7 py-3.5 text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-[var(--elev-1)] transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98]"
+                >
+                  {t("exploreCategories")}
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs transition-transform duration-300 ease-[var(--ease-premium)] group-hover:translate-x-0.5">→</span>
+                </Link>
+                <Link
+                  href={`/${locale}/promo`}
+                  className="mat-func group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold tracking-tight text-[var(--fg)] shadow-[var(--elev-1)] transition-all duration-300 ease-[var(--ease-premium)] hover:shadow-md active:scale-[0.98]"
+                >
+                  View promo <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/[0.06] text-xs transition-transform duration-300 ease-[var(--ease-premium)] group-hover:translate-x-0.5">→</span>
+                </Link>
+              </div>
+
+              <form action={`/${locale}/products`} className="mx-auto mt-8 flex max-w-xl gap-2 rounded-full bg-[var(--surface-2)] p-1.5 shadow-[inset_0_0_0_1px_var(--border)]">
+                <input
+                  name="q"
+                  placeholder={t("searchPlaceholder")}
+                  className="h-10 flex-1 rounded-full bg-[var(--surface)] px-5 text-sm font-medium tracking-tight outline-none placeholder:text-[var(--fg-faint)] focus:ring-2 focus:ring-[var(--ring)]"
+                />
+                <button className="btn-shine group inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[var(--accent)] px-6 text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] active:scale-[0.98]">
+                  Search
+                </button>
+              </form>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium tracking-tight text-[var(--fg-faint)]">
+                <span>Trusted checkout</span>
+                <span aria-hidden>·</span>
+                <span>Instant email delivery</span>
+                <span aria-hidden>·</span>
+                <span>Telegram support</span>
+              </div>
             </div>
 
-            {/* Search */}
-            <form action={`/${locale}/products`} className="mx-auto mt-6 flex max-w-xl gap-2">
-              <input
-                name="q"
-                placeholder={t("searchPlaceholder")}
-                className="h-11 flex-1 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-5 text-sm outline-none placeholder:text-[var(--fg-faint)] focus:border-[var(--accent)] focus:bg-white focus:ring-2 focus:ring-[var(--ring)]"
-              />
-              <button className="h-11 shrink-0 rounded-full bg-[var(--fg)] px-6 text-sm font-semibold text-white transition-colors hover:bg-black">
-                Search
-              </button>
-            </form>
+            <div className="border-t border-black/[0.06] dark:border-white/[0.09] bg-[var(--surface-2)]/60 px-6 py-4 sm:px-8">
+              <CategoryPills locale={loc} />
+            </div>
           </div>
-
-          {/* Category pills */}
-          <div className="mt-8">
-            <CategoryPills locale={loc} />
-          </div>
-        </div>
+        </Reveal>
       </section>
 
-      {/* Featured */}
-      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <SectionHeader title={t("featured")} href={`/${locale}/products`} cta={t("viewAll")} />
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((p) => (
-            <ProductCard key={p.slug} p={p} locale={loc} />
-          ))}
-        </div>
-      </section>
-
-      {/* New arrivals */}
-      {newArrivals.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-          <SectionHeader title={t("newArrivals")} subtitle="Just added by our curators" />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {newArrivals.map((p) => (
-              <ProductCard key={p.slug} p={p} locale={loc} />
+      <Reveal>
+        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+          <SectionHeader title={t("featured")} href={`/${locale}/products`} cta={t("viewAll")} />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((p, i) => (
+              <ProductCard key={p.slug} p={p} locale={loc} index={i} />
             ))}
           </div>
         </section>
+      </Reveal>
+
+      {newArrivals.length > 0 && (
+        <Reveal>
+          <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+            <SectionHeader title={t("newArrivals")} subtitle="Just added by our curators" />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {newArrivals.map((p, i) => (
+                <ProductCard key={p.slug} p={p} locale={loc} index={i} />
+              ))}
+            </div>
+          </section>
+        </Reveal>
       )}
 
-      {/* All products */}
-      <section className="mx-auto max-w-6xl px-4 pb-12 pt-2 sm:px-6">
-        <SectionHeader title={c("allProducts")} href={`/${locale}/products`} cta={t("viewAll")} />
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rest.map((p) => (
-            <ProductCard key={p.slug} p={p} locale={loc} />
-          ))}
-        </div>
-      </section>
+      <Reveal>
+        <section className="mx-auto max-w-6xl px-4 pb-12 pt-4 sm:px-6">
+          <SectionHeader title={c("allProducts")} href={`/${locale}/products`} cta={t("viewAll")} />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rest.map((p, i) => (
+              <ProductCard key={p.slug} p={p} locale={loc} index={i} />
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs tracking-wide text-[var(--fg-faint)]">
+            Prices show USD + indicative DZD. Final charge in USD.
+          </p>
+        </section>
+      </Reveal>
     </div>
   );
 }
