@@ -25,6 +25,9 @@ export type CatalogOffer = {
   compareAt?: number;
   stock?: number;
   badge?: string;
+  /** Provider wants a value from the buyer (e.g. the account email) before fulfillment. */
+  requiresCustomerInput: boolean;
+  customerPrompt?: string;
 };
 
 export type CatalogProduct = {
@@ -64,7 +67,14 @@ const offerSelect = {
     orderBy: [{ priority: "asc" }],
     select: {
       providerOffer: {
-        select: { costMinor: true, currency: true, availability: true, stockQuantity: true },
+        select: {
+          costMinor: true,
+          currency: true,
+          availability: true,
+          stockQuantity: true,
+          customerInputType: true,
+          customerPrompt: true,
+        },
       },
     },
   },
@@ -100,6 +110,7 @@ function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
   const markup = Number(o.markupPercent);
   const price = Math.round(Number(best.costMinor) * (1 + markup / 100));
 
+  const inputType = best.customerInputType;
   return {
     id: o.id,
     label: localized(o.labelEn, o.labelAr, o.labelFr),
@@ -107,6 +118,9 @@ function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
     compareAt: o.compareAtMinor == null ? undefined : Number(o.compareAtMinor),
     stock: best.stockQuantity ?? undefined,
     badge: o.badge ?? undefined,
+    // Mirrors checkout.ts's rule so the form asks for exactly what placeOrder requires.
+    requiresCustomerInput: !!inputType && inputType !== "none",
+    customerPrompt: best.customerPrompt ?? undefined,
   };
 }
 

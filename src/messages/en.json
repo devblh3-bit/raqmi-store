@@ -45,7 +45,18 @@
     "title": "Checkout",
     "email": "Email",
     "customerInput": "Delivery info",
-    "pay": "Place order"
+    "pay": "Place order",
+    "placing": "Placing order…",
+    "errorFunds": "Not enough wallet balance. Add funds and try again.",
+    "errorUnavailable": "This offer is no longer available.",
+    "errorInputRequired": "Please fill in the delivery info.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "orderPlaced": "Order placed",
+    "orderCode": "Order code",
+    "status": "Status",
+    "total": "Total",
+    "backToProducts": "Continue shopping",
+    "notFound": "Order not found."
   },
   "track": {
     "title": "Track order",
