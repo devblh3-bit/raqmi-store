@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "products": "Produits",
+    "categories": "Catégories",
+    "promo": "Promos",
+    "track": "Suivi",
+    "cart": "Panier",
+    "account": "Compte"
+  },
+  "home": {
+    "heroTitle": "Applications premium, un seul achat",
+    "heroSubtitle": "Découvrez des applications et licences numériques premium pour tous vos appareils. Achat unique, sans abonnement.",
+    "exploreCategories": "Explorer les catégories",
+    "featured": "En vedette",
+    "newArrivals": "Nouveautés",
+    "viewAll": "Voir tout",
+    "searchPlaceholder": "Rechercher un produit…"
+  },
+  "catalog": {
+    "allProducts": "Tous les produits",
+    "categories": "Catégories",
+    "sortNewest": "Nouveautés",
+    "sortCheapest": "Moins cher",
+    "sortExpensive": "Plus cher",
+    "outOfStock": "Rupture",
+    "from": "À partir de",
+    "discount": "Économisez"
+  },
+  "product": {
+    "chooseOffer": "Choisir une offre",
+    "buyNow": "Acheter",
+    "addToCart": "Ajouter au panier",
+    "description": "Description",
+    "warranty": "Garantie",
+    "rules": "Conditions",
+    "stockLimited": "Stock limité"
+  },
+  "cart": {
+    "title": "Votre panier",
+    "empty": "Votre panier est vide",
+    "checkout": "Commander"
+  },
+  "checkout": {
+    "title": "Commande",
+    "email": "Email",
+    "customerInput": "Infos de livraison",
+    "pay": "Valider la commande"
+  },
+  "track": {
+    "title": "Suivi de commande",
+    "code": "Code de commande",
+    "email": "Email",
+    "check": "Vérifier"
+  }
+}

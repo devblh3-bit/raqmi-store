@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "categories": "Categories",
+    "promo": "Promo",
+    "track": "Track Order",
+    "cart": "Cart",
+    "account": "Account"
+  },
+  "home": {
+    "heroTitle": "Premium apps, one purchase",
+    "heroSubtitle": "Discover premium apps and digital licenses for every device. One-time purchase, no subscription.",
+    "exploreCategories": "Explore categories",
+    "featured": "Featured",
+    "newArrivals": "New arrivals",
+    "viewAll": "View all",
+    "searchPlaceholder": "Search products…"
+  },
+  "catalog": {
+    "allProducts": "All products",
+    "categories": "Categories",
+    "sortNewest": "Newest",
+    "sortCheapest": "Cheapest",
+    "sortExpensive": "Most expensive",
+    "outOfStock": "Out of stock",
+    "from": "From",
+    "discount": "Save"
+  },
+  "product": {
+    "chooseOffer": "Choose a plan",
+    "buyNow": "Buy now",
+    "addToCart": "Add to cart",
+    "description": "Description",
+    "warranty": "Warranty",
+    "rules": "Terms",
+    "stockLimited": "Limited stock"
+  },
+  "cart": {
+    "title": "Your cart",
+    "empty": "Your cart is empty",
+    "checkout": "Checkout"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "email": "Email",
+    "customerInput": "Delivery info",
+    "pay": "Place order"
+  },
+  "track": {
+    "title": "Track order",
+    "code": "Order code",
+    "email": "Email",
+    "check": "Check"
+  }
+}

@@ -1,0 +1,11 @@
+.env
+node_modules
+.next
+out
+dist
+coverage
+.turbo
+.vercel
+*.tsbuildinfo
+.DS_Store
+graphify-out

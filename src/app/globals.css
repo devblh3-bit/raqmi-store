@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f6f2;
+  --bg-deep: #eeece5;
+  --surface: #ffffff;
+  --surface-2: #f2f0ea;
+  --surface-3: #e8e5dc;
+  --fg: #151513;
+  --fg-muted: #66635a;
+  --fg-faint: #969287;
+  --border: #15151314;
+  --border-strong: #15151329;
+  --border-subtle: #1515130d;
+  --accent: #10a37f;
+  --accent-hover: #0d8b6c;
+  --accent-fg: #ffffff;
+  --accent-soft: #10a37f1a;
+  --accent-yellow: #f59e0b;
+  --accent-blue: #2563eb;
+  --accent-orange: #ea580c;
+  --discount: #e11d48;
+  --discount-soft: #e11d481a;
+  --success: #10a37f;
+  --warning: #d97706;
+  --danger: #e11d48;
+  --ring: #10a37f59;
+  --overlay: #0f0f0d73;
+  --star: #f59e0b;
+
+  /* elevation */
+  --elev-1: 0 1px 2px rgba(21, 21, 19, 0.06), 0 1px 3px rgba(21, 21, 19, 0.08);
+  --elev-2: 0 4px 12px rgba(21, 21, 19, 0.08), 0 1px 3px rgba(21, 21, 19, 0.06);
+  --elev-3: 0 12px 32px rgba(21, 21, 19, 0.12), 0 4px 12px rgba(21, 21, 19, 0.08);
+  --shadow-color: rgba(21, 21, 19, 0.08);
+
+  /* radius */
+  --radius: 1rem;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-border: var(--border);
+  --color-discount: var(--discount);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Ambient background — subtle radial wash like gptluna */
+.ambient-bg {
+  background:
+    radial-gradient(48% 44% at 10% 15%, color-mix(in srgb, var(--accent) 14%, transparent) 0, transparent 100%),
+    radial-gradient(40% 36% at 88% 8%, color-mix(in srgb, var(--star) 10%, transparent) 0, transparent 100%),
+    radial-gradient(44% 40% at 70% 90%, color-mix(in srgb, var(--accent) 10%, transparent) 0, transparent 100%),
+    var(--bg);
+}
+
+/* Reveal animation — CSS-only, no JS motion lib needed for MVP */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 420ms ease, transform 420ms ease;
+  }
+  .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar: thin, muted like gptluna */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}

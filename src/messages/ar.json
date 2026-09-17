@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "products": "المنتجات",
+    "categories": "الفئات",
+    "promo": "العروض",
+    "track": "تتبع الطلب",
+    "cart": "السلة",
+    "account": "الحساب"
+  },
+  "home": {
+    "heroTitle": "تطبيقات مميزة، شراء واحد يكفي",
+    "heroSubtitle": "اكتشف تطبيقات وتراخيص رقمية مميزة لكل الأجهزة. شراء لمرة واحدة، بلا اشتراك.",
+    "exploreCategories": "استكشف الفئات",
+    "featured": "مميز",
+    "newArrivals": "وصل حديثاً",
+    "viewAll": "عرض الكل",
+    "searchPlaceholder": "ابحث عن منتج…"
+  },
+  "catalog": {
+    "allProducts": "جميع المنتجات",
+    "categories": "الفئات",
+    "sortNewest": "الأحدث",
+    "sortCheapest": "الأرخص",
+    "sortExpensive": "الأغلى",
+    "outOfStock": "نفد المخزون",
+    "from": "ابتداءً من",
+    "discount": "وفّر"
+  },
+  "product": {
+    "chooseOffer": "اختر الباقة",
+    "buyNow": "اشترِ الآن",
+    "addToCart": "أضف إلى السلة",
+    "description": "الوصف",
+    "warranty": "الضمان",
+    "rules": "الشروط",
+    "stockLimited": "كمية محدودة"
+  },
+  "cart": {
+    "title": "سلتك",
+    "empty": "سلتك فارغة",
+    "checkout": "الدفع"
+  },
+  "checkout": {
+    "title": "إتمام الطلب",
+    "email": "البريد الإلكتروني",
+    "customerInput": "بيانات التسليم",
+    "pay": "تأكيد الطلب"
+  },
+  "track": {
+    "title": "تتبع الطلب",
+    "code": "رمز الطلب",
+    "email": "البريد الإلكتروني",
+    "check": "تحقق"
+  }
+}
