@@ -43,6 +43,7 @@ model Product {
   images        String[]
   isActive      Boolean  @default(true)
   isFeatured    Boolean  @default(false)
+  isNew         Boolean  @default(false)
   sortOrder     Int      @default(0)
   soldCount     Int      @default(0)
   offers        Offer[]
@@ -60,6 +61,8 @@ model Offer {
   labelAr               String
   labelFr               String
   markupPercent         Decimal                  @default(0) @db.Decimal(6, 2)
+  compareAtMinor        BigInt? // strike-through "was" price, display only
+  badge                 String? // small marketing label, e.g. "Popular"
   rulesEn               String                   @default("")
   rulesAr               String                   @default("")
   rulesFr               String                   @default("")

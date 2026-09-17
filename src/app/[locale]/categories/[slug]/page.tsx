@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { categories, products } from "@/data/catalog";
+import { getCategory, getProductsByCategory } from "@/lib/catalog";
 import ProductCard from "@/components/ProductCard";
 import type { Locale } from "@/i18n";
 import Link from "next/link";
 export default async function KategoriSlugPage({ params }: { params: Promise<{ locale: string; slug: string }> }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
-  const cat = categories.find((c) => c.slug === slug);
+  const cat = await getCategory(slug);
   if (!cat) notFound();
   const loc = locale as Locale;
-  const list = products.filter((p) => p.category === slug);
+  const list = await getProductsByCategory(slug, loc);
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <Link href={`/${locale}/categories`} className="text-sm font-medium text-[var(--fg-muted)] hover:text-[var(--fg)]">← Categories</Link>

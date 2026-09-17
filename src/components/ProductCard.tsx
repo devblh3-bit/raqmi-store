@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n";
-import type { Product } from "@/data/catalog";
+import type { CatalogProduct } from "@/lib/catalog";
 import { ProductArt } from "@/lib/product-images";
 import { Price } from "./Price";
 
-export default function ProductCard({ p, locale, index = 0 }: { p: Product; locale: Locale; index?: number }) {
+export default function ProductCard({ p, locale, index = 0 }: { p: CatalogProduct; locale: Locale; index?: number }) {
   const cheapest = [...p.offers].sort((a, b) => a.price - b.price)[0];
   const hasDiscount = cheapest.compareAt != null && cheapest.compareAt > cheapest.price;
   const discountPct = hasDiscount ? Math.round(((cheapest.compareAt! - cheapest.price) / cheapest.compareAt!) * 100) : 0;

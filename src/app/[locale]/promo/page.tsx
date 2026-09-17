@@ -1,11 +1,12 @@
 import { setRequestLocale } from "next-intl/server";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/catalog";
+import { getProducts } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 export default async function PromoPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const loc = locale as Locale;
+  const products = await getProducts(loc);
   const promos = products.filter((p) => p.offers.some((o) => o.compareAt && o.compareAt > o.price));
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { products } from "@/data/catalog";
+import { getProductBySlug } from "@/lib/catalog";
 import { ProductArt } from "@/lib/product-images";
 import { Price } from "@/components/Price";
 import type { Locale } from "@/i18n";
@@ -14,9 +14,9 @@ export default async function ProductDetail({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "product" });
-  const p = products.find((x) => x.slug === slug);
-  if (!p) notFound();
   const loc = locale as Locale;
+  const p = await getProductBySlug(slug, loc);
+  if (!p) notFound();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n";
-import { categories } from "@/data/catalog";
+import { getCategories } from "@/lib/catalog";
 
-export default function CategoryPills({ locale, active }: { locale: Locale; active?: string }) {
+export default async function CategoryPills({ locale, active }: { locale: Locale; active?: string }) {
+  const categories = await getCategories();
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <Link

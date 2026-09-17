@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/catalog";
+import { getProducts } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 
 export default async function AplikasiPage({
@@ -16,7 +16,7 @@ export default async function AplikasiPage({
   const t = await getTranslations({ locale, namespace: "home" });
   const loc = locale as Locale;
 
-  let list = [...products];
+  let list = await getProducts(loc);
   if (q) {
     const needle = q.toLowerCase();
     list = list.filter((p) => p.name.toLowerCase().includes(needle) || p.description.toLowerCase().includes(needle));

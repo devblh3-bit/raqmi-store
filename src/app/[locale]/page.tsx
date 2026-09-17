@@ -3,7 +3,7 @@ import Link from "next/link";
 import CategoryPills from "@/components/CategoryPills";
 import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
-import { products } from "@/data/catalog";
+import { getProducts } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 import Reveal from "@/components/Reveal";
 
@@ -14,6 +14,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const c = await getTranslations({ locale, namespace: "catalog" });
   const loc = locale as Locale;
 
+  const products = await getProducts(loc);
   const featured = products.filter((p) => p.isFeatured);
   const newArrivals = products.filter((p) => p.isNew);
   const rest = products.filter((p) => !p.isFeatured && !p.isNew);

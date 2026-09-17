@@ -1,0 +1,172 @@
+import "server-only";
+
+import { Prisma } from "@prisma/client";
+import { prisma } from "./db";
+import type { Locale } from "@/i18n";
+
+/**
+ * DB-backed catalog reads. Returns the same shape the storefront already
+ * renders (src/data/catalog.ts types), so pages swap their import and nothing
+ * else changes.
+ *
+ * Prices come from OfferProviderLink -> ProviderOffer.costMinor with the offer's
+ * markup applied, mirroring pricing.ts's retail path. This is the DISPLAY path:
+ * it stays read-only and never writes the OfferComputedPrice cache. Checkout
+ * re-prices through priceForOffer(), which is authoritative.
+ * ponytail: no tier pricing in listings (retail only) — logged-in reseller
+ * discounts show at checkout. Upgrade path: pass tierId through and reuse
+ * computeOfferPrice here.
+ */
+
+export type CatalogOffer = {
+  id: string; // real Offer.id — this is what checkout takes
+  label: Record<string, string>;
+  price: number; // USD minor
+  compareAt?: number;
+  stock?: number;
+  badge?: string;
+};
+
+export type CatalogProduct = {
+  slug: string;
+  category: string;
+  name: string;
+  description: string;
+  image: string;
+  sold: number;
+  offers: CatalogOffer[];
+  isNew?: boolean;
+  isFeatured?: boolean;
+};
+
+export type CatalogCategory = {
+  slug: string;
+  name: Record<string, string>;
+  count: number;
+};
+
+const localized = (en: string, ar: string, fr: string) => ({ en, ar, fr });
+
+function pick(row: { nameEn: string; nameAr: string; nameFr: string }, locale: Locale) {
+  return locale === "ar" ? row.nameAr : locale === "fr" ? row.nameFr : row.nameEn;
+}
+
+const offerSelect = {
+  id: true,
+  labelEn: true,
+  labelAr: true,
+  labelFr: true,
+  markupPercent: true,
+  compareAtMinor: true,
+  badge: true,
+  links: {
+    where: { isEnabled: true },
+    orderBy: [{ priority: "asc" }],
+    select: {
+      providerOffer: {
+        select: { costMinor: true, currency: true, availability: true, stockQuantity: true },
+      },
+    },
+  },
+} satisfies Prisma.OfferSelect;
+
+const productInclude = {
+  category: { select: { slug: true } },
+  offers: {
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }],
+    select: offerSelect,
+  },
+} satisfies Prisma.ProductInclude;
+
+type ProductRow = Awaited<ReturnType<typeof loadProducts>>[number];
+
+function loadProducts(where: Prisma.ProductWhereInput) {
+  return prisma.product.findMany({
+    where: { isActive: true, ...where },
+    include: productInclude,
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+}
+
+function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
+  // Cheapest enabled USD link wins, matching computeOfferPrice's selection.
+  const usable = o.links
+    .map((l) => l.providerOffer)
+    .filter((po) => po.currency === "USD" && po.availability !== "OUT_OF_STOCK");
+  if (!usable.length) return null;
+  const best = usable.reduce((a, b) => (b.costMinor < a.costMinor ? b : a));
+
+  const markup = Number(o.markupPercent);
+  const price = Math.round(Number(best.costMinor) * (1 + markup / 100));
+
+  return {
+    id: o.id,
+    label: localized(o.labelEn, o.labelAr, o.labelFr),
+    price,
+    compareAt: o.compareAtMinor == null ? undefined : Number(o.compareAtMinor),
+    stock: best.stockQuantity ?? undefined,
+    badge: o.badge ?? undefined,
+  };
+}
+
+function toProduct(p: ProductRow, locale: Locale): CatalogProduct | null {
+  const offers = p.offers.map(toOffer).filter((o): o is CatalogOffer => o !== null);
+  if (!offers.length) return null; // nothing sellable; hide rather than render a broken card
+  return {
+    slug: p.slug,
+    category: p.category.slug,
+    name: pick(p, locale),
+    description:
+      locale === "ar" ? p.descriptionAr : locale === "fr" ? p.descriptionFr : p.descriptionEn,
+    image: p.images[0] ?? "",
+    sold: p.soldCount,
+    offers,
+    isNew: p.isNew,
+    isFeatured: p.isFeatured,
+  };
+}
+
+export async function getProducts(locale: Locale): Promise<CatalogProduct[]> {
+  const rows = await loadProducts({});
+  return rows.map((p) => toProduct(p, locale)).filter((p): p is CatalogProduct => p !== null);
+}
+
+export async function getProductBySlug(
+  slug: string,
+  locale: Locale,
+): Promise<CatalogProduct | null> {
+  const [row] = await loadProducts({ slug });
+  return row ? toProduct(row, locale) : null;
+}
+
+export async function getProductsByCategory(
+  categorySlug: string,
+  locale: Locale,
+): Promise<CatalogProduct[]> {
+  const rows = await loadProducts({ category: { slug: categorySlug } });
+  return rows.map((p) => toProduct(p, locale)).filter((p): p is CatalogProduct => p !== null);
+}
+
+export async function getCategories(): Promise<CatalogCategory[]> {
+  const rows = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }],
+    select: {
+      slug: true,
+      nameEn: true,
+      nameAr: true,
+      nameFr: true,
+      _count: { select: { products: { where: { isActive: true } } } },
+    },
+  });
+  return rows.map((c) => ({
+    slug: c.slug,
+    name: localized(c.nameEn, c.nameAr, c.nameFr),
+    count: c._count.products,
+  }));
+}
+
+export async function getCategory(slug: string): Promise<CatalogCategory | null> {
+  return (await getCategories()).find((c) => c.slug === slug) ?? null;
+}
