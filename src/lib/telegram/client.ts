@@ -459,6 +459,21 @@ export interface SendMessageOptions extends CallOptions {
   disableWebPagePreview?: boolean;
   replyToMessageId?: number;
   messageThreadId?: number;
+  /**
+   * Inline keyboard. `callback_data` is capped at 64 bytes by the Bot API and
+   * is attacker-visible in the client, so it must carry only opaque ids —
+   * never amounts, balances or anything trusted on the way back in.
+   */
+  replyMarkup?: InlineKeyboardMarkup;
+}
+
+export interface InlineKeyboardButton {
+  text: string;
+  callback_data: string;
+}
+
+export interface InlineKeyboardMarkup {
+  inline_keyboard: InlineKeyboardButton[][];
 }
 
 export interface TelegramMessage {
@@ -474,8 +489,15 @@ export async function sendMessage(
   text: string,
   options: SendMessageOptions = {},
 ): Promise<BotApiResult<TelegramMessage>> {
-  const { parseMode, disableNotification, disableWebPagePreview = true, replyToMessageId, messageThreadId, ...call } =
-    options;
+  const {
+    parseMode,
+    disableNotification,
+    disableWebPagePreview = true,
+    replyToMessageId,
+    messageThreadId,
+    replyMarkup,
+    ...call
+  } = options;
 
   return callBotApi<TelegramMessage>(
     "sendMessage",
@@ -487,6 +509,7 @@ export async function sendMessage(
       link_preview_options: disableWebPagePreview ? { is_disabled: true } : undefined,
       reply_parameters: replyToMessageId ? { message_id: replyToMessageId } : undefined,
       message_thread_id: messageThreadId,
+      reply_markup: replyMarkup,
     },
     call,
   );
@@ -556,4 +579,56 @@ export interface WebhookInfo {
  */
 export function getWebhookInfo(options: CallOptions = {}): Promise<BotApiResult<WebhookInfo>> {
   return callBotApi<WebhookInfo>("getWebhookInfo", {}, options);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Inline-keyboard callbacks                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface AnswerCallbackOptions extends CallOptions {
+  /** Shown to the admin who tapped. Keep it short; Telegram caps it at 200. */
+  text?: string;
+  /** Modal alert instead of the default toast. */
+  showAlert?: boolean;
+}
+
+/**
+ * Acknowledge a button tap. Telegram shows a spinner on the button until this
+ * lands, so it is called on every path — including rejected/failed ones.
+ */
+export function answerCallbackQuery(
+  callbackQueryId: string,
+  options: AnswerCallbackOptions = {},
+): Promise<BotApiResult<boolean>> {
+  const { text, showAlert, ...call } = options;
+  return callBotApi<boolean>(
+    "answerCallbackQuery",
+    { callback_query_id: callbackQueryId, text, show_alert: showAlert },
+    call,
+  );
+}
+
+/**
+ * Replace a message's text (and drop its keyboard unless one is supplied).
+ * Used to retire the Approve/Reject buttons once a decision is recorded.
+ */
+export function editMessageText(
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  options: SendMessageOptions = {},
+): Promise<BotApiResult<TelegramMessage>> {
+  const { parseMode, disableWebPagePreview = true, replyMarkup, ...call } = options;
+  return callBotApi<TelegramMessage>(
+    "editMessageText",
+    {
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: parseMode,
+      link_preview_options: disableWebPagePreview ? { is_disabled: true } : undefined,
+      reply_markup: replyMarkup,
+    },
+    call,
+  );
 }

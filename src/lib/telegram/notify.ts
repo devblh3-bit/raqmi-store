@@ -5,7 +5,12 @@ import {
   toSafePlaintext,
   type PlaintextField,
 } from "./escape";
-import { sendMessageToAdmin, type BotApiResult, type TelegramMessage } from "./client";
+import {
+  sendMessageToAdmin,
+  type BotApiResult,
+  type InlineKeyboardMarkup,
+  type TelegramMessage,
+} from "./client";
 
 /**
  * Typed admin alerts.
@@ -71,6 +76,8 @@ export interface AlertRecord {
   collapsedCount: number;
   /** Redacted failure reason when `sentToTelegram` is false and not throttled. */
   sendError?: string;
+  /** Telegram message id of the sent alert, so a caller can retire its buttons. */
+  messageId?: number;
   occurredAt: string;
 }
 
@@ -208,6 +215,8 @@ interface AlertSpec {
   link?: string;
   /** Structured lines for the Telegram message; values are sanitised. */
   fields?: PlaintextField[];
+  /** Optional inline keyboard (e.g. Approve/Reject). Ids only, never amounts. */
+  buttons?: InlineKeyboardMarkup;
 }
 
 /**
@@ -268,10 +277,12 @@ async function dispatch(spec: AlertSpec, options: NotifyOptions = {}): Promise<A
   const result: BotApiResult<TelegramMessage> = await sendMessageToAdmin(text, {
     // No parseMode: the body contains provider/customer content.
     disableNotification: isSilent(spec.severity),
+    replyMarkup: spec.buttons,
   });
 
   if (result.ok) {
     record.sentToTelegram = true;
+    record.messageId = result.result?.message_id;
   } else {
     record.sendError = result.error; // already redacted by the client
   }
@@ -517,6 +528,12 @@ export interface PendingDepositInput {
   method: string;
   reference?: string;
   waitingMinutes?: number;
+  /**
+   * Attach Approve/Reject buttons. callback_data carries only the deposit id
+   * (opaque, <=64 bytes); the amount is re-read from the DB on the way back in,
+   * never trusted from the button.
+   */
+  withActions?: boolean;
 }
 
 /** A manual-confirmation deposit is waiting; it ages into a warning. */
@@ -548,6 +565,16 @@ export function notifyPendingDeposit(
         fr: `Un dépôt de ${amount} ${currency} de ${customer} via ${method} attend une confirmation manuelle${reference ? ` (référence ${reference})` : ""}.`,
       },
       link: `/admin/deposits/${encodeURIComponent(input.depositId)}`,
+      buttons: input.withActions
+        ? {
+            inline_keyboard: [
+              [
+                { text: "✅ Approve", callback_data: `dep:ok:${input.depositId}` },
+                { text: "❌ Reject", callback_data: `dep:no:${input.depositId}` },
+              ],
+            ],
+          }
+        : undefined,
       fields: [
         { label: "Amount", value: `${amount} ${currency}` },
         { label: "Customer", value: input.customerLabel },

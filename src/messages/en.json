@@ -74,5 +74,30 @@
     "errorInvalid": "That link is invalid or expired. Request a new one.",
     "errorTelegram": "Telegram sign-in failed. Try again.",
     "errorSend": "Could not send the email. Try again."
+  },
+  "wallet": {
+    "title": "Wallet",
+    "balance": "Balance",
+    "addFunds": "Add funds",
+    "amount": "Amount (USD)",
+    "method": "Payment method",
+    "methodUsdtBep20": "USDT (BEP20)",
+    "methodUsdtTrc20": "USDT (TRC20)",
+    "methodBank": "Bank transfer",
+    "txHash": "Transaction hash",
+    "txHashHint": "Paste the on-chain transaction hash",
+    "proofUrl": "Proof link",
+    "proofUrlHint": "Link to your transfer receipt",
+    "submit": "Submit deposit",
+    "submitted": "Deposit submitted — an admin will review it shortly.",
+    "pending": "Pending review",
+    "history": "Recent deposits",
+    "noDeposits": "No deposits yet.",
+    "errorAmount": "Enter an amount between $1 and $1,000,000.",
+    "errorGeneric": "Could not submit the deposit. Please try again.",
+    "statusPENDING": "Pending",
+    "statusCONFIRMED_ON_CHAIN": "Confirmed on chain",
+    "statusAPPROVED": "Approved",
+    "statusREJECTED": "Rejected"
   }
 }

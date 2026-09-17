@@ -24,9 +24,17 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
+// Vitest runs test files in parallel against one database, and other suites
+// create their own throwaway categories/products. So assert over the slugs the
+// seed owns, never over whole-table counts.
+const SEEDED_PRODUCTS = new Set(mock.map((p) => p.slug));
+const SEEDED_CATEGORIES = new Set(mockCategories.map((c) => c.slug));
+const seededOnly = <T extends { slug: string }>(rows: T[]) =>
+  rows.filter((r) => SEEDED_PRODUCTS.has(r.slug));
+
 describe("DB catalog matches the seed source", () => {
   it("returns every seeded product with cheapest-price parity", async () => {
-    const all = await getProducts("en");
+    const all = seededOnly(await getProducts("en"));
     expect(all).toHaveLength(mock.length);
 
     for (const m of mock) {
@@ -44,7 +52,7 @@ describe("DB catalog matches the seed source", () => {
   });
 
   it("round-trips every offer's price, compareAt, badge and stock", async () => {
-    const all = await getProducts("en");
+    const all = seededOnly(await getProducts("en"));
     for (const m of mock) {
       const p = all.find((x) => x.slug === m.slug)!;
       for (const mo of m.offers) {
@@ -61,7 +69,7 @@ describe("DB catalog matches the seed source", () => {
   });
 
   it("preserves the home-page and promo partitions", async () => {
-    const all = await getProducts("en");
+    const all = seededOnly(await getProducts("en"));
     expect(all.filter((p) => p.isFeatured)).toHaveLength(
       mock.filter((p) => p.isFeatured).length,
     );
@@ -74,7 +82,7 @@ describe("DB catalog matches the seed source", () => {
   });
 
   it("serves categories with DB-side product counts", async () => {
-    const cats = await getCategories();
+    const cats = (await getCategories()).filter((c) => SEEDED_CATEGORIES.has(c.slug));
     expect(cats).toHaveLength(mockCategories.length);
     expect(cats.reduce((s, c) => s + c.count, 0)).toBe(mock.length);
 
@@ -87,7 +95,7 @@ describe("DB catalog matches the seed source", () => {
     expect(await getProductBySlug("chatgpt-plus", "en")).not.toBeNull();
     expect(await getProductBySlug("does-not-exist", "en")).toBeNull();
 
-    const ai = await getProductsByCategory("ai", "en");
+    const ai = seededOnly(await getProductsByCategory("ai", "en"));
     expect(ai).toHaveLength(mock.filter((p) => p.category === "ai").length);
     expect(ai.every((p) => p.category === "ai")).toBe(true);
   });

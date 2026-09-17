@@ -74,5 +74,30 @@
     "errorInvalid": "Ce lien est invalide ou expiré. Demandez-en un nouveau.",
     "errorTelegram": "Échec de la connexion Telegram. Réessayez.",
     "errorSend": "Impossible d'envoyer l'e-mail. Réessayez."
+  },
+  "wallet": {
+    "title": "Portefeuille",
+    "balance": "Solde",
+    "addFunds": "Ajouter des fonds",
+    "amount": "Montant (USD)",
+    "method": "Moyen de paiement",
+    "methodUsdtBep20": "USDT (BEP20)",
+    "methodUsdtTrc20": "USDT (TRC20)",
+    "methodBank": "Virement bancaire",
+    "txHash": "Hash de transaction",
+    "txHashHint": "Collez le hash de la transaction",
+    "proofUrl": "Lien de preuve",
+    "proofUrlHint": "Lien vers votre reçu de virement",
+    "submit": "Envoyer le dépôt",
+    "submitted": "Dépôt envoyé — un administrateur va l'examiner.",
+    "pending": "En attente de validation",
+    "history": "Dépôts récents",
+    "noDeposits": "Aucun dépôt pour le moment.",
+    "errorAmount": "Saisissez un montant entre 1 $ et 1 000 000 $.",
+    "errorGeneric": "Envoi du dépôt impossible. Réessayez.",
+    "statusPENDING": "En attente",
+    "statusCONFIRMED_ON_CHAIN": "Confirmé sur la chaîne",
+    "statusAPPROVED": "Approuvé",
+    "statusREJECTED": "Rejeté"
   }
 }

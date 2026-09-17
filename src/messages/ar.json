@@ -74,5 +74,30 @@
     "errorInvalid": "هذا الرابط غير صالح أو منتهي الصلاحية. اطلب رابطًا جديدًا.",
     "errorTelegram": "فشل تسجيل الدخول عبر تيليجرام. حاول مجددًا.",
     "errorSend": "تعذر إرسال البريد. حاول مجددًا."
+  },
+  "wallet": {
+    "title": "المحفظة",
+    "balance": "الرصيد",
+    "addFunds": "إضافة رصيد",
+    "amount": "المبلغ (دولار)",
+    "method": "طريقة الدفع",
+    "methodUsdtBep20": "USDT (BEP20)",
+    "methodUsdtTrc20": "USDT (TRC20)",
+    "methodBank": "تحويل بنكي",
+    "txHash": "معرّف العملية",
+    "txHashHint": "الصق معرّف العملية على الشبكة",
+    "proofUrl": "رابط الإثبات",
+    "proofUrlHint": "رابط إيصال التحويل",
+    "submit": "إرسال الإيداع",
+    "submitted": "تم إرسال الإيداع — ستتم مراجعته قريبًا.",
+    "pending": "في انتظار المراجعة",
+    "history": "الإيداعات الأخيرة",
+    "noDeposits": "لا توجد إيداعات بعد.",
+    "errorAmount": "أدخل مبلغًا بين 1 و1,000,000 دولار.",
+    "errorGeneric": "تعذر إرسال الإيداع. حاول مجددًا.",
+    "statusPENDING": "قيد الانتظار",
+    "statusCONFIRMED_ON_CHAIN": "مؤكد على الشبكة",
+    "statusAPPROVED": "مقبول",
+    "statusREJECTED": "مرفوض"
   }
 }
