@@ -1,0 +1,428 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Catalog ----------
+
+model Category {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  nameEn        String
+  nameAr        String
+  nameFr        String
+  descriptionEn String    @default("")
+  descriptionAr String    @default("")
+  descriptionFr String    @default("")
+  image         String?
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  products      Product[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  nameEn        String
+  nameAr        String
+  nameFr        String
+  descriptionEn String   @default("")
+  descriptionAr String   @default("")
+  descriptionFr String   @default("")
+  shortEn       String   @default("")
+  shortAr       String   @default("")
+  shortFr       String   @default("")
+  images        String[]
+  isActive      Boolean  @default(true)
+  isFeatured    Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  soldCount     Int      @default(0)
+  offers        Offer[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryId, isActive])
+}
+
+model Offer {
+  id                    String                   @id @default(cuid())
+  productId             String
+  product               Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  labelEn               String
+  labelAr               String
+  labelFr               String
+  markupPercent         Decimal                  @default(0) @db.Decimal(6, 2)
+  rulesEn               String                   @default("")
+  rulesAr               String                   @default("")
+  rulesFr               String                   @default("")
+  translationLockedAr   Boolean                  @default(false)
+  translationLockedFr   Boolean                  @default(false)
+  sourceDescriptionHash String?
+  isActive              Boolean                  @default(true)
+  sortOrder             Int                      @default(0)
+  links                 OfferProviderLink[]
+  tierOverrides         OfferTierPriceOverride[]
+  computedPrices        OfferComputedPrice[]
+  orderItems            OrderItem[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([productId, isActive])
+}
+
+model Provider {
+  id             String          @id @default(cuid())
+  code           String          @unique // qcst | vbr | canboso
+  displayName    String
+  baseUrl        String
+  isActive       Boolean         @default(true)
+  balanceMinor   BigInt?
+  balanceCurrency String?
+  lowBalanceThresholdMinor BigInt?
+  providerOffers ProviderOffer[]
+  providerOrders ProviderOrder[]
+  syncRuns       SyncRun[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ProviderOffer {
+  id                String              @id @default(cuid())
+  providerId        String
+  provider          Provider            @relation(fields: [providerId], references: [id])
+  providerSku       String
+  rawName           String
+  rawNameEn         String              @default("")
+  rawDescription    String              @default("")
+  rawDescriptionEn  String              @default("")
+  rawWarranty       String              @default("")
+  customerInputType String? // email | none | custom prompt etc.
+  customerPrompt    String?
+  fulfillmentMode   String? // sync | async
+  availability      String              @default("UNKNOWN") // AVAILABLE | OUT_OF_STOCK | UNKNOWN
+  stockType         String?
+  stockQuantity     Int?
+  minQuantity       Int                 @default(1)
+  maxQuantity       Int?
+  costMinor         BigInt // integer minor units in `currency`
+  currency          String // USD | VND | ...
+  pricingSource     String?
+  etag              String?
+  rawJson           Json?
+  lastSyncedAt      DateTime            @default(now())
+  links             OfferProviderLink[]
+  attempts          FulfillmentAttempt[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([providerId, providerSku])
+  @@index([availability])
+}
+
+model OfferProviderLink {
+  id              String        @id @default(cuid())
+  offerId         String
+  offer           Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  providerOfferId String
+  providerOffer   ProviderOffer @relation(fields: [providerOfferId], references: [id])
+  priority        Int           @default(0) // lower = tried first
+  isEnabled       Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  @@unique([offerId, providerOfferId])
+  @@index([offerId, priority])
+}
+
+// ---------- Users / resellers ----------
+
+enum UserRole {
+  CUSTOMER
+  RESELLER_APPLICANT
+  RESELLER
+  ADMIN
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  passwordHash     String?
+  role             UserRole      @default(CUSTOMER)
+  tierId           String?
+  tier             ResellerTier? @relation(fields: [tierId], references: [id])
+  preferredLocale  String        @default("en")
+  telegramId       BigInt?
+  telegramUsername String?
+  wallet           Wallet?
+  walletTxns       WalletTransaction[]
+  deposits         Deposit[]
+  orders           Order[]
+  reviewedDeposits Deposit[]     @relation("DepositReviewer")
+  auditLogs        AuditLog[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model ResellerTier {
+  id              String                   @id @default(cuid())
+  name            String                   @unique
+  discountPercent Decimal                  @default(0) @db.Decimal(6, 2)
+  minDepositMinor BigInt                   @default(0)
+  users           User[]
+  overrides       OfferTierPriceOverride[]
+  computedPrices  OfferComputedPrice[]
+  createdAt       DateTime                 @default(now())
+}
+
+model OfferTierPriceOverride {
+  id         String       @id @default(cuid())
+  offerId    String
+  offer      Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  tierId     String
+  tier       ResellerTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  priceMinor BigInt // USD minor
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([offerId, tierId])
+}
+
+// ---------- Wallet / deposits ----------
+
+model Wallet {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  balanceMinor BigInt   @default(0) // USD minor; DB CHECK (balanceMinor >= 0) added in migration SQL
+  currency     String   @default("USD")
+  updatedAt    DateTime @updatedAt
+}
+
+enum WalletTxnType {
+  DEPOSIT
+  PURCHASE
+  REFUND
+  ADJUSTMENT
+}
+
+model WalletTransaction {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  type              WalletTxnType
+  amountMinor       BigInt // signed: negative for debits
+  balanceAfterMinor BigInt
+  reference         String? // orderId / depositId
+  note              String?
+  createdAt         DateTime      @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum DepositMethod {
+  USDT_BEP20
+  USDT_TRC20
+  MANUAL_BANK
+}
+
+enum DepositStatus {
+  PENDING
+  CONFIRMED_ON_CHAIN
+  APPROVED
+  REJECTED
+}
+
+model Deposit {
+  id                 String        @id @default(cuid())
+  userId             String
+  user               User          @relation(fields: [userId], references: [id])
+  method             DepositMethod
+  amountMinor        BigInt
+  status             DepositStatus @default(PENDING)
+  proofImageUrl      String?
+  chain              String?
+  txHash             String?
+  logIndex           Int?
+  chainConfirmations Int           @default(0)
+  toAddress          String?
+  tokenContract      String?
+  confirmedAt        DateTime?
+  reviewedById       String?
+  reviewedBy         User?         @relation("DepositReviewer", fields: [reviewedById], references: [id])
+  reviewNote         String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@unique([chain, txHash, logIndex])
+  @@index([status])
+}
+
+// ---------- Orders / fulfillment ----------
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PLACED_WITH_PROVIDER
+  COMPLETED
+  PARTIALLY_DELIVERED
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  code          String      @unique // RQM- + 20 Crockford base32, CSPRNG
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  guestEmail    String?
+  status        OrderStatus @default(PENDING)
+  paymentStatus String      @default("UNPAID") // UNPAID | PAID | REFUNDED
+  totalMinor    BigInt
+  currency      String      @default("USD")
+  locale        String      @default("en")
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([guestEmail])
+}
+
+enum OrderItemStatus {
+  AWAITING_FULFILLMENT
+  PLACED
+  AWAITING_SELLER
+  AWAITING_ACTIVATION
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model OrderItem {
+  id                    String               @id @default(cuid())
+  orderId               String
+  order                 Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  offerId               String
+  offer                 Offer                @relation(fields: [offerId], references: [id])
+  quantity              Int                  @default(1)
+  unitPriceMinor        BigInt // USD minor, snapshotted
+  unitCostMinor         BigInt // provider currency minor, snapshotted
+  costCurrency          String               @default("USD")
+  fxRateSnapshot        Decimal?             @db.Decimal(18, 8)
+  requiresCustomerInput Boolean              @default(false)
+  customerInputEnc      String? // envelope-encrypted (crypto.ts format), purge 30d after COMPLETED
+  deliveryPayloadEnc    String? // envelope-encrypted, purge 90d
+  status                OrderItemStatus      @default(AWAITING_FULFILLMENT)
+  attemptCount          Int                  @default(0)
+  providerOrders        ProviderOrder[]
+  attempts              FulfillmentAttempt[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model ProviderOrder {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          Provider  @relation(fields: [providerId], references: [id])
+  orderItemId       String
+  orderItem         OrderItem @relation(fields: [orderItemId], references: [id])
+  providerOrderId   String? // provider-side id once known
+  clientOrderId     String // ours; NEVER re-minted on retry
+  idempotencyKey    String
+  status            String    @default("CREATED") // normalized provider status
+  paymentStatus     String?
+  deliveryAvailable Boolean   @default(false)
+  deliveryEnc       String? // envelope-encrypted delivery JSON
+  errorCode         String?
+  errorDetail       String?
+  attempts          Int       @default(0)
+  nextPollAt        DateTime?
+  leaseUntil        DateTime?
+  lastPolledAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([providerId, clientOrderId])
+  @@unique([providerId, idempotencyKey])
+  @@index([nextPollAt, leaseUntil])
+}
+
+model FulfillmentAttempt {
+  id              String        @id @default(cuid())
+  orderItemId     String
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  providerOfferId String
+  providerOffer   ProviderOffer @relation(fields: [providerOfferId], references: [id])
+  status          String // PLACED | FAILED | SUCCEEDED
+  errorCode       String?
+  attemptedAt     DateTime      @default(now())
+
+  @@index([orderItemId])
+}
+
+// ---------- Ops ----------
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String // OOS | PROVIDER_FAILURE | LOW_BALANCE | RESELLER_APPLICATION | DEPOSIT_PENDING | COST_DRIFT
+  severity  String   @default("info") // info | warning | critical
+  titleEn   String
+  bodyEn    String   @default("")
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+}
+
+model OfferComputedPrice {
+  id              String        @id @default(cuid())
+  offerId         String
+  offer           Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  tierId          String? // null = retail
+  tier            ResellerTier? @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  priceMinor      BigInt
+  costMinor       BigInt
+  providerOfferId String? // winning link at compute time
+  computedAt      DateTime      @default(now())
+
+  @@unique([offerId, tierId])
+}
+
+model SyncRun {
+  id         String    @id @default(cuid())
+  providerId String
+  provider   Provider  @relation(fields: [providerId], references: [id])
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  inserted   Int       @default(0)
+  updated    Int       @default(0)
+  disabled   Int       @default(0)
+  errors     Int       @default(0)
+  errorText  String?
+
+  @@index([providerId, startedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String // DEPOSIT_APPROVED | OFFER_DISABLED | ...
+  entity    String // table name
+  entityId  String
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
