@@ -10,12 +10,17 @@ export async function GET(request: Request) {
   const token = url.searchParams.get("token");
   const next = safeNextPath(url.searchParams.get("next"));
 
-  const fail = new URL(`/${defaultLocale}/login?error=invalid`);
-  if (next) fail.searchParams.set("next", next);
-  if (!token) return NextResponse.redirect(new URL(fail, url));
+  // Build the failure URL relative to the request; carry `next` so a retry
+  // still lands where the buyer was going.
+  const failUrl = new URL(`/${defaultLocale}/login`, url);
+  failUrl.searchParams.set("error", "invalid");
+  if (next) failUrl.searchParams.set("next", next);
+  const fail = () => NextResponse.redirect(failUrl);
+
+  if (!token) return fail();
 
   const email = await consumeLoginToken(token);
-  if (!email) return NextResponse.redirect(new URL(fail, url));
+  if (!email) return fail();
 
   const user = await prisma.user.upsert({
     where: { email },
