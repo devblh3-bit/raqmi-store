@@ -47,7 +47,7 @@ export default async function ProductDetail({
         </div>
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)]">
-          <BuyOfferForm offers={p.offers} locale={loc} />
+          <BuyOfferForm offers={p.offers} locale={loc} slug={p.slug} />
 
           <div className="mt-6 rounded-2xl bg-[var(--surface-2)] p-4">
             <p className="text-xs font-semibold">Need help?</p>

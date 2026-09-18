@@ -98,8 +98,12 @@ export default function Header({ locale }: { locale: Locale }) {
               <CartIcon className="h-[16px] w-[16px]" />
             </Link>
 
+            {/* Always /account, never /login: this is a static client component and
+                cannot read the session without making every page dynamic. /account
+                itself redirects anonymous visitors to login, so one target serves
+                both cases and the storefront stays prerendered. */}
             <Link
-              href={`${prefix}/login`}
+              href={`${prefix}/account`}
               aria-label={t("account")}
               className="relative hidden h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 sm:flex"
             >

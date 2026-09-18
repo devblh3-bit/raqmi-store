@@ -99,5 +99,27 @@
     "statusCONFIRMED_ON_CHAIN": "Confirmé sur la chaîne",
     "statusAPPROVED": "Approuvé",
     "statusREJECTED": "Rejeté"
+  },
+  "account": {
+    "title": "Votre compte",
+    "signOut": "Se déconnecter",
+    "orders": "Vos commandes",
+    "noOrders": "Aucune commande pour le moment.",
+    "browseProducts": "Parcourir les produits",
+    "wallet": "Portefeuille",
+    "balance": "Solde",
+    "addFunds": "Ajouter des fonds",
+    "manageWallet": "Gérer le portefeuille",
+    "viewOrder": "Voir",
+    "items": "articles"
+  },
+  "order": {
+    "statusPENDING": "En attente",
+    "statusPAID": "Payée",
+    "statusPLACED_WITH_PROVIDER": "Commandée au fournisseur",
+    "statusCOMPLETED": "Terminée",
+    "statusPARTIALLY_DELIVERED": "Partiellement livrée",
+    "statusFAILED": "Échouée",
+    "statusREFUNDED": "Remboursée"
   }
 }

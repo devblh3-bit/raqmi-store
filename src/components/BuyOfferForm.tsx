@@ -20,9 +20,11 @@ const ERROR_KEY: Record<string, string> = {
 export default function BuyOfferForm({
   offers,
   locale,
+  slug,
 }: {
   offers: CatalogOffer[];
   locale: Locale;
+  slug: string;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
@@ -35,6 +37,8 @@ export default function BuyOfferForm({
   return (
     <form action={action}>
       <input type="hidden" name="locale" value={locale} />
+      {/* Where to come back to after signing in. Validated server-side. */}
+      <input type="hidden" name="returnTo" value={`/${locale}/products/${slug}`} />
       <input type="hidden" name="offerId" value={selected} />
 
       <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>

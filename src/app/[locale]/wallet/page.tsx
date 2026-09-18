@@ -13,7 +13,9 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
   const loc = locale as Locale;
 
   const session = await getSession();
-  if (!session) redirect(`/${locale}/login?next=wallet`);
+  // Rooted path: safeNextPath rejects relative values, so "wallet" would be
+  // dropped and the buyer would land on the home page after signing in.
+  if (!session) redirect(`/${locale}/login?next=/${locale}/wallet`);
 
   // Wallet row is created lazily on first credit, so absent == zero balance.
   const [wallet, deposits] = await Promise.all([

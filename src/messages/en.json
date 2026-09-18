@@ -99,5 +99,27 @@
     "statusCONFIRMED_ON_CHAIN": "Confirmed on chain",
     "statusAPPROVED": "Approved",
     "statusREJECTED": "Rejected"
+  },
+  "account": {
+    "title": "Your account",
+    "signOut": "Sign out",
+    "orders": "Your orders",
+    "noOrders": "No orders yet.",
+    "browseProducts": "Browse products",
+    "wallet": "Wallet",
+    "balance": "Balance",
+    "addFunds": "Add funds",
+    "manageWallet": "Manage wallet",
+    "viewOrder": "View",
+    "items": "items"
+  },
+  "order": {
+    "statusPENDING": "Pending",
+    "statusPAID": "Paid",
+    "statusPLACED_WITH_PROVIDER": "Ordered from supplier",
+    "statusCOMPLETED": "Completed",
+    "statusPARTIALLY_DELIVERED": "Partly delivered",
+    "statusFAILED": "Failed",
+    "statusREFUNDED": "Refunded"
   }
 }

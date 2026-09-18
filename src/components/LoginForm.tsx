@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
-export default function LoginForm() {
+export default function LoginForm({ next }: { next?: string }) {
   const t = useTranslations("auth");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
@@ -14,7 +14,7 @@ export default function LoginForm() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, next }),
     }).catch(() => null);
     setState(res?.ok ? "sent" : "error");
   }

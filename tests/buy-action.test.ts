@@ -139,8 +139,29 @@ describe("buyNow action", () => {
   it("sends anonymous buyers to login and places no order", async () => {
     session.current = null;
     const { redirected } = await call(form({ offerId, locale: "fr" }));
-    expect(redirected).toBe("/fr/login?next=checkout");
+    // Falls back to the product list when the form supplied no returnTo.
+    expect(redirected).toBe("/fr/login?next=%2Ffr%2Fproducts");
     expect(await prisma.order.count({ where: { userId } })).toBe(0);
+  });
+
+  it("returns the buyer to the product page after login", async () => {
+    session.current = null;
+    const { redirected } = await call(
+      form({ offerId, locale: "en", returnTo: "/en/products/chatgpt-plus" }),
+    );
+    expect(redirected).toBe("/en/login?next=%2Fen%2Fproducts%2Fchatgpt-plus");
+    expect(await prisma.order.count({ where: { userId } })).toBe(0);
+  });
+
+  it("drops an off-site returnTo instead of building an open redirect", async () => {
+    session.current = null;
+
+    for (const hostile of ["https://evil.com", "//evil.com", "/\\evil.com"]) {
+      redirects.to = [];
+      const { redirected } = await call(form({ offerId, locale: "en", returnTo: hostile }));
+      expect(redirected).toBe("/en/login?next=%2Fen%2Fproducts");
+      expect(redirected).not.toContain("evil.com");
+    }
   });
 
   it("surfaces insufficient funds without creating an order", async () => {

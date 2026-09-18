@@ -99,5 +99,27 @@
     "statusCONFIRMED_ON_CHAIN": "مؤكد على الشبكة",
     "statusAPPROVED": "مقبول",
     "statusREJECTED": "مرفوض"
+  },
+  "account": {
+    "title": "حسابك",
+    "signOut": "تسجيل الخروج",
+    "orders": "طلباتك",
+    "noOrders": "لا توجد طلبات بعد.",
+    "browseProducts": "تصفح المنتجات",
+    "wallet": "المحفظة",
+    "balance": "الرصيد",
+    "addFunds": "إضافة رصيد",
+    "manageWallet": "إدارة المحفظة",
+    "viewOrder": "عرض",
+    "items": "عناصر"
+  },
+  "order": {
+    "statusPENDING": "قيد الانتظار",
+    "statusPAID": "مدفوع",
+    "statusPLACED_WITH_PROVIDER": "تم الطلب من المورد",
+    "statusCOMPLETED": "مكتمل",
+    "statusPARTIALLY_DELIVERED": "تم التسليم جزئيًا",
+    "statusFAILED": "فشل",
+    "statusREFUNDED": "مسترد"
   }
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { placeOrder, CheckoutError } from "@/lib/checkout";
 import { InsufficientFundsError } from "@/lib/wallet";
+import { safeNextPath } from "@/lib/auth/redirect";
 import { locales } from "@/i18n";
 
 export type BuyState = { error?: string; code?: string };
@@ -16,6 +17,7 @@ const schema = z.object({
   offerId: z.string().min(20).max(40),
   customerInput: z.string().trim().max(500).optional(),
   locale: z.enum(locales),
+  returnTo: z.string().max(512).optional(),
 });
 
 export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuyState> {
@@ -23,12 +25,19 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
     offerId: formData.get("offerId"),
     customerInput: formData.get("customerInput") || undefined,
     locale: formData.get("locale"),
+    returnTo: formData.get("returnTo") || undefined,
   });
   if (!parsed.success) return { error: "BAD_REQUEST" };
-  const { offerId, customerInput, locale } = parsed.data;
+  const { offerId, customerInput, locale, returnTo } = parsed.data;
 
   const session = await getSession();
-  if (!session) redirect(`/${locale}/login?next=checkout`);
+  if (!session) {
+    // Send them back to the product they were buying, not to a bare login page.
+    // safeNextPath drops anything off-site, so the open-redirect guard applies
+    // to the value the browser supplied.
+    const back = safeNextPath(returnTo) ?? `/${locale}/products`;
+    redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
+  }
 
   let code: string;
   try {
