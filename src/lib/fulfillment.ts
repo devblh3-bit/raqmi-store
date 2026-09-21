@@ -1,6 +1,7 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import type { OrderItemStatus } from "@prisma/client";
+
 import { prisma } from "./db";
 import { getAdapter } from "./providers";
 import {
@@ -28,10 +29,8 @@ import { notifyProviderFailure } from "./telegram/notify";
  *  - Items are claimed with a lease, so two workers cannot dispatch the same
  *    item concurrently.
  *
- * ponytail: no polling loop. A provider that returns PENDING is recorded and
- * left for a later reconcile pass (`nextPollAt` is already on ProviderOrder and
- * `getOrder` exists on every adapter); this module only places orders.
- * Upgrade path: `reconcilePending()` on a cron, reading nextPollAt.
+ * Pending provider orders are recorded with `nextPollAt`; `reconcilePendingOrders`
+ * claims and polls those rows in a later cron pass.
  */
 
 /** How long a claim is held before another worker may retry the item. */
@@ -45,6 +44,12 @@ export type DispatchOutcome =
   | { kind: "pending"; itemId: string; providerOrderId: string; status: NormalizedOrderStatus }
   | { kind: "failed"; itemId: string; reason: string }
   | { kind: "skipped"; itemId: string; reason: string };
+
+export type ReconcileOutcome =
+  | { kind: "completed"; providerOrderId: string; itemId: string }
+  | { kind: "pending"; providerOrderId: string; itemId: string; status: NormalizedOrderStatus }
+  | { kind: "failed"; providerOrderId: string; itemId: string; reason: string }
+  | { kind: "skipped"; providerOrderId: string; itemId: string; reason: string };
 
 /** Stable per-attempt id. Derived, never random, so a retry cannot mint a new one. */
 function clientOrderIdFor(orderItemId: string, providerOfferId: string): string {
@@ -60,6 +65,21 @@ const PROVISIONAL: ReadonlySet<NormalizedOrderStatus> = new Set([
   "AWAITING_SELLER",
   "UNKNOWN",
 ]);
+
+const POLL_DELAY_MS = 2 * 60 * 1000;
+const MAX_POLL_DELAY_MS = 60 * 60 * 1000;
+
+/**
+ * Item statuses a poll may move.
+ *
+ * An item only reaches reconcile after dispatch placed it, so these are exactly
+ * the non-terminal placed states. COMPLETED/FAILED/REFUNDED are terminal and a
+ * late poll must never rewrite them. Every item update in reconcile filters on
+ * this same set: when the success path accepted three statuses and a failure
+ * path accepted only PLACED, an item at AWAITING_SELLER kept a live status
+ * while its ProviderOrder went FAILED — a paid order stranded forever.
+ */
+const POLLABLE_ITEM_STATUSES: OrderItemStatus[] = ["PLACED", "AWAITING_SELLER", "AWAITING_ACTIVATION"];
 
 /**
  * Claim items awaiting fulfillment.
@@ -245,6 +265,7 @@ async function dispatchToLink(
     : null;
   // A synchronous provider (Canboso returns goods on create) is done in one call.
   const done = deliveryAvailable || order.status === "COMPLETED";
+  const terminalFailure = order.status === "FAILED" || order.status === "CANCELLED";
 
   await prisma.$transaction(async (tx) => {
     await tx.providerOrder.upsert({
@@ -257,8 +278,8 @@ async function dispatchToLink(
         paymentStatus: order.rawStatus,
         deliveryAvailable,
         deliveryEnc,
-        errorCode: null,
-        errorDetail: null,
+        errorCode: terminalFailure ? order.providerError?.code ?? order.status : null,
+        errorDetail: terminalFailure ? order.providerError?.detail?.slice(0, 500) ?? null : null,
         lastPolledAt: new Date(),
         // Provisional rows are polled later; terminal ones never are.
         nextPollAt: provisional ? new Date(Date.now() + LEASE_MS) : null,
@@ -274,6 +295,8 @@ async function dispatchToLink(
         paymentStatus: order.rawStatus,
         deliveryAvailable,
         deliveryEnc,
+        errorCode: terminalFailure ? order.providerError?.code ?? order.status : null,
+        errorDetail: terminalFailure ? order.providerError?.detail?.slice(0, 500) ?? null : null,
         attempts: 1,
         lastPolledAt: new Date(),
         nextPollAt: provisional ? new Date(Date.now() + LEASE_MS) : null,
@@ -284,7 +307,8 @@ async function dispatchToLink(
       data: {
         orderItemId: item.id,
         providerOfferId: link.providerOfferId,
-        status: done ? "SUCCEEDED" : "PLACED",
+        status: done ? "SUCCEEDED" : terminalFailure ? "FAILED" : "PLACED",
+        errorCode: terminalFailure ? order.providerError?.code ?? order.status : null,
       },
     });
 
@@ -299,10 +323,22 @@ async function dispatchToLink(
         where: { id: item.id },
         data: { status: "PLACED" },
       });
+    } else if (terminalFailure) {
+      await tx.orderItem.update({
+        where: { id: item.id },
+        data: { status: "FAILED" },
+      });
     }
   });
 
   if (done) return { kind: "completed", itemId: item.id, providerOrderId: order.providerOrderId };
+  if (terminalFailure) {
+    return {
+      kind: "failed",
+      itemId: item.id,
+      reason: order.providerError?.detail ?? order.providerError?.code ?? order.status,
+    };
+  }
   return {
     kind: "pending",
     itemId: item.id,
@@ -311,9 +347,154 @@ async function dispatchToLink(
   };
 }
 
+
+function boundedPollDelay(retryAfterMs?: number): number {
+  return Math.min(MAX_POLL_DELAY_MS, Math.max(POLL_DELAY_MS, retryAfterMs ?? POLL_DELAY_MS));
+}
+
+function errorText(error: { providerCode?: string; message: string }): { code: string; detail: string } {
+  return {
+    code: (error.providerCode || "POLL_FAILED").slice(0, 100),
+    detail: error.message.slice(0, 500),
+  };
+}
+
+/** Poll due asynchronous provider orders without touching Canboso rows. */
+export async function reconcilePendingOrders(
+  limit = MAX_ITEMS_PER_RUN,
+  opts: { now?: Date } = {},
+): Promise<ReconcileOutcome[]> {
+  const now = opts.now ?? new Date();
+  const candidates = await prisma.providerOrder.findMany({
+    where: {
+      providerOrderId: { not: null },
+      nextPollAt: { lte: now },
+      OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }],
+      status: { notIn: ["COMPLETED", "FAILED", "CANCELLED"] },
+      provider: { isActive: true, code: { not: "CANBOSO" } },
+    },
+    orderBy: { nextPollAt: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      providerId: true,
+      providerOrderId: true,
+      status: true,
+      orderItemId: true,
+      provider: { select: { code: true } },
+      orderItem: {
+        select: {
+          id: true,
+          status: true,
+          offer: {
+            select: {
+              links: {
+                select: { providerOfferId: true, providerOffer: { select: { providerId: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const outcomes: ReconcileOutcome[] = [];
+  for (const candidate of candidates) {
+    const leaseUntil = new Date(now.getTime() + LEASE_MS);
+    const claimed = await prisma.providerOrder.updateMany({
+      where: {
+        id: candidate.id,
+        nextPollAt: { lte: now },
+        OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }],
+      },
+      data: { leaseUntil },
+    });
+    if (claimed.count !== 1 || !candidate.providerOrderId) continue;
+
+    const adapter = getAdapter(candidate.provider.code);
+    if (!adapter) {
+      await prisma.providerOrder.updateMany({
+        where: { id: candidate.id, leaseUntil },
+        data: { status: "FAILED", errorCode: "NO_ADAPTER", errorDetail: "No provider adapter", nextPollAt: null, leaseUntil: null, lastPolledAt: now },
+      });
+      outcomes.push({ kind: "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, reason: "NO_ADAPTER" });
+      continue;
+    }
+
+    try {
+      const result = await adapter.getOrder(candidate.providerOrderId);
+      if (isNotSupported(result)) {
+        await prisma.providerOrder.updateMany({
+          where: { id: candidate.id, leaseUntil },
+          data: { status: "FAILED", errorCode: "NOT_SUPPORTED", errorDetail: result.message.slice(0, 500), nextPollAt: null, leaseUntil: null, lastPolledAt: now },
+        });
+        outcomes.push({ kind: "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, reason: "NOT_SUPPORTED" });
+        continue;
+      }
+      if (!result.ok) {
+        const { code, detail } = errorText(result.error);
+        const retryable = result.error.retryable;
+        const nextPollAt = retryable ? new Date(now.getTime() + boundedPollDelay(result.error.retryAfterMs)) : null;
+        await prisma.$transaction(async (tx) => {
+          await tx.providerOrder.updateMany({
+            where: { id: candidate.id, leaseUntil },
+            data: { status: retryable ? candidate.status : "FAILED", errorCode: code, errorDetail: detail, nextPollAt, leaseUntil: null, lastPolledAt: now },
+          });
+          if (!retryable) {
+            await tx.orderItem.updateMany({ where: { id: candidate.orderItemId, status: { in: POLLABLE_ITEM_STATUSES } }, data: { status: "FAILED" } });
+          }
+        });
+        outcomes.push({ kind: retryable ? "pending" : "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, ...(retryable ? { status: candidate.status as NormalizedOrderStatus } : { reason: `${code}: ${detail}` }) } as ReconcileOutcome);
+        continue;
+      }
+
+      const order = result.value;
+      const deliveryAvailable = !!order.delivery?.available;
+      const done = deliveryAvailable || order.status === "COMPLETED";
+      const terminalFailure = order.status === "FAILED" || order.status === "CANCELLED";
+      const link = candidate.orderItem.offer.links.find((entry) => entry.providerOffer.providerId === candidate.providerId);
+      const deliveryEnc = deliveryAvailable && link ? deliveryEncFor(candidate.orderItemId, link.providerOfferId, order.delivery) : undefined;
+      const provisional = PROVISIONAL.has(order.status);
+      await prisma.$transaction(async (tx) => {
+        await tx.providerOrder.updateMany({
+          where: { id: candidate.id, leaseUntil },
+          data: {
+            providerOrderId: order.providerOrderId,
+            status: order.status,
+            paymentStatus: order.rawStatus,
+            ...(deliveryEnc !== undefined ? { deliveryAvailable: true, deliveryEnc } : {}),
+            errorCode: null,
+            errorDetail: null,
+            lastPolledAt: now,
+            nextPollAt: provisional && !done ? new Date(now.getTime() + POLL_DELAY_MS) : null,
+            leaseUntil: null,
+          },
+        });
+        if (done) {
+          await tx.orderItem.updateMany({ where: { id: candidate.orderItemId, status: { in: POLLABLE_ITEM_STATUSES } }, data: { status: "COMPLETED" } });
+        } else if (terminalFailure) {
+          await tx.orderItem.updateMany({ where: { id: candidate.orderItemId, status: { in: POLLABLE_ITEM_STATUSES } }, data: { status: "FAILED" } });
+        }
+      });
+      if (terminalFailure) {
+        outcomes.push({ kind: "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, reason: order.providerError?.detail ?? order.providerError?.code ?? order.status });
+      } else {
+        outcomes.push(done
+          ? { kind: "completed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId }
+          : { kind: "pending", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, status: order.status });
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Unexpected polling error";
+      await prisma.providerOrder.updateMany({
+        where: { id: candidate.id, leaseUntil },
+        data: { status: candidate.status, errorCode: "POLL_EXCEPTION", errorDetail: detail.slice(0, 500), nextPollAt: new Date(now.getTime() + POLL_DELAY_MS), leaseUntil: null, lastPolledAt: now },
+      });
+      outcomes.push({ kind: "pending", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, status: candidate.status as NormalizedOrderStatus });
+    }
+  }
+  return outcomes;
+}
 /**
- * Dispatch up to `limit` items awaiting fulfillment.
- *
  * Never throws for a provider failure: one bad supplier must not stop the run.
  * Returns what happened so a cron can log it.
  */

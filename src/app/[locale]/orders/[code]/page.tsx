@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { normalizeOrderCode } from "@/lib/order-code";
 import { Price } from "@/components/Price";
+import { ClearCartAfterCheckout } from "@/components/ClearCartAfterCheckout";
 import type { Locale } from "@/i18n";
 
 export default async function OrderPage({
@@ -42,7 +43,9 @@ export default async function OrderPage({
         : o.offer.product.nameEn;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-10 sm:px-6">
+    <>
+      <ClearCartAfterCheckout />
+      <div className="mx-auto max-w-xl px-4 py-10 sm:px-6">
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
@@ -103,5 +106,6 @@ export default async function OrderPage({
         </Link>
       </div>
     </div>
+    </>
   );
 }

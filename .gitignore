@@ -11,3 +11,6 @@ coverage
 graphify-out
 .playwright-cli
 .env.bak-*
+# hook telemetry — ponytail writer scratch, never product
+cross-cutting-principles.md
+skill-observations/

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dispatchPendingOrders } from "@/lib/fulfillment";
+import { dispatchPendingOrders, reconcilePendingOrders } from "@/lib/fulfillment";
 
 /**
  * Fulfillment tick. Point a cron at it (every minute or so) with the secret in
@@ -22,15 +22,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const outcomes = await dispatchPendingOrders();
+  const dispatchOutcomes = await dispatchPendingOrders();
+  const reconciliationOutcomes = await reconcilePendingOrders();
 
-  const summary = {
+  const summarize = (outcomes: { kind: string }[]) => ({
     claimed: outcomes.length,
     completed: outcomes.filter((o) => o.kind === "completed").length,
     pending: outcomes.filter((o) => o.kind === "pending").length,
     failed: outcomes.filter((o) => o.kind === "failed").length,
     skipped: outcomes.filter((o) => o.kind === "skipped").length,
-  };
+  });
 
-  return NextResponse.json({ ok: true, summary, outcomes });
+  return NextResponse.json({
+    ok: true,
+    dispatch: summarize(dispatchOutcomes),
+    reconciliation: summarize(reconciliationOutcomes),
+    outcomes: { dispatch: dispatchOutcomes, reconciliation: reconciliationOutcomes },
+  });
 }

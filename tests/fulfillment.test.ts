@@ -20,11 +20,15 @@ const calls = vi.hoisted(() => ({
     customerEmail?: string;
     quantity: number;
   }[],
+  getOrder: [] as { providerCode: string; providerOrderId: string }[],
 }));
 
 // Scripted per-provider behaviour, keyed by provider code.
 const behaviour = vi.hoisted(() => ({
   map: {} as Record<string, (input: { clientOrderId: string; sku: string }) => unknown>,
+  // reconcilePendingOrders polls with getOrder; scripted separately so a test can
+  // place an order with one status and then poll it into another.
+  getOrder: {} as Record<string, (providerOrderId: string) => unknown>,
 }));
 
 vi.mock("../src/lib/providers", async () => {
@@ -33,10 +37,16 @@ vi.mock("../src/lib/providers", async () => {
   );
   return {
     getAdapter: (code: string) => {
-      if (!behaviour.map[code]) return null;
+      if (!behaviour.map[code] && !behaviour.getOrder[code]) return null;
       return {
         code,
         capabilities: {},
+        getOrder: async (providerOrderId: string) => {
+          calls.getOrder.push({ providerCode: code, providerOrderId });
+          const scripted = behaviour.getOrder[code];
+          if (!scripted) throw new Error(`getOrder not scripted for ${code}`);
+          return scripted(providerOrderId);
+        },
         createOrder: async (input: {
           clientOrderId: string;
           providerSku: string;
@@ -65,7 +75,7 @@ vi.mock("../src/lib/telegram/notify", () => ({
 }));
 
 import { prisma } from "../src/lib/db";
-import { dispatchPendingOrders, clientOrderIdFor } from "../src/lib/fulfillment";
+import { dispatchPendingOrders, reconcilePendingOrders, clientOrderIdFor } from "../src/lib/fulfillment";
 import { ok, fail } from "../src/lib/providers/types";
 import { encryptField } from "../src/lib/crypto";
 
@@ -185,7 +195,9 @@ afterAll(async () => {
 
 beforeEach(async () => {
   calls.createOrder = [];
+  calls.getOrder = [];
   behaviour.map = {};
+  behaviour.getOrder = {};
   await prisma.fulfillmentAttempt.deleteMany({
     where: { orderItem: { order: { userId } } },
   });
@@ -520,5 +532,368 @@ describe("dispatchPendingOrders", () => {
 
   it("returns nothing when no items are awaiting fulfillment", async () => {
     expect(await dispatchPendingOrders()).toEqual([]);
+  });
+});
+
+/**
+ * Reconciliation: the second half of fulfillment.
+ *
+ * dispatch places an order; a provider that answers PENDING owes us goods later,
+ * and reconcilePendingOrders is what collects them. It had no coverage at all,
+ * which is why the suite stayed green while these paths were unverified.
+ *
+ * What matters here is that every poll outcome lands the OrderItem in a state the
+ * buyer's order page can explain: delivered, still waiting, or failed. A row that
+ * keeps a non-terminal item status while its ProviderOrder reads FAILED is a
+ * stranded paid order — invisible in the UI and unreachable by a later pass.
+ */
+
+/** A NormalizedOrder with the fields reconcile reads; override per test. */
+function polled(overrides: Record<string, unknown> = {}) {
+  return {
+    providerCode: "QCST",
+    providerOrderId: "p-poll",
+    clientOrderId: null,
+    status: "PAID_PENDING_DELIVERY",
+    rawStatus: "paid",
+    quantity: 1,
+    costMinor: 500,
+    currency: "USD",
+    cancellable: true,
+    delivery: null,
+    deliveryExpiresAt: null,
+    createdAt: null,
+    updatedAt: null,
+    providerError: null,
+    idempotencyReplayed: false,
+    rawJson: {},
+    ...overrides,
+  };
+}
+
+/**
+ * A provider order already placed and due for polling.
+ *
+ * Built directly rather than by dispatching first: reconcile's inputs are a row
+ * state (status, nextPollAt, lease) and these tests need to set that precisely.
+ */
+async function duePoll(
+  code: string,
+  opts: {
+    itemStatus?: "PLACED" | "AWAITING_SELLER" | "AWAITING_ACTIVATION";
+    poStatus?: string;
+    nextPollAt?: Date | null;
+    leaseUntil?: Date | null;
+    providerId?: string;
+    providerOrderId?: string | null;
+  } = {},
+) {
+  const order = await makeOrder(code, [offerWithGoodLink]);
+  const item = order.items[0];
+  await prisma.orderItem.update({
+    where: { id: item.id },
+    data: { status: opts.itemStatus ?? "PLACED" },
+  });
+  const po = await prisma.providerOrder.create({
+    data: {
+      providerId: opts.providerId ?? providerIds.good,
+      orderItemId: item.id,
+      clientOrderId: `oi_${item.id}_poll`,
+      idempotencyKey: `oi_${item.id}_poll`,
+      providerOrderId: opts.providerOrderId === undefined ? "p-poll" : opts.providerOrderId,
+      status: opts.poStatus ?? "PAID_PENDING_DELIVERY",
+      nextPollAt: opts.nextPollAt === undefined ? new Date(Date.now() - 1000) : opts.nextPollAt,
+      leaseUntil: opts.leaseUntil ?? null,
+      attempts: 1,
+    },
+  });
+  return { order, item, po };
+}
+
+describe("reconcilePendingOrders", () => {
+  it("completes the item when the provider finally delivers", async () => {
+    const { item } = await duePoll("RQM-POLL-1");
+    behaviour.getOrder[GOOD] = () =>
+      ok(
+        polled({
+          status: "COMPLETED",
+          rawStatus: "completed",
+          delivery: {
+            available: true,
+            accounts: [
+              {
+                user: "buyer@example.com",
+                password: "s3cret-pw",
+                verifyEmail: null,
+                expiryText: null,
+                otherInfo: null,
+                credentialBlob: null,
+                raw: {},
+              },
+            ],
+            raw: {},
+          },
+        }),
+      );
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "completed" && o.itemId === item.id)).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("COMPLETED");
+
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("COMPLETED");
+    expect(po.deliveryAvailable).toBe(true);
+    expect(po.nextPollAt).toBeNull(); // terminal: never polled again
+    expect(po.leaseUntil).toBeNull(); // lease released
+    // Delivery is at rest as an envelope, not plaintext.
+    expect(po.deliveryEnc).toBeTruthy();
+    expect(po.deliveryEnc).not.toContain("s3cret-pw");
+  });
+
+  it("keeps polling while the provider is still working, with a bounded delay", async () => {
+    const { item } = await duePoll("RQM-POLL-2");
+    behaviour.getOrder[GOOD] = () => ok(polled({ status: "AWAITING_SELLER" }));
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "pending")).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("PLACED"); // not delivered, not failed
+
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("AWAITING_SELLER");
+    expect(po.nextPollAt).not.toBeNull();
+    expect(po.nextPollAt!.getTime()).toBeGreaterThan(Date.now()); // in the future
+    expect(po.leaseUntil).toBeNull();
+  });
+
+  it("fails the item when the provider reports a terminal failure", async () => {
+    const { item } = await duePoll("RQM-POLL-3");
+    behaviour.getOrder[GOOD] = () =>
+      ok(
+        polled({
+          status: "FAILED",
+          rawStatus: "failed",
+          providerError: { code: "OUT_OF_STOCK", detail: "supplier ran dry" },
+        }),
+      );
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "failed")).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("FAILED");
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("FAILED");
+    expect(po.nextPollAt).toBeNull();
+  });
+
+  it("fails the item when the provider cancels", async () => {
+    const { item } = await duePoll("RQM-POLL-4");
+    behaviour.getOrder[GOOD] = () => ok(polled({ status: "CANCELLED", rawStatus: "cancelled" }));
+
+    await reconcilePendingOrders();
+
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("FAILED"); // OrderItemStatus has no CANCELLED
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("CANCELLED");
+    expect(po.nextPollAt).toBeNull();
+  });
+
+  it("retries a transient poll error without touching the item", async () => {
+    const { item } = await duePoll("RQM-POLL-5");
+    behaviour.getOrder[GOOD] = () =>
+      fail({ kind: "rate_limited", retryable: true, retryAfterMs: 5000, message: "slow down" });
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "pending")).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("PLACED"); // a 429 is not the buyer's problem
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("PAID_PENDING_DELIVERY"); // status preserved
+    expect(po.errorCode).toBeTruthy();
+    expect(po.nextPollAt).not.toBeNull();
+    expect(po.leaseUntil).toBeNull(); // released for the next pass
+  });
+
+  it("fails the item on a non-retryable poll error", async () => {
+    const { item } = await duePoll("RQM-POLL-6");
+    behaviour.getOrder[GOOD] = () =>
+      fail({ kind: "not_found", retryable: false, providerCode: "NO_SUCH_ORDER", message: "gone" });
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "failed")).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("FAILED");
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.status).toBe("FAILED");
+    expect(po.errorCode).toBe("NO_SUCH_ORDER");
+    expect(po.nextPollAt).toBeNull();
+  });
+
+  /**
+   * The strand: an item can legitimately sit at AWAITING_SELLER or
+   * AWAITING_ACTIVATION, and a hard poll failure must terminate it from there
+   * too. Marking only PLACED items leaves a paid order with a FAILED provider
+   * row and a non-terminal item that no later pass will ever revisit.
+   */
+  it("fails a non-retryable poll from every non-terminal item status", async () => {
+    for (const [i, itemStatus] of (["AWAITING_SELLER", "AWAITING_ACTIVATION"] as const).entries()) {
+      const { item } = await duePoll(`RQM-POLL-7${i}`, { itemStatus, poStatus: itemStatus });
+      behaviour.getOrder[GOOD] = () =>
+        fail({ kind: "provider", retryable: false, providerCode: "DEAD", message: "dead" });
+
+      await reconcilePendingOrders();
+
+      const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+      expect(after.status, `item at ${itemStatus} must terminate`).toBe("FAILED");
+      const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+      expect(po.status).toBe("FAILED");
+    }
+  });
+
+  it("keeps the item polling when the adapter throws", async () => {
+    const { item } = await duePoll("RQM-POLL-8");
+    behaviour.getOrder[GOOD] = () => {
+      throw new Error("socket hang up");
+    };
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes.some((o) => o.kind === "pending")).toBe(true);
+    const after = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(after.status).toBe("PLACED"); // a crash is ours, not the buyer's
+    const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(po.errorCode).toBe("POLL_EXCEPTION");
+    expect(po.nextPollAt).not.toBeNull();
+    expect(po.leaseUntil).toBeNull();
+  });
+
+  it("does not poll a row before it is due", async () => {
+    await duePoll("RQM-POLL-9", { nextPollAt: new Date(Date.now() + 60_000) });
+    behaviour.getOrder[GOOD] = () => ok(polled({ status: "COMPLETED" }));
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes).toEqual([]);
+    expect(calls.getOrder).toHaveLength(0);
+  });
+
+  it("does not poll a row another worker holds a lease on", async () => {
+    await duePoll("RQM-POLL-10", { leaseUntil: new Date(Date.now() + 60_000) });
+    behaviour.getOrder[GOOD] = () => ok(polled({ status: "COMPLETED" }));
+
+    const outcomes = await reconcilePendingOrders();
+
+    expect(outcomes).toEqual([]);
+    expect(calls.getOrder).toHaveLength(0);
+  });
+
+  it("does not poll terminal rows", async () => {
+    for (const [i, poStatus] of (["COMPLETED", "FAILED", "CANCELLED"] as const).entries()) {
+      await duePoll(`RQM-POLL-11${i}`, { poStatus });
+    }
+    behaviour.getOrder[GOOD] = () => ok(polled({ status: "COMPLETED" }));
+
+    await reconcilePendingOrders();
+
+    expect(calls.getOrder).toHaveLength(0);
+  });
+
+  it("never polls Canboso, which delivers synchronously and has no status endpoint", async () => {
+    const canboso = await prisma.provider.create({
+      data: { code: "CANBOSO", displayName: "C", baseUrl: "https://canboso.com" },
+    });
+    try {
+      await duePoll("RQM-POLL-12", { providerId: canboso.id });
+      behaviour.getOrder.CANBOSO = () => ok(polled({ status: "COMPLETED" }));
+
+      const outcomes = await reconcilePendingOrders();
+
+      expect(outcomes).toEqual([]);
+      expect(calls.getOrder).toHaveLength(0);
+    } finally {
+      await prisma.providerOrder.deleteMany({ where: { providerId: canboso.id } });
+      await prisma.provider.delete({ where: { id: canboso.id } });
+    }
+  });
+
+  it("marks a row failed when its provider has no adapter", async () => {
+    const orphan = await prisma.provider.create({
+      data: { code: `${TAG}-orphan`, displayName: "O", baseUrl: "https://example.invalid" },
+    });
+    try {
+      const { item } = await duePoll("RQM-POLL-13", { providerId: orphan.id });
+
+      const outcomes = await reconcilePendingOrders();
+
+      expect(outcomes.some((o) => o.kind === "failed")).toBe(true);
+      const po = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+      expect(po.errorCode).toBe("NO_ADAPTER");
+      expect(po.nextPollAt).toBeNull();
+      expect(po.leaseUntil).toBeNull();
+    } finally {
+      await prisma.providerOrder.deleteMany({ where: { providerId: orphan.id } });
+      await prisma.provider.delete({ where: { id: orphan.id } });
+    }
+  });
+
+  it("polls a row dispatch left pending, end to end", async () => {
+    // The unit tests above build rows by hand; this one proves dispatch's output
+    // is shaped the way reconcile's input expects.
+    behaviour.map[GOOD] = () =>
+      ok(polled({ providerOrderId: "p-e2e", status: "AWAITING_ACTIVATION", rawStatus: "await" }));
+
+    const order = await makeOrder("RQM-POLL-14", [offerWithGoodLink]);
+    await dispatchPendingOrders(25, { onlyItemIds: itemIdsOf(order) });
+
+    const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } });
+    expect(item.status).toBe("PLACED");
+    const placed = await prisma.providerOrder.findFirstOrThrow({ where: { orderItemId: item.id } });
+    expect(placed.nextPollAt).not.toBeNull();
+
+    // Make it due, then let the provider deliver.
+    await prisma.providerOrder.update({
+      where: { id: placed.id },
+      data: { nextPollAt: new Date(Date.now() - 1000) },
+    });
+    behaviour.getOrder[GOOD] = () =>
+      ok(
+        polled({
+          providerOrderId: "p-e2e",
+          status: "COMPLETED",
+          rawStatus: "completed",
+          delivery: {
+            available: true,
+            accounts: [
+              {
+                user: "e2e@example.com",
+                password: "pw",
+                verifyEmail: null,
+                expiryText: null,
+                otherInfo: null,
+                credentialBlob: null,
+                raw: {},
+              },
+            ],
+            raw: {},
+          },
+        }),
+      );
+
+    await reconcilePendingOrders();
+
+    expect(calls.getOrder).toEqual([{ providerCode: GOOD, providerOrderId: "p-e2e" }]);
+    const done = await prisma.orderItem.findUniqueOrThrow({ where: { id: item.id } });
+    expect(done.status).toBe("COMPLETED");
+  });
+
+  it("returns nothing when no rows are due", async () => {
+    expect(await reconcilePendingOrders()).toEqual([]);
   });
 });

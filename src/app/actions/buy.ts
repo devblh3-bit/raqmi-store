@@ -13,22 +13,42 @@ export type BuyState = { error?: string; code?: string };
 // Server Actions are reachable by direct POST, so everything below is a trust
 // boundary: session is re-read server-side and the price is never taken from
 // the client — placeOrder re-prices from the DB.
-const schema = z.object({
+const lineSchema = z.object({
   offerId: z.string().min(20).max(40),
+  quantity: z.number().int().min(1).max(100),
   customerInput: z.string().trim().max(500).optional(),
+});
+
+const schema = z.object({
+  offerId: z.string().min(20).max(40).optional(),
+  customerInput: z.string().trim().max(500).optional(),
+  lines: z.array(lineSchema).min(1).max(20).optional(),
   locale: z.enum(locales),
   returnTo: z.string().max(512).optional(),
 });
 
 export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuyState> {
+  const rawLines = formData.get("lines");
+  let parsedLines: unknown;
+  if (rawLines !== null) {
+    if (typeof rawLines !== "string") return { error: "BAD_REQUEST" };
+    try {
+      parsedLines = JSON.parse(rawLines);
+    } catch {
+      return { error: "BAD_REQUEST" };
+    }
+  }
+
   const parsed = schema.safeParse({
-    offerId: formData.get("offerId"),
+    offerId: formData.get("offerId") || undefined,
     customerInput: formData.get("customerInput") || undefined,
+    lines: parsedLines,
     locale: formData.get("locale"),
     returnTo: formData.get("returnTo") || undefined,
   });
   if (!parsed.success) return { error: "BAD_REQUEST" };
-  const { offerId, customerInput, locale, returnTo } = parsed.data;
+  const { offerId, customerInput, lines, locale, returnTo } = parsed.data;
+  if (!lines?.length && !offerId) return { error: "BAD_REQUEST" };
 
   const session = await getSession();
   if (!session) {
@@ -43,7 +63,7 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
   try {
     const order = await placeOrder({
       userId: session.userId,
-      lines: [{ offerId, quantity: 1, customerInput }],
+      lines: lines ?? [{ offerId: offerId!, quantity: 1, customerInput }],
       locale,
     });
     code = order.code;

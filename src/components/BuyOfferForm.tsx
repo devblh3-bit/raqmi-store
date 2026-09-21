@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useCart } from "./CartProvider";
 import { useTranslations } from "next-intl";
 import { buyNow, type BuyState } from "@/app/actions/buy";
 import type { CatalogOffer } from "@/lib/catalog";
@@ -28,10 +29,13 @@ export default function BuyOfferForm({
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
+  const { addItem } = useCart();
   const [selected, setSelected] = useState(offers[0]?.id ?? "");
+  const [customerInput, setCustomerInput] = useState("");
   const [state, action, pending] = useActionState<BuyState, FormData>(buyNow, {});
 
   const offer = offers.find((o) => o.id === selected) ?? offers[0];
+  const selectedOfferId = offer?.id ?? "";
   const errorKey = state.error ? (ERROR_KEY[state.error] ?? "errorGeneric") : null;
 
   return (
@@ -39,7 +43,7 @@ export default function BuyOfferForm({
       <input type="hidden" name="locale" value={locale} />
       {/* Where to come back to after signing in. Validated server-side. */}
       <input type="hidden" name="returnTo" value={`/${locale}/products/${slug}`} />
-      <input type="hidden" name="offerId" value={selected} />
+      <input type="hidden" name="offerId" value={selectedOfferId} />
 
       <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>
       <div className="mt-3 flex flex-col gap-2">
@@ -85,6 +89,8 @@ export default function BuyOfferForm({
             id="customerInput"
             name="customerInput"
             required
+            value={customerInput}
+            onChange={(event) => setCustomerInput(event.target.value)}
             maxLength={500}
             placeholder={offer.customerPrompt ?? "you@example.com"}
             className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-5 text-sm outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--ring)]"
@@ -100,6 +106,26 @@ export default function BuyOfferForm({
           {tc(errorKey)}
         </p>
       )}
+
+      <button
+        type="button"
+        disabled={!offer}
+        onClick={() => {
+          if (!offer) return;
+          addItem({
+            offerId: offer.id,
+            label: offer.label[locale] ?? offer.label.en,
+            price: offer.price,
+            locale,
+            requiresCustomerInput: offer.requiresCustomerInput,
+            customerPrompt: offer.customerPrompt,
+            customerInput: customerInput.trim() || undefined,
+          });
+        }}
+        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface)] text-sm font-bold text-[var(--fg)] transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+      >
+        {t("addToCart")}
+      </button>
 
       <button
         disabled={pending || !offers.length}

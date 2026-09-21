@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Claude Code hooks and skills run independently of the application build.
+    ".claude/**",
   ]),
 ]);
 
