@@ -3,10 +3,13 @@ import { prisma } from "@/lib/db";
 import { markNotificationRead, markAllNotificationsRead } from "./actions";
 
 export default async function NotificationsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ unread?: string; type?: string }>;
 }) {
+  const { locale } = await params;
   const { unread, type } = await searchParams;
   const where: Record<string, unknown> = {};
   if (unread === "1") where.isRead = false;
@@ -38,12 +41,12 @@ export default async function NotificationsPage({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <Link href="/admin/notifications" className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!unread && !type ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>All</Link>
-        <Link href="/admin/notifications?unread=1" className={`rounded-full px-3 py-1.5 text-xs font-semibold ${unread === "1" ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>Unread</Link>
+        <Link href={`/${locale}/admin/notifications`} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!unread && !type ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>All</Link>
+        <Link href={`/${locale}/admin/notifications?unread=1`} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${unread === "1" ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>Unread</Link>
         {types.map((t) => (
           <Link
             key={t.type}
-            href={`/admin/notifications?type=${t.type}`}
+            href={`/${locale}/admin/notifications?type=${t.type}`}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold ${type === t.type ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}
           >
             {t.type}

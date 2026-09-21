@@ -4,20 +4,23 @@ import { getSession } from "@/lib/auth/session";
 
 export default async function AdminLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   const session = await getSession();
-  if (!session) redirect("/en/login?next=/admin");
-  if (session.role !== "ADMIN") redirect("/en/login?next=/admin");
+  if (!session) redirect(`/${locale}/login?next=/${locale}/admin`);
+  if (session.role !== "ADMIN") redirect(`/${locale}/login?next=/${locale}/admin`);
 
   const nav = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/catalog", label: "Catalog" },
-    { href: "/admin/deposits", label: "Deposits" },
-    { href: "/admin/orders", label: "Orders" },
-    { href: "/admin/notifications", label: "Notifications" },
-    { href: "/admin/sync", label: "Sync" },
+    { href: `/${locale}/admin`, label: "Dashboard" },
+    { href: `/${locale}/admin/catalog`, label: "Catalog" },
+    { href: `/${locale}/admin/deposits`, label: "Deposits" },
+    { href: `/${locale}/admin/orders`, label: "Orders" },
+    { href: `/${locale}/admin/notifications`, label: "Notifications" },
+    { href: `/${locale}/admin/sync`, label: "Sync" },
   ] as const;
 
   return (

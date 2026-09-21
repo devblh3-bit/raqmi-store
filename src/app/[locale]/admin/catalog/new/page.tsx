@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db";
 import { createProduct } from "../actions";
 import { redirect } from "next/navigation";
 
-export default async function NewProductPage() {
+export default async function NewProductPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const categories = await prisma.category.findMany({
     orderBy: [{ sortOrder: "asc" }],
     select: { id: true, slug: true, nameEn: true },
@@ -17,7 +18,7 @@ export default async function NewProductPage() {
           "use server";
           const r = await createProduct(formData);
           if ("error" in r) throw new Error(r.error);
-          redirect("/admin/catalog");
+          redirect(`/${locale}/admin/catalog`);
         }}
         className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm"
       >

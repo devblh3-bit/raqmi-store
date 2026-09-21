@@ -3,10 +3,13 @@ import { prisma } from "@/lib/db";
 import { approveDepositAction, rejectDepositAction } from "./actions";
 
 export default async function DepositsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ status?: string }>;
 }) {
+  const { locale } = await params;
   const { status } = await searchParams;
   const where =
     status === "PENDING" || status === "APPROVED" || status === "REJECTED" || status === "CONFIRMED_ON_CHAIN"
@@ -30,7 +33,7 @@ export default async function DepositsPage({
         {tabs.map((t) => (
           <Link
             key={t || "all"}
-            href={t ? `/admin/deposits?status=${t}` : "/admin/deposits"}
+            href={t ? `/${locale}/admin/deposits?status=${t}` : `/${locale}/admin/deposits`}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
               (status ?? "") === t ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"
             }`}

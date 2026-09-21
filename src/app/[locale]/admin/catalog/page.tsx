@@ -2,10 +2,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function CatalogPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string }>;
 }) {
+  const { locale } = await params;
   const { q } = await searchParams;
   const where = q
     ? {
@@ -31,7 +34,7 @@ export default async function CatalogPage({
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight">Catalog</h1>
         <Link
-          href="/admin/catalog/new"
+          href={`/${locale}/admin/catalog/new`}
           className="rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[var(--accent-hover)]"
         >
           New product
@@ -72,11 +75,11 @@ export default async function CatalogPage({
                 <td className="px-4 py-3 text-center">{p._count.offers}</td>
                 <td className="px-4 py-3 text-center">{p.isActive ? "Yes" : "No"}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/catalog/${p.id}`} className="font-semibold text-[var(--accent)] hover:underline">
+                  <Link href={`/${locale}/admin/catalog/${p.id}`} className="font-semibold text-[var(--accent)] hover:underline">
                     Edit
                   </Link>
                   {" · "}
-                  <Link href={`/admin/catalog/${p.id}/offers`} className="font-semibold text-[var(--accent)] hover:underline">
+                  <Link href={`/${locale}/admin/catalog/${p.id}/offers`} className="font-semibold text-[var(--accent)] hover:underline">
                     Offers
                   </Link>
                 </td>

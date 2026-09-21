@@ -5,9 +5,9 @@ import { updateProduct } from "../actions";
 export default async function EditProductPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { locale, id } = await params;
   const [product, categories] = await Promise.all([
     prisma.product.findUnique({ where: { id } }),
     prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }], select: { id: true, slug: true, nameEn: true } }),
@@ -23,7 +23,7 @@ export default async function EditProductPage({
           "use server";
           const r = await updateProduct(id, formData);
           if ("error" in r) throw new Error(r.error);
-          redirect("/admin/catalog");
+          redirect(`/${locale}/admin/catalog`);
         }}
         className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm"
       >

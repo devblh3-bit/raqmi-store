@@ -2,10 +2,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function OrdersPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ status?: string }>;
 }) {
+  const { locale } = await params;
   const { status } = await searchParams;
   const valid = ["PENDING", "PAID", "PLACED_WITH_PROVIDER", "COMPLETED", "PARTIALLY_DELIVERED", "FAILED", "REFUNDED"] as const;
   const where =
@@ -33,11 +36,11 @@ export default async function OrdersPage({
       <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
 
       <div className="flex flex-wrap gap-1.5">
-        <Link href="/admin/orders" className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!status ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>All</Link>
+        <Link href={`/${locale}/admin/orders`} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!status ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>All</Link>
         {valid.map((s) => (
           <Link
             key={s}
-            href={`/admin/orders?status=${s}`}
+            href={`/${locale}/admin/orders?status=${s}`}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold ${status === s ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}
           >
             {s}
