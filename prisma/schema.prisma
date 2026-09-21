@@ -41,9 +41,11 @@ model Product {
   shortAr       String   @default("")
   shortFr       String   @default("")
   images        String[]
+  image         String?
   isActive      Boolean  @default(true)
   isFeatured    Boolean  @default(false)
   isNew         Boolean  @default(false)
+  contentLocked Boolean  @default(false)
   sortOrder     Int      @default(0)
   soldCount     Int      @default(0)
   offers        Offer[]
@@ -71,6 +73,9 @@ model Offer {
   sourceDescriptionHash String?
   isActive              Boolean                  @default(true)
   sortOrder             Int                      @default(0)
+  dedupeKey             String?
+  productPinned         Boolean                  @default(false)
+  stockQty              Int?
   links                 OfferProviderLink[]
   tierOverrides         OfferTierPriceOverride[]
   computedPrices        OfferComputedPrice[]
@@ -79,52 +84,54 @@ model Offer {
   updatedAt             DateTime                 @updatedAt
 
   @@index([productId, isActive])
+  @@index([dedupeKey])
+  @@index([productPinned])
 }
 
 model Provider {
-  id             String          @id @default(cuid())
-  code           String          @unique // qcst | vbr | canboso
-  displayName    String
-  baseUrl        String
-  isActive       Boolean         @default(true)
-  balanceMinor   BigInt?
-  balanceCurrency String?
+  id                       String          @id @default(cuid())
+  code                     String          @unique // qcst | vbr | canboso
+  displayName              String
+  baseUrl                  String
+  isActive                 Boolean         @default(true)
+  balanceMinor             BigInt?
+  balanceCurrency          String?
   lowBalanceThresholdMinor BigInt?
-  providerOffers ProviderOffer[]
-  providerOrders ProviderOrder[]
-  syncRuns       SyncRun[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  providerOffers           ProviderOffer[]
+  providerOrders           ProviderOrder[]
+  syncRuns                 SyncRun[]
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
 }
 
 model ProviderOffer {
-  id                String              @id @default(cuid())
+  id                String               @id @default(cuid())
   providerId        String
-  provider          Provider            @relation(fields: [providerId], references: [id])
+  provider          Provider             @relation(fields: [providerId], references: [id])
   providerSku       String
   rawName           String
-  rawNameEn         String              @default("")
-  rawDescription    String              @default("")
-  rawDescriptionEn  String              @default("")
-  rawWarranty       String              @default("")
+  rawNameEn         String               @default("")
+  rawDescription    String               @default("")
+  rawDescriptionEn  String               @default("")
+  rawWarranty       String               @default("")
   customerInputType String? // email | none | custom prompt etc.
   customerPrompt    String?
   fulfillmentMode   String? // sync | async
-  availability      String              @default("UNKNOWN") // AVAILABLE | OUT_OF_STOCK | UNKNOWN
+  availability      String               @default("UNKNOWN") // AVAILABLE | OUT_OF_STOCK | UNKNOWN
   stockType         String?
   stockQuantity     Int?
-  minQuantity       Int                 @default(1)
+  minQuantity       Int                  @default(1)
   maxQuantity       Int?
   costMinor         BigInt // integer minor units in `currency`
   currency          String // USD | VND | ...
   pricingSource     String?
   etag              String?
   rawJson           Json?
-  lastSyncedAt      DateTime            @default(now())
+  lastSyncedAt      DateTime             @default(now())
   links             OfferProviderLink[]
   attempts          FulfillmentAttempt[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   @@unique([providerId, providerSku])
   @@index([availability])
@@ -154,33 +161,33 @@ enum UserRole {
 }
 
 model User {
-  id               String        @id @default(cuid())
-  email            String        @unique
+  id               String              @id @default(cuid())
+  email            String              @unique
   passwordHash     String?
-  role             UserRole      @default(CUSTOMER)
+  role             UserRole            @default(CUSTOMER)
   tierId           String?
-  tier             ResellerTier? @relation(fields: [tierId], references: [id])
-  preferredLocale  String        @default("en")
+  tier             ResellerTier?       @relation(fields: [tierId], references: [id])
+  preferredLocale  String              @default("en")
   telegramId       BigInt?
   telegramUsername String?
   wallet           Wallet?
   walletTxns       WalletTransaction[]
   deposits         Deposit[]
   orders           Order[]
-  reviewedDeposits Deposit[]     @relation("DepositReviewer")
+  reviewedDeposits Deposit[]           @relation("DepositReviewer")
   auditLogs        AuditLog[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 }
 
 // Magic-link tokens: only the SHA-256 hash is stored; the raw token lives in the emailed URL.
 model LoginToken {
-  id        String    @id @default(cuid())
-  tokenHash String    @unique
-  email     String
-  expiresAt DateTime
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  email      String
+  expiresAt  DateTime
   consumedAt DateTime?
-  createdAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([email])
 }
