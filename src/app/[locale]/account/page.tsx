@@ -47,67 +47,60 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          {user?.email && (
-            <p className="mt-1 text-sm text-[var(--fg-muted)]" dir="ltr">
-              {user.email}
-            </p>
-          )}
+          <p className="text-xs text-[var(--fg-muted)] mt-0.5">
+            Welcome back! Here is your account overview, wallet balance, and order history.
+          </p>
         </div>
-
-        {/* Sign Out Button in header */}
-        <form action="/api/auth/logout" method="post" className="shrink-0">
-          <button className="inline-flex h-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-semibold shadow-xs transition-all hover:bg-[var(--surface-2)]">
-            {t("signOut")}
-          </button>
-        </form>
       </div>
 
-      <div className="mt-6 flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         {/* Wallet summary */}
-        <div className="flex items-center justify-between gap-4 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)]">
+        <div className="flex items-center justify-between gap-4 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xs">
           <div>
-            <p className="text-sm text-[var(--fg-muted)]">{t("balance")}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--fg-muted)]">{t("balance")}</p>
             <div className="mt-1 text-2xl font-black tracking-tight">
               <Price cents={Number(wallet?.balanceMinor ?? 0n)} locale={loc} size="lg" />
             </div>
           </div>
           <Link
-            href={`/${locale}/wallet`}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] px-6 text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98]"
+            href={`/${locale}/account/wallet`}
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] px-5 text-xs font-bold tracking-tight text-white shadow-xs transition hover:bg-[var(--accent-hover)] active:scale-95"
           >
             {t("addFunds")}
           </Link>
         </div>
 
         {/* Wholesale Reseller Application Card */}
-        <ResellerApplicationCard
-          status={user?.role === "RESELLER_APPLICANT" ? "PENDING" : "NONE"}
-        />
+        <div id="reseller">
+          <ResellerApplicationCard
+            status={user?.role === "RESELLER_APPLICANT" ? "PENDING" : "NONE"}
+          />
+        </div>
 
         {/* Order history */}
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
-          <h2 className="text-sm font-semibold">{t("orders")}</h2>
+        <div id="orders" className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xs sm:p-8">
+          <h2 className="text-base font-bold tracking-tight">{t("orders")}</h2>
           {orders.length === 0 ? (
             <div className="mt-4 text-center">
               <p className="text-sm text-[var(--fg-muted)]">{t("noOrders")}</p>
               <Link
                 href={`/${locale}/products`}
-                className="mt-3 inline-flex h-11 items-center justify-center rounded-full bg-[var(--accent)] px-6 text-sm font-bold text-[var(--accent-fg)] shadow-sm transition-all hover:bg-[var(--accent-hover)]"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent)] px-5 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--accent-hover)]"
               >
                 {t("browseProducts")}
               </Link>
             </div>
           ) : (
-            <ul className="mt-3 flex flex-col gap-2">
+            <ul className="mt-4 flex flex-col gap-2">
               {orders.map((o) => (
                 <li key={o.id}>
                   <Link
                     href={`/${locale}/orders/${o.code}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-2)] px-4 py-3 transition-colors hover:bg-[var(--surface-3,var(--surface-2))]"
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-2)] px-4 py-3 transition-colors hover:bg-[var(--surface-2)]/80"
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-mono text-sm font-semibold" dir="ltr">
