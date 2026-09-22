@@ -69,8 +69,8 @@ export default async function AdminLayout({
       </div>
 
       {/* Desktop Sticky Sidebar */}
-      <aside className="hidden w-48 shrink-0 md:block">
-        <div className="sticky top-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
+      <aside className="sticky top-20 self-start hidden w-48 shrink-0 md:block">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent)]">
               🛡️ Admin
