@@ -53,8 +53,8 @@ export default async function AplikasiPage({
         </p>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((p) => (
-            <ProductCard key={p.slug} p={p} locale={loc} />
+          {list.map((p, i) => (
+            <ProductCard key={p.slug} p={p} locale={loc} index={i} />
           ))}
         </div>
       )}

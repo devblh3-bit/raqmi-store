@@ -13,7 +13,7 @@ export default async function PromoPage({ params }: { params: Promise<{ locale: 
       <h1 className="text-2xl font-bold tracking-tight">Promo 🔥</h1>
       <p className="mt-1 text-sm text-[var(--fg-muted)]">{promos.length} products on sale</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {promos.map((p) => <ProductCard key={p.slug} p={p} locale={loc} />)}
+        {promos.map((p, i) => <ProductCard key={p.slug} p={p} locale={loc} index={i} />)}
       </div>
     </div>
   );

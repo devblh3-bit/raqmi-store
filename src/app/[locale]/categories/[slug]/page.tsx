@@ -20,7 +20,7 @@ export default async function KategoriSlugPage({ params }: { params: Promise<{ l
         <p className="mt-8 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--fg-muted)]">No products in this category yet.</p>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((p) => <ProductCard key={p.slug} p={p} locale={loc} />)}
+          {list.map((p, i) => <ProductCard key={p.slug} p={p} locale={loc} index={i} />)}
         </div>
       )}
     </div>

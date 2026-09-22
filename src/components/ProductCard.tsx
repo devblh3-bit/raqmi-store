@@ -13,7 +13,7 @@ export default function ProductCard({ p, locale, index = 0 }: { p: CatalogProduc
     <Link
       href={`/${locale}/products/${p.slug}`}
       data-index={String(index % 6)}
-      className="reveal group relative flex flex-col overflow-hidden rounded-[1.75rem] bg-[var(--surface)] shadow-[var(--elev-1)] ring-1 ring-black/[0.04] dark:ring-white/10 transition-all duration-700 ease-[var(--ease-premium)] hover:-translate-y-1 hover:shadow-[var(--elev-2)] hover:ring-black/[0.06] dark:ring-white/10"
+      className="group relative flex flex-col overflow-hidden rounded-[1.75rem] bg-[var(--surface)] shadow-[var(--elev-1)] ring-1 ring-black/[0.04] dark:ring-white/10 transition-all duration-700 ease-[var(--ease-premium)] hover:-translate-y-1 hover:shadow-[var(--elev-2)] hover:ring-black/[0.06] dark:ring-white/10"
     >
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[1.75rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]" />
 
