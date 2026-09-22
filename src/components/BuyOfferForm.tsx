@@ -25,17 +25,23 @@ export default function BuyOfferForm({
   slug,
   resellerTier,
   wholesalePrices,
+  selectedOfferId: controlledOfferId,
+  onSelectOffer,
 }: {
   offers: CatalogOffer[];
   locale: Locale;
   slug: string;
   resellerTier?: { id: string; name: string; discountPercent: number } | null;
   wholesalePrices?: Record<string, { price: number; marginCents: number }>;
+  selectedOfferId?: string;
+  onSelectOffer?: (id: string) => void;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
   const { addItem } = useCart();
-  const [selected, setSelected] = useState(offers[0]?.id ?? "");
+  const [internalSelected, setInternalSelected] = useState(offers[0]?.id ?? "");
+  const selected = controlledOfferId !== undefined ? controlledOfferId : internalSelected;
+  const setSelected = onSelectOffer ?? setInternalSelected;
   const [customerInput, setCustomerInput] = useState("");
   const [state, action, pending] = useActionState<BuyState, FormData>(buyNow, {});
 
@@ -111,25 +117,6 @@ export default function BuyOfferForm({
           );
         })}
       </div>
-
-      {/* Localized offer rules and warranty instructions */}
-      {offer?.rules && (offer.rules[locale] || offer.rules.en) && (
-        <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/70 p-3.5 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-[var(--fg)]">
-            <span>🛡️</span>
-            <span>
-              {locale === "ar"
-                ? "تفاصيل الضمان والتعليمات:"
-                : locale === "fr"
-                  ? "Garantie & Instructions :"
-                  : "Warranty & Instructions:"}
-            </span>
-          </div>
-          <p className="mt-1 leading-relaxed text-[var(--fg-muted)] whitespace-pre-line">
-            {offer.rules[locale] || offer.rules.en}
-          </p>
-        </div>
-      )}
 
       {offer?.requiresCustomerInput && (
         <div className="mt-4">
