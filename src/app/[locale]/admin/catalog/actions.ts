@@ -19,7 +19,7 @@ import {
   reorderLinkSchema,
 } from "@/lib/admin/validation";
 
-import { autoTranslateStoreText } from "@/lib/catalog/translation";
+import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
 
 function adminError(msg: string) {
   return { error: msg } as const;
@@ -285,6 +285,18 @@ export async function createOfferFromProvider(formData: FormData) {
 
   const dedupeKey = dedupeKeyForOffer({ labelEn, productSlug: product.slug });
 
+  const rawDesc = cleanProviderDescription(
+    providerOffer.rawDescriptionEn ||
+    providerOffer.rawDescription ||
+    providerOffer.rawWarranty ||
+    ""
+  );
+  const descAuto = autoTranslateStoreText(rawDesc);
+
+  const finalRulesEn = (rulesEn?.trim() || rawDesc).trim();
+  const finalRulesAr = (rulesAr?.trim() || descAuto.ar || finalRulesEn).trim();
+  const finalRulesFr = (rulesFr?.trim() || descAuto.fr || finalRulesEn).trim();
+
   const result = await prisma.$transaction(async (tx) => {
     const offer = await tx.offer.create({
       data: {
@@ -292,9 +304,9 @@ export async function createOfferFromProvider(formData: FormData) {
         labelEn,
         labelAr,
         labelFr,
-        rulesEn: rulesEn || "",
-        rulesAr: rulesAr || "",
-        rulesFr: rulesFr || "",
+        rulesEn: finalRulesEn,
+        rulesAr: finalRulesAr,
+        rulesFr: finalRulesFr,
         markupPercent: new Prisma.Decimal(markupPercent),
         compareAtMinor: compareAtMinor != null ? BigInt(compareAtMinor) : null,
         badge: badge || null,
@@ -391,6 +403,23 @@ export async function attachBackupProvider(formData: FormData) {
         } as never,
       },
     });
+
+    if (!offer.rulesEn && (providerOffer.rawDescription || providerOffer.rawDescriptionEn || providerOffer.rawWarranty)) {
+      const poDesc = cleanProviderDescription(
+        providerOffer.rawDescriptionEn || providerOffer.rawDescription || providerOffer.rawWarranty || ""
+      );
+      if (poDesc) {
+        const poAuto = autoTranslateStoreText(poDesc);
+        await tx.offer.update({
+          where: { id: offerId },
+          data: {
+            rulesEn: poDesc,
+            rulesAr: poAuto.ar || poDesc,
+            rulesFr: poAuto.fr || poDesc,
+          },
+        });
+      }
+    }
 
     return created;
   });
@@ -809,6 +838,14 @@ export async function createProductFromProviderOffer(
 
   const dedupeKey = dedupeKeyForOffer({ labelEn: rawTitle, productSlug: slug });
 
+  const rawDesc = cleanProviderDescription(
+    providerOffer.rawDescriptionEn ||
+    providerOffer.rawDescription ||
+    providerOffer.rawWarranty ||
+    ""
+  );
+  const descAuto = autoTranslateStoreText(rawDesc);
+
   const result = await prisma.$transaction(async (tx) => {
     const product = await tx.product.create({
       data: {
@@ -817,9 +854,9 @@ export async function createProductFromProviderOffer(
         nameAr: auto.ar || rawTitle,
         nameFr: auto.fr || rawTitle,
         categoryId: targetCategoryId!,
-        descriptionEn: providerOffer.rawDescriptionEn || providerOffer.rawDescription || "",
-        descriptionAr: auto.ar || "",
-        descriptionFr: auto.fr || "",
+        descriptionEn: rawDesc || "",
+        descriptionAr: descAuto.ar || "",
+        descriptionFr: descAuto.fr || "",
         shortEn: "",
         shortAr: "",
         shortFr: "",
@@ -836,6 +873,9 @@ export async function createProductFromProviderOffer(
         labelEn: rawTitle,
         labelAr: auto.ar || rawTitle,
         labelFr: auto.fr || rawTitle,
+        rulesEn: rawDesc,
+        rulesAr: descAuto.ar || rawDesc,
+        rulesFr: descAuto.fr || rawDesc,
         markupPercent: new Prisma.Decimal(markupPercent),
         productPinned: true,
         dedupeKey,
@@ -873,7 +913,10 @@ export async function linkProviderOfferToExistingProduct(
   productId: string,
   providerOfferId: string,
   labelEn?: string,
-  markupPercent: number = 15
+  markupPercent: number = 15,
+  rulesEn?: string,
+  rulesAr?: string,
+  rulesFr?: string
 ) {
   const session = await requireAdmin();
   const [product, providerOffer] = await Promise.all([
@@ -887,6 +930,18 @@ export async function linkProviderOfferToExistingProduct(
   const auto = autoTranslateStoreText(title);
   const dedupeKey = dedupeKeyForOffer({ labelEn: title, productSlug: product.slug });
 
+  const rawDesc = cleanProviderDescription(
+    providerOffer.rawDescriptionEn ||
+    providerOffer.rawDescription ||
+    providerOffer.rawWarranty ||
+    ""
+  );
+  const descAuto = autoTranslateStoreText(rawDesc);
+
+  const finalRulesEn = (rulesEn?.trim() || rawDesc).trim();
+  const finalRulesAr = (rulesAr?.trim() || descAuto.ar || finalRulesEn).trim();
+  const finalRulesFr = (rulesFr?.trim() || descAuto.fr || finalRulesEn).trim();
+
   const result = await prisma.$transaction(async (tx) => {
     const offer = await tx.offer.create({
       data: {
@@ -894,6 +949,9 @@ export async function linkProviderOfferToExistingProduct(
         labelEn: title,
         labelAr: auto.ar || title,
         labelFr: auto.fr || title,
+        rulesEn: finalRulesEn,
+        rulesAr: finalRulesAr,
+        rulesFr: finalRulesFr,
         markupPercent: new Prisma.Decimal(markupPercent),
         productPinned: true,
         dedupeKey,
@@ -990,12 +1048,33 @@ export async function createProductWithInitialOffer(formData: FormData) {
     if (variantLabel) {
       const vAuto = autoTranslateStoreText(variantLabel);
       const dedupeKey = dedupeKeyForOffer({ labelEn: variantLabel, productSlug: slug });
+
+      let rulesEn = String(raw.variantRulesEn || "").trim();
+      let rulesAr = String(raw.variantRulesAr || "").trim();
+      let rulesFr = String(raw.variantRulesFr || "").trim();
+
+      if (providerOfferId && (!rulesEn || !rulesAr || !rulesFr)) {
+        const po = await tx.providerOffer.findUnique({ where: { id: providerOfferId } });
+        if (po) {
+          const poDesc = cleanProviderDescription(
+            po.rawDescriptionEn || po.rawDescription || po.rawWarranty || ""
+          );
+          const poAuto = autoTranslateStoreText(poDesc);
+          if (!rulesEn) rulesEn = poDesc;
+          if (!rulesAr) rulesAr = poAuto.ar || poDesc;
+          if (!rulesFr) rulesFr = poAuto.fr || poDesc;
+        }
+      }
+
       const offer = await tx.offer.create({
         data: {
           productId: p.id,
           labelEn: variantLabel,
           labelAr: vAuto.ar || variantLabel,
           labelFr: vAuto.fr || variantLabel,
+          rulesEn,
+          rulesAr,
+          rulesFr,
           markupPercent: new Prisma.Decimal(variantMarkup),
           productPinned: true,
           dedupeKey,

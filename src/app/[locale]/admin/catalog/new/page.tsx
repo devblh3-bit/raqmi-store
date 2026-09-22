@@ -22,6 +22,9 @@ export default async function NewProductPage({
         providerSku: true,
         costMinor: true,
         currency: true,
+        rawDescription: true,
+        rawDescriptionEn: true,
+        rawWarranty: true,
         provider: { select: { displayName: true } },
       },
       take: 50,
@@ -35,6 +38,9 @@ export default async function NewProductPage({
     providerSku: o.providerSku,
     costMinor: o.costMinor.toString(),
     currency: o.currency,
+    rawDescription: o.rawDescription,
+    rawDescriptionEn: o.rawDescriptionEn,
+    rawWarranty: o.rawWarranty,
     provider: o.provider,
   }));
 

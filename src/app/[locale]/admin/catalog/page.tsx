@@ -176,6 +176,9 @@ export default async function CatalogPage({
     currency: o.currency,
     availability: o.availability,
     stockQuantity: o.stockQuantity,
+    rawDescription: o.rawDescription,
+    rawDescriptionEn: o.rawDescriptionEn,
+    rawWarranty: o.rawWarranty,
     lastSyncedAt: o.lastSyncedAt.toISOString(),
     provider: o.provider,
   }));

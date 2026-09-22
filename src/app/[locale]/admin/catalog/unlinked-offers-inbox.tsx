@@ -6,6 +6,7 @@ import {
   createProductFromProviderOffer,
   linkProviderOfferToExistingProduct,
 } from "./actions";
+import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
 
 export type UnlinkedProviderOffer = {
   id: string;
@@ -16,6 +17,9 @@ export type UnlinkedProviderOffer = {
   currency: string;
   availability: string;
   stockQuantity: number | null;
+  rawDescription?: string | null;
+  rawDescriptionEn?: string | null;
+  rawWarranty?: string | null;
   lastSyncedAt: string;
   provider: {
     code: string;
@@ -74,6 +78,9 @@ export function UnlinkedOffersInbox({
   const [linkProductId, setLinkProductId] = useState("");
   const [linkVariantLabel, setLinkVariantLabel] = useState("");
   const [linkMarkup, setLinkMarkup] = useState("15");
+  const [linkRulesEn, setLinkRulesEn] = useState("");
+  const [linkRulesAr, setLinkRulesAr] = useState("");
+  const [linkRulesFr, setLinkRulesFr] = useState("");
   const [productSearch, setProductSearch] = useState("");
 
   // Unique providers list with counts and active status
@@ -226,6 +233,14 @@ export function UnlinkedOffersInbox({
     setLinkProductId(existingProducts[0]?.id || "");
     setLinkMarkup("15");
     setProductSearch("");
+
+    const desc = cleanProviderDescription(
+      offer.rawDescriptionEn || offer.rawDescription || offer.rawWarranty || ""
+    );
+    const auto = autoTranslateStoreText(desc);
+    setLinkRulesEn(desc);
+    setLinkRulesAr(auto.ar || desc);
+    setLinkRulesFr(auto.fr || desc);
   };
 
   // Filtered existing products for modal
@@ -248,7 +263,10 @@ export function UnlinkedOffersInbox({
         linkProductId,
         linkModalOffer.id,
         linkVariantLabel || undefined,
-        markup
+        markup,
+        linkRulesEn || undefined,
+        linkRulesAr || undefined,
+        linkRulesFr || undefined
       );
 
       if ("error" in res) {
@@ -825,6 +843,30 @@ export function UnlinkedOffersInbox({
                     className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
                   />
                 </label>
+              </div>
+
+              {/* Rules & Warranty Instructions */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[var(--fg-muted)]">
+                    🛡️ Rules & Warranty Instructions (Storefront)
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    ✨ Auto-filled from supplier
+                  </span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={linkRulesEn}
+                  onChange={(e) => {
+                    setLinkRulesEn(e.target.value);
+                    const auto = autoTranslateStoreText(e.target.value);
+                    setLinkRulesAr(auto.ar || e.target.value);
+                    setLinkRulesFr(auto.fr || e.target.value);
+                  }}
+                  placeholder="e.g. 30 days replacement warranty. Enter your OpenAI email at checkout."
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-xs outline-none focus:border-[var(--accent)]"
+                />
               </div>
             </div>
 

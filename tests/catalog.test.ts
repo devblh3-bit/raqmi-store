@@ -23,6 +23,26 @@ import {
   deleteProductsOfDisabledProvider,
 } from "../src/app/[locale]/admin/sync/actions";
 
+const CANONICAL_SLUGS = [
+  "claude-pro",
+  "gemini-pro",
+  "chatgpt-plus",
+  "canva-pro",
+  "adobe-creative",
+  "youtube-premium",
+  "netflix-premium",
+  "spotify-premium",
+  "microsoft-365",
+  "windows-11-pro",
+  "office-2024-pro",
+  "nordvpn",
+  "quillbot-premium",
+  "duolingo-super",
+  "capcut-pro",
+  "aged-gmail-accounts",
+  "cloud-developer-credits",
+];
+
 beforeAll(async () => {
   await prisma.user.upsert({
     where: { id: "test-admin" },
@@ -49,24 +69,6 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { id: "test-admin" } });
   await prisma.$disconnect();
 });
-
-const CANONICAL_SLUGS = [
-  "claude-pro",
-  "gemini-pro",
-  "chatgpt-plus",
-  "canva-pro",
-  "adobe-creative",
-  "youtube-premium",
-  "netflix-premium",
-  "spotify-premium",
-  "microsoft-365",
-  "windows-11-pro",
-  "office-2024-pro",
-  "quillbot-premium",
-  "nordvpn",
-  "duolingo-super",
-  "capcut-pro",
-];
 
 describe("DB catalog has consolidated canonical live products", () => {
   it("returns canonical products with active offers and positive prices", async () => {

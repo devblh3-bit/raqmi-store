@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { autoTranslateStoreText } from "@/lib/catalog/translation";
+import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
 import { createProductWithInitialOffer } from "../actions";
 
 export type CategoryItem = {
@@ -19,6 +19,9 @@ export type SupplierOfferSnippet = {
   providerSku: string;
   costMinor: string;
   currency: string;
+  rawDescription?: string | null;
+  rawDescriptionEn?: string | null;
+  rawWarranty?: string | null;
   provider: { displayName: string };
 };
 
@@ -80,6 +83,15 @@ export function NewProductForm({
       }
       if (!variantLabel) {
         setVariantLabel(cleanName);
+      }
+      const desc = cleanProviderDescription(
+        offer.rawDescriptionEn || offer.rawDescription || offer.rawWarranty || ""
+      );
+      if (desc && !descEn) {
+        setDescEn(desc);
+        const autoDesc = autoTranslateStoreText(desc);
+        setDescAr(autoDesc.ar);
+        setDescFr(autoDesc.fr);
       }
     }
   };

@@ -12,6 +12,7 @@ import {
   deleteOffer,
   reorderOffer,
 } from "../../actions";
+import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
 
 export type SerializedProviderOffer = {
   id: string;
@@ -654,11 +655,17 @@ function CreateVariantModal({
   const profitFloat = retailFloat - costFloat;
   const dzdEst = Math.round(retailFloat * 240);
 
-  const defaultTitle =
-    providerOffer.rawNameEn || providerOffer.rawName || providerOffer.providerSku;
+  const defaultTitle = providerOffer.rawNameEn || providerOffer.rawName;
+  const autoTitle = autoTranslateStoreText(defaultTitle);
+  const defaultRulesEn = cleanProviderDescription(
+    providerOffer.rawDescription ||
+    providerOffer.rawWarranty ||
+    ""
+  );
+  const autoRules = autoTranslateStoreText(defaultRulesEn);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
           <h3 className="text-lg font-bold">Create Variant from Supplier SKU</h3>
@@ -731,7 +738,7 @@ function CreateVariantModal({
                 <label className="text-[11px] text-[var(--fg-muted)]">العربية (Required)</label>
                 <input
                   name="labelAr"
-                  defaultValue={defaultTitle}
+                  defaultValue={autoTitle.ar || defaultTitle}
                   required
                   placeholder="مثال: شهر واحد — حساب شخصي"
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
@@ -741,7 +748,7 @@ function CreateVariantModal({
                 <label className="text-[11px] text-[var(--fg-muted)]">Français (Required)</label>
                 <input
                   name="labelFr"
-                  defaultValue={defaultTitle}
+                  defaultValue={autoTitle.fr || defaultTitle}
                   required
                   placeholder="ex. 1 Mois — Personnel"
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
@@ -761,7 +768,7 @@ function CreateVariantModal({
                 <textarea
                   name="rulesEn"
                   rows={3}
-                  defaultValue={providerOffer.rawDescription || ""}
+                  defaultValue={defaultRulesEn}
                   placeholder="e.g. 30 days replacement warranty. Enter your OpenAI email at checkout."
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-xs outline-none focus:border-[var(--accent)]"
                 />
@@ -771,6 +778,7 @@ function CreateVariantModal({
                 <textarea
                   name="rulesAr"
                   rows={3}
+                  defaultValue={autoRules.ar || defaultRulesEn}
                   placeholder="مثال: ضمان لمدة 30 يوم. يرجى إدخال بريدك الإلكتروني لتفعيل الاشتراك."
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-xs outline-none focus:border-[var(--accent)]"
                 />
@@ -780,6 +788,7 @@ function CreateVariantModal({
                 <textarea
                   name="rulesFr"
                   rows={3}
+                  defaultValue={autoRules.fr || defaultRulesEn}
                   placeholder="ex. Garantie de 30 jours. Fournissez votre adresse e-mail lors de la commande."
                   className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-xs outline-none focus:border-[var(--accent)]"
                 />

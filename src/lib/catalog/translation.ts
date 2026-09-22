@@ -105,3 +105,17 @@ export function autoTranslateStoreText(englishText: string): { ar: string; fr: s
   };
 }
 
+/**
+ * Strips Telegram custom emoji tags and HTML break tags from supplier descriptions
+ * while preserving natural emoji unicode, newlines, and bullet points.
+ */
+export function cleanProviderDescription(raw?: string | null): string {
+  if (!raw) return "";
+  return raw
+    .replace(/<tg-emoji[^>]*>(.*?)<\/tg-emoji>/gi, "$1")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<p>/gi, "")
+    .replace(/<\/p>/gi, "\n")
+    .trim();
+}
+

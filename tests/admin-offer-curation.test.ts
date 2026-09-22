@@ -19,6 +19,7 @@ import {
   reorderLink,
   deleteLink,
   deleteOffer,
+  linkProviderOfferToExistingProduct,
 } from "../src/app/[locale]/admin/catalog/actions";
 import { priceForOffer } from "../src/lib/pricing";
 
@@ -276,5 +277,56 @@ describe("Admin Offer Curation & Fallback Actions", () => {
       where: { id: createdOfferId },
     });
     expect(deleted).toBeNull();
+  });
+
+  it("auto-fills rules & warranty instructions from provider offer description on variant creation and linking", async () => {
+    // 1. Create a provider offer with rich description
+    const richPo = await prisma.providerOffer.create({
+      data: {
+        providerId: (await prisma.provider.findFirstOrThrow({ where: { code: `${TEST_TAG}-1` } })).id,
+        providerSku: "sku-rich-desc",
+        rawName: "Premium License 30D",
+        rawDescription: "30 days replacement warranty. Instant login credentials. Contact support for assistance.",
+        rawWarranty: "30 days",
+        costMinor: 800n,
+        currency: "USD",
+        availability: "AVAILABLE",
+      },
+    });
+
+    // 2. Create variant via createOfferFromProvider with empty rules
+    const fd = new FormData();
+    fd.append("productId", productId);
+    fd.append("providerOfferId", richPo.id);
+    fd.append("labelEn", "Premium License 30D Auto Rules");
+    fd.append("labelAr", "رخصة مميزة 30 يوم");
+    fd.append("labelFr", "Licence Premium 30J");
+    // omit rulesEn, rulesAr, rulesFr
+    fd.append("markupPercent", "20");
+
+    const res = await createOfferFromProvider(fd);
+    expect(res).toHaveProperty("ok", true);
+    if ("offerId" in res && res.offerId) {
+      const created = await prisma.offer.findUniqueOrThrow({ where: { id: res.offerId } });
+      expect(created.rulesEn).toContain("30 days replacement warranty");
+      expect(created.rulesAr).toBeTruthy();
+      expect(created.rulesFr).toBeTruthy();
+      await prisma.offerProviderLink.deleteMany({ where: { offerId: res.offerId } });
+      await prisma.offer.delete({ where: { id: res.offerId } });
+    }
+
+    // 3. Link via linkProviderOfferToExistingProduct with empty rules
+    const linkRes = await linkProviderOfferToExistingProduct(productId, richPo.id, "Linked Auto Rules Variant", 20);
+    expect(linkRes).toHaveProperty("ok", true);
+    if ("offerId" in linkRes && linkRes.offerId) {
+      const linked = await prisma.offer.findUniqueOrThrow({ where: { id: linkRes.offerId } });
+      expect(linked.rulesEn).toContain("30 days replacement warranty");
+      expect(linked.rulesAr).toBeTruthy();
+      expect(linked.rulesFr).toBeTruthy();
+      await prisma.offerProviderLink.deleteMany({ where: { offerId: linkRes.offerId } });
+      await prisma.offer.delete({ where: { id: linkRes.offerId } });
+    }
+
+    await prisma.providerOffer.delete({ where: { id: richPo.id } });
   });
 });
