@@ -182,6 +182,11 @@ export const systemSettingsSchema = z.object({
     .min(0, "Profit margin cannot be negative")
     .max(500, "Unreasonable margin")
     .default(15),
+  baridimobRip: z.string().trim().max(100).optional().default(""),
+  baridimobHolder: z.string().trim().max(100).optional().default(""),
+  ccpAccount: z.string().trim().max(100).optional().default(""),
+  usdtBep20Address: z.string().trim().max(120).optional().default(""),
+  usdtTrc20Address: z.string().trim().max(120).optional().default(""),
   maintenanceMode: z.coerce.boolean().default(false),
   maintenanceBannerEn: z.string().trim().max(500).optional().default(""),
   maintenanceBannerAr: z.string().trim().max(500).optional().default(""),

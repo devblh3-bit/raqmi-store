@@ -67,7 +67,17 @@ export default async function ResellerWalletPage({
           Submit deposit via CCP, BaridiMob, or Crypto. Deposits are confirmed by administrators.
         </p>
         <div className="mt-5">
-          <DepositForm locale={loc} />
+          <DepositForm
+            locale={loc}
+            paymentAccounts={{
+              baridimobRip: settings.baridimobRip,
+              baridimobHolder: settings.baridimobHolder,
+              ccpAccount: settings.ccpAccount,
+              usdtBep20Address: settings.usdtBep20Address,
+              usdtTrc20Address: settings.usdtTrc20Address,
+              dzdRate: settings.dzdRate,
+            }}
+          />
         </div>
       </div>
 

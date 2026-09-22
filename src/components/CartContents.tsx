@@ -79,7 +79,40 @@ export default function CartContents({ locale }: { locale: Locale }) {
 
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)]">
         <div className="flex items-center justify-between font-semibold"><span>{tc("total")}</span><Price cents={total} locale={locale} /></div>
-        {errorKey && <p role="alert" className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">{tc(errorKey)}</p>}
+        {state.error === "INSUFFICIENT_FUNDS" ? (
+          <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold text-xs">
+              <span>⚠️</span>
+              <span>{tc("errorFunds")}</span>
+            </div>
+            <p className="text-xs text-[var(--fg-muted)]">
+              {locale === "ar"
+                ? "رصيد محفظتك غير كافٍ لإتمام طلبات السلة. اشحن محفظتك للمتابعة فوراً."
+                : locale === "fr"
+                  ? "Solde insuffisant pour commander votre panier. Rechargez votre portefeuille pour continuer."
+                  : "Your wallet balance is insufficient to checkout. Top up via Baridimob or Crypto to complete it immediately."}
+            </p>
+            <a
+              href={`/${locale}/account/wallet?amount=${(total / 100).toFixed(2)}&method=MANUAL_BANK`}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 w-full shadow-sm transition-all"
+            >
+              <span>⚡</span>
+              <span>
+                {locale === "ar"
+                  ? `شحن المحفظة (${(total / 100).toFixed(2)}$) عبر بريديموب ➔`
+                  : locale === "fr"
+                    ? `Recharger (${(total / 100).toFixed(2)}$) via BaridiMob ➔`
+                    : `Top up Wallet ($${(total / 100).toFixed(2)}) via Baridimob ➔`}
+              </span>
+            </a>
+          </div>
+        ) : (
+          errorKey && (
+            <p role="alert" className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              {tc(errorKey)}
+            </p>
+          )
+        )}
         <button disabled={pending || missingInput} className="btn-shine mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] disabled:opacity-60">
           {pending ? tc("placing") : t("checkout")}
         </button>

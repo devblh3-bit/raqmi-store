@@ -48,11 +48,16 @@ const balance = async () =>
   (await prisma.wallet.findUnique({ where: { userId } }))?.balanceMinor ?? 0n;
 
 describe("requestDeposit", () => {
-  it("records a PENDING deposit and credits nothing", async () => {
-    const d = await requestDeposit({ userId, amountMinor: 2500, method: "USDT_BEP20" });
+  it("records a PENDING deposit with uploaded receipt path", async () => {
+    const d = await requestDeposit({
+      userId,
+      amountMinor: 3000,
+      method: "MANUAL_BANK",
+      proofImageUrl: "/uploads/receipts/receipt_test123.jpg",
+    });
     expect(d.status).toBe("PENDING");
-    expect(d.amountMinor).toBe(2500n);
-    expect(await balance()).toBe(0n); // the whole point: no money before review
+    expect(d.proofImageUrl).toBe("/uploads/receipts/receipt_test123.jpg");
+    expect(await balance()).toBe(0n);
   });
 
   it("rejects amounts outside the allowed range", async () => {

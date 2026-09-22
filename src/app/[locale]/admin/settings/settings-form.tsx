@@ -11,6 +11,11 @@ interface SettingsFormProps {
   initialSettings: {
     dzdRate: number;
     defaultProfitMargin: number;
+    baridimobRip: string;
+    baridimobHolder: string;
+    ccpAccount: string;
+    usdtBep20Address: string;
+    usdtTrc20Address: string;
     maintenanceMode: boolean;
     maintenanceBannerEn: string;
     maintenanceBannerAr: string;
@@ -28,6 +33,12 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
   const [defaultProfitMargin, setDefaultProfitMargin] = useState(
     initialSettings.defaultProfitMargin.toString()
   );
+  const [baridimobRip, setBaridimobRip] = useState(initialSettings.baridimobRip || "");
+  const [baridimobHolder, setBaridimobHolder] = useState(initialSettings.baridimobHolder || "");
+  const [ccpAccount, setCcpAccount] = useState(initialSettings.ccpAccount || "");
+  const [usdtBep20Address, setUsdtBep20Address] = useState(initialSettings.usdtBep20Address || "");
+  const [usdtTrc20Address, setUsdtTrc20Address] = useState(initialSettings.usdtTrc20Address || "");
+
   const [maintenanceMode, setMaintenanceMode] = useState(initialSettings.maintenanceMode);
   const [bannerEn, setBannerEn] = useState(initialSettings.maintenanceBannerEn);
   const [bannerAr, setBannerAr] = useState(initialSettings.maintenanceBannerAr);
@@ -48,6 +59,11 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
     const fd = new FormData();
     fd.append("dzdRate", dzdRate);
     fd.append("defaultProfitMargin", defaultProfitMargin);
+    fd.append("baridimobRip", baridimobRip);
+    fd.append("baridimobHolder", baridimobHolder);
+    fd.append("ccpAccount", ccpAccount);
+    fd.append("usdtBep20Address", usdtBep20Address);
+    fd.append("usdtTrc20Address", usdtTrc20Address);
     fd.append("maintenanceMode", maintenanceMode ? "true" : "false");
     fd.append("maintenanceBannerEn", bannerEn);
     fd.append("maintenanceBannerAr", bannerAr);
@@ -292,7 +308,144 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
           </div>
         </div>
 
-        {/* Section 3: Storefront Operational Mode (Maintenance Mode) */}
+        {/* Section 3: Deposit Accounts & Payment Instructions (Baridimob, CCP & USDT) */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">💳 Deposit Accounts & Payment Instructions</h2>
+              <p className="text-xs text-[var(--fg-muted)] mt-1">
+                Configure the Baridimob, CCP, and USDT wallet addresses displayed to buyers on the deposit and wallet top-up pages.
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-3 py-1 text-xs font-semibold">
+              Customer Payment Details
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Algerian Postal & Bank Transfers */}
+            <div className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-5">
+              <div className="flex items-center gap-2 font-bold text-sm text-[var(--fg)]">
+                <span>🇩🇿</span>
+                <span>Baridimob & CCP (Algeria Post)</span>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)]">
+                Customers choose Manual Bank and see these details to complete instant Baridimob transfers or post office CCP deposits.
+              </p>
+
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label htmlFor="baridimobRip" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                    Baridimob RIP (20 Digits)
+                  </label>
+                  <input
+                    id="baridimobRip"
+                    name="baridimobRip"
+                    type="text"
+                    maxLength={30}
+                    value={baridimobRip}
+                    onChange={(e) => setBaridimobRip(e.target.value)}
+                    placeholder="00799999000123456789"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-mono font-semibold text-[var(--fg)] outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="baridimobHolder" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                    Account Holder Name (Nom & Prénom)
+                  </label>
+                  <input
+                    id="baridimobHolder"
+                    name="baridimobHolder"
+                    type="text"
+                    maxLength={80}
+                    value={baridimobHolder}
+                    onChange={(e) => setBaridimobHolder(e.target.value)}
+                    placeholder="e.g. BENALI OUSSAMA"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--fg)] outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="ccpAccount" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                    CCP Account Number & Key
+                  </label>
+                  <input
+                    id="ccpAccount"
+                    name="ccpAccount"
+                    type="text"
+                    maxLength={50}
+                    value={ccpAccount}
+                    onChange={(e) => setCcpAccount(e.target.value)}
+                    placeholder="e.g. 12345678 Clé 99"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-mono text-[var(--fg)] outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Cryptocurrency (USDT) */}
+            <div className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-5">
+              <div className="flex items-center gap-2 font-bold text-sm text-[var(--fg)]">
+                <span>₮</span>
+                <span>USDT Cryptocurrency Wallets</span>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)]">
+                Customers choose USDT and transfer funds from Binance, Bybit, or Trust Wallet to these destination addresses.
+              </p>
+
+              <div className="space-y-3 pt-1">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="usdtBep20Address" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                      USDT BEP20 Address (BNB Smart Chain)
+                    </label>
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                      BSC
+                    </span>
+                  </div>
+                  <input
+                    id="usdtBep20Address"
+                    name="usdtBep20Address"
+                    type="text"
+                    maxLength={80}
+                    value={usdtBep20Address}
+                    onChange={(e) => setUsdtBep20Address(e.target.value)}
+                    placeholder="0x..."
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-mono text-[var(--fg)] outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="usdtTrc20Address" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                      USDT TRC20 Address (TRON Network)
+                    </label>
+                    <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">
+                      TRON
+                    </span>
+                  </div>
+                  <input
+                    id="usdtTrc20Address"
+                    name="usdtTrc20Address"
+                    type="text"
+                    maxLength={80}
+                    value={usdtTrc20Address}
+                    onChange={(e) => setUsdtTrc20Address(e.target.value)}
+                    placeholder="T..."
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-mono text-[var(--fg)] outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-2.5 text-[11px] text-blue-700 dark:text-blue-300">
+                  💡 Customers will submit their Transaction Hash (TxHash) after sending, allowing you to verify receipts directly on BscScan or TronScan.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Storefront Operational Mode (Maintenance Mode) */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <div>

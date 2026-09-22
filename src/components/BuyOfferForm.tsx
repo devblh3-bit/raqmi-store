@@ -149,13 +149,42 @@ export default function BuyOfferForm({
         </div>
       )}
 
-      {errorKey && (
-        <p
-          role="alert"
-          className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
-        >
-          {tc(errorKey)}
-        </p>
+      {state.error === "INSUFFICIENT_FUNDS" ? (
+        <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold text-xs">
+            <span>⚠️</span>
+            <span>{tc("errorFunds")}</span>
+          </div>
+          <p className="text-xs text-[var(--fg-muted)]">
+            {locale === "ar"
+              ? "رصيد محفظتك غير كافٍ لإتمام هذا الطلب. اشحن محفظتك بالدينار الجزائري عبر بريديموب للمتابعة فوراً."
+              : locale === "fr"
+                ? "Solde insuffisant dans votre portefeuille. Rechargez via BaridiMob pour finaliser votre commande immédiatement."
+                : "Your wallet balance is insufficient to place this order. Top up via Baridimob or Crypto to complete it immediately."}
+          </p>
+          <a
+            href={`/${locale}/account/wallet?amount=${((offer?.price ?? 0) / 100).toFixed(2)}&method=MANUAL_BANK`}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 w-full shadow-sm transition-all"
+          >
+            <span>⚡</span>
+            <span>
+              {locale === "ar"
+                ? `شحن المحفظة (${((offer?.price ?? 0) / 100).toFixed(2)}$) عبر بريديموب ➔`
+                : locale === "fr"
+                  ? `Recharger (${((offer?.price ?? 0) / 100).toFixed(2)}$) via BaridiMob ➔`
+                  : `Top up Wallet ($${((offer?.price ?? 0) / 100).toFixed(2)}) via Baridimob ➔`}
+            </span>
+          </a>
+        </div>
+      ) : (
+        errorKey && (
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {tc(errorKey)}
+          </p>
+        )
       )}
 
       <button

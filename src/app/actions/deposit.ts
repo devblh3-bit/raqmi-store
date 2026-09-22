@@ -17,7 +17,15 @@ const schema = z.object({
   amount: z.coerce.number().positive().max(1_000_000),
   method: z.enum(["USDT_BEP20", "USDT_TRC20", "MANUAL_BANK"]),
   txHash: z.string().trim().max(120).optional(),
-  proofUrl: z.string().trim().url().max(500).optional(),
+  proofUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (val) => !val || val.startsWith("/") || val.startsWith("http://") || val.startsWith("https://"),
+      "Invalid proof image URL or path",
+    )
+    .optional(),
   locale: z.enum(locales),
 });
 

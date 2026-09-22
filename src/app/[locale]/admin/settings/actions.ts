@@ -35,6 +35,11 @@ export async function updateSystemSettings(formData: FormData) {
   const parsed = systemSettingsSchema.safeParse({
     dzdRate: raw.dzdRate,
     defaultProfitMargin: raw.defaultProfitMargin,
+    baridimobRip: raw.baridimobRip || undefined,
+    baridimobHolder: raw.baridimobHolder || undefined,
+    ccpAccount: raw.ccpAccount || undefined,
+    usdtBep20Address: raw.usdtBep20Address || undefined,
+    usdtTrc20Address: raw.usdtTrc20Address || undefined,
     maintenanceMode: raw.maintenanceMode === "true" || raw.maintenanceMode === "on",
     maintenanceBannerEn: raw.maintenanceBannerEn || undefined,
     maintenanceBannerAr: raw.maintenanceBannerAr || undefined,
@@ -49,6 +54,11 @@ export async function updateSystemSettings(formData: FormData) {
   const {
     dzdRate,
     defaultProfitMargin,
+    baridimobRip,
+    baridimobHolder,
+    ccpAccount,
+    usdtBep20Address,
+    usdtTrc20Address,
     maintenanceMode,
     maintenanceBannerEn,
     maintenanceBannerAr,
@@ -59,6 +69,11 @@ export async function updateSystemSettings(formData: FormData) {
   const updates = [
     { key: "dzd_rate", value: dzdRate.toString() },
     { key: "default_profit_margin", value: defaultProfitMargin.toString() },
+    { key: "baridimob_rip", value: baridimobRip },
+    { key: "baridimob_holder", value: baridimobHolder },
+    { key: "ccp_account", value: ccpAccount },
+    { key: "usdt_bep20_address", value: usdtBep20Address },
+    { key: "usdt_trc20_address", value: usdtTrc20Address },
     { key: "maintenance_mode", value: maintenanceMode ? "true" : "false" },
     { key: "maintenance_banner_en", value: maintenanceBannerEn },
     { key: "maintenance_banner_ar", value: maintenanceBannerAr },
@@ -111,6 +126,8 @@ export async function updateSystemSettings(formData: FormData) {
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/resellers");
+  revalidatePath("/account/wallet");
+  revalidatePath("/reseller/wallet");
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/products");

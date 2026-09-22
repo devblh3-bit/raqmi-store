@@ -5,6 +5,11 @@ import { prisma } from "@/lib/db";
 export interface SystemSettings {
   dzdRate: number;
   defaultProfitMargin: number;
+  baridimobRip: string;
+  baridimobHolder: string;
+  ccpAccount: string;
+  usdtBep20Address: string;
+  usdtTrc20Address: string;
   maintenanceMode: boolean;
   maintenanceBannerEn: string;
   maintenanceBannerAr: string;
@@ -15,6 +20,11 @@ export interface SystemSettings {
 export const DEFAULT_SETTINGS: SystemSettings = {
   dzdRate: 240,
   defaultProfitMargin: 15,
+  baridimobRip: "",
+  baridimobHolder: "",
+  ccpAccount: "",
+  usdtBep20Address: "",
+  usdtTrc20Address: "",
   maintenanceMode: false,
   maintenanceBannerEn: "Store maintenance in progress. Purchasing is temporarily disabled.",
   maintenanceBannerAr: "أعمال صيانة جارية في المتجر. عمليات الشراء معطلة مؤقتًا.",
@@ -50,6 +60,11 @@ export async function getSystemSettings(): Promise<SystemSettings> {
         Number.isFinite(defaultProfitMargin) && defaultProfitMargin >= 0
           ? defaultProfitMargin
           : DEFAULT_SETTINGS.defaultProfitMargin,
+      baridimobRip: map.get("baridimob_rip") ?? DEFAULT_SETTINGS.baridimobRip,
+      baridimobHolder: map.get("baridimob_holder") ?? DEFAULT_SETTINGS.baridimobHolder,
+      ccpAccount: map.get("ccp_account") ?? DEFAULT_SETTINGS.ccpAccount,
+      usdtBep20Address: map.get("usdt_bep20_address") ?? DEFAULT_SETTINGS.usdtBep20Address,
+      usdtTrc20Address: map.get("usdt_trc20_address") ?? DEFAULT_SETTINGS.usdtTrc20Address,
       maintenanceMode: map.get("maintenance_mode") === "true",
       maintenanceBannerEn: map.get("maintenance_banner_en") ?? DEFAULT_SETTINGS.maintenanceBannerEn,
       maintenanceBannerAr: map.get("maintenance_banner_ar") ?? DEFAULT_SETTINGS.maintenanceBannerAr,

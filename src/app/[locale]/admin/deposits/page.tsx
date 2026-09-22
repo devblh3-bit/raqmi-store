@@ -66,11 +66,33 @@ export default async function DepositsPage({
                 </td>
                 <td className="px-4 py-3 text-xs">
                   {d.proofImageUrl ? (
-                    <a href={d.proofImageUrl} target="_blank" rel="noreferrer" className="font-semibold text-[var(--accent)] hover:underline">
-                      proof
+                    <a
+                      href={d.proofImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 font-semibold text-[var(--accent)] hover:underline"
+                    >
+                      <img
+                        src={d.proofImageUrl}
+                        alt="Proof thumbnail"
+                        className="h-8 w-8 rounded-lg object-cover border border-[var(--border)] shadow-xs"
+                      />
+                      <span>View Receipt ↗</span>
                     </a>
                   ) : d.txHash ? (
-                    <span className="font-mono text-xs">{d.txHash.slice(0, 12)}…</span>
+                    <a
+                      href={
+                        d.method === "USDT_BEP20"
+                          ? `https://bscscan.com/tx/${d.txHash}`
+                          : `https://tronscan.org/#/transaction/${d.txHash}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <span>{d.txHash.slice(0, 8)}…{d.txHash.slice(-4)}</span>
+                      <span>↗</span>
+                    </a>
                   ) : (
                     <span className="text-[var(--fg-muted)]">—</span>
                   )}

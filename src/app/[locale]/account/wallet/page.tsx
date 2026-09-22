@@ -4,14 +4,18 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import DepositForm from "@/components/DepositForm";
 import { Price } from "@/components/Price";
+import { getSystemSettings } from "@/lib/settings";
 import type { Locale } from "@/i18n";
 
 export default async function AccountWalletPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ amount?: string; method?: string }>;
 }) {
   const { locale } = await params;
+  const { amount: initialAmount, method: initialMethod } = (await searchParams) ?? {};
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "wallet" });
   const loc = locale as Locale;
@@ -20,13 +24,14 @@ export default async function AccountWalletPage({
   if (!session) redirect(`/${locale}/login?next=/${locale}/account/wallet`);
 
   // Wallet row is created lazily on first credit, so absent == zero balance.
-  const [wallet, deposits] = await Promise.all([
+  const [wallet, deposits, settings] = await Promise.all([
     prisma.wallet.findUnique({ where: { userId: session.userId } }),
     prisma.deposit.findMany({
       where: { userId: session.userId },
       orderBy: { createdAt: "desc" },
       take: 15,
     }),
+    getSystemSettings(),
   ]);
 
   return (
@@ -52,7 +57,19 @@ export default async function AccountWalletPage({
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xs sm:p-8">
         <h2 className="text-base font-bold tracking-tight">{t("addFunds")}</h2>
         <div className="mt-4">
-          <DepositForm locale={loc} />
+          <DepositForm
+            locale={loc}
+            paymentAccounts={{
+              baridimobRip: settings.baridimobRip,
+              baridimobHolder: settings.baridimobHolder,
+              ccpAccount: settings.ccpAccount,
+              usdtBep20Address: settings.usdtBep20Address,
+              usdtTrc20Address: settings.usdtTrc20Address,
+              dzdRate: settings.dzdRate,
+            }}
+            initialAmount={initialAmount}
+            initialMethod={initialMethod}
+          />
         </div>
       </div>
 
