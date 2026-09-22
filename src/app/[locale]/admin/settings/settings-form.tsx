@@ -274,11 +274,11 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
             </div>
 
             {/* Live Banner Preview */}
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-[var(--fg)]">
                 <div className="flex items-center gap-2">
                   <span>👀</span>
-                  <span>Storefront Banner Preview</span>
+                  <span>Storefront Banner Live Preview</span>
                 </div>
                 <div className="flex gap-1">
                   {(["en", "ar", "fr"] as const).map((loc) => (
@@ -286,10 +286,10 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
                       key={loc}
                       type="button"
                       onClick={() => setPreviewLocale(loc)}
-                      className={`px-2 py-0.5 rounded text-[11px] uppercase font-bold ${
+                      className={`px-2.5 py-1 rounded-md text-[11px] uppercase font-bold transition-all ${
                         previewLocale === loc
-                          ? "bg-amber-600 text-white"
-                          : "bg-amber-500/20 text-amber-800 dark:text-amber-200"
+                          ? "bg-[var(--accent)] text-white"
+                          : "bg-[var(--surface)] text-[var(--fg-muted)] border border-[var(--border)] hover:text-[var(--fg)]"
                       }`}
                     >
                       {loc}
@@ -299,10 +299,10 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
               </div>
               <div
                 dir={previewLocale === "ar" ? "rtl" : "ltr"}
-                className="rounded-lg bg-amber-500/20 border border-amber-500/40 p-3 text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-100 flex items-center justify-center gap-2 text-center"
+                className="w-full rounded-xl bg-amber-500 text-zinc-950 border border-amber-600 p-3.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 text-center shadow-sm"
               >
-                <span>⚠️</span>
-                <span>{activePreviewBanner || "(No message provided)"}</span>
+                <span className="text-base leading-none">⚠️</span>
+                <span className="tracking-wide">{activePreviewBanner || "(No message provided)"}</span>
               </div>
             </div>
           </div>

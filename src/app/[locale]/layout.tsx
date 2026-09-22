@@ -37,10 +37,10 @@ export default async function LocaleLayout({
           {settings.maintenanceMode && (
             <div
               role="alert"
-              className="bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-2"
+              className="w-full bg-amber-500 text-zinc-950 border-b border-amber-600 px-4 py-2.5 text-center text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm sticky top-0 z-50"
             >
-              <span>⚠️</span>
-              <span>{bannerText}</span>
+              <span className="text-base leading-none">⚠️</span>
+              <span className="tracking-wide">{bannerText}</span>
             </div>
           )}
           <Header locale={locale as Locale} />
