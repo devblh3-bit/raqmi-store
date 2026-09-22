@@ -26,10 +26,14 @@ export const DEFAULT_SETTINGS: SystemSettings = {
  */
 export async function getSystemSettings(): Promise<SystemSettings> {
   try {
-    if (!prisma?.systemSetting) {
+    let rows: Array<{ key: string; value: string }> = [];
+    if (prisma?.systemSetting) {
+      rows = await prisma.systemSetting.findMany();
+    } else if (typeof prisma?.$queryRaw === "function") {
+      rows = await prisma.$queryRaw<Array<{ key: string; value: string }>>`SELECT "key", "value" FROM "SystemSetting"`;
+    } else {
       return DEFAULT_SETTINGS;
     }
-    const rows = await prisma.systemSetting.findMany();
     const map = new Map<string, string>(rows.map((r) => [r.key, r.value]));
 
     const dzdRateRaw = map.get("dzd_rate");

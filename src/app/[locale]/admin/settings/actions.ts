@@ -64,12 +64,30 @@ export async function updateSystemSettings(formData: FormData) {
   ];
 
   await prisma.$transaction(async (tx) => {
+    const txAny = tx as unknown as {
+      systemSetting?: {
+        upsert: (args: {
+          where: { key: string };
+          create: { key: string; value: string };
+          update: { value: string };
+        }) => Promise<unknown>;
+      };
+    };
+
     for (const item of updates) {
-      await tx.systemSetting.upsert({
-        where: { key: item.key },
-        create: item,
-        update: { value: item.value },
-      });
+      if (txAny.systemSetting) {
+        await txAny.systemSetting.upsert({
+          where: { key: item.key },
+          create: item,
+          update: { value: item.value },
+        });
+      } else {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO "SystemSetting" ("key", "value", "updatedAt") VALUES ($1, $2, NOW()) ON CONFLICT ("key") DO UPDATE SET "value" = $2, "updatedAt" = NOW()`,
+          item.key,
+          item.value,
+        );
+      }
     }
 
     await tx.auditLog.create({
