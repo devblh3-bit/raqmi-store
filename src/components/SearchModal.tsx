@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n";
 import { PriceCompact } from "@/components/Price";
+import { ProductArt } from "@/lib/product-images";
 import type { SearchProductResult } from "@/app/api/search/route";
 
 function SearchIcon({ className = "" }: { className?: string }) {
@@ -247,18 +248,20 @@ export function SearchModal({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-2)]">
-                        {item.image ? (
-                          <Image
-                            src={item.image}
-                            alt={item.name}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
+                      <div className="shrink-0">
+                        {item.image && (item.image.startsWith("http://") || item.image.startsWith("https://") || item.image.startsWith("/")) ? (
+                          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-2)]">
+                            <Image
+                              src={item.image}
+                              alt={item.name}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                            />
+                          </div>
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-base">
-                            📦
+                          <div className="rounded-xl overflow-hidden ring-1 ring-black/[0.04] dark:ring-white/10">
+                            <ProductArt id={item.image || item.slug} size={40} />
                           </div>
                         )}
                       </div>
@@ -317,3 +320,4 @@ export function SearchModal({
     </div>
   );
 }
+
