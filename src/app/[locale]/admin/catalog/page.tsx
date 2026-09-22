@@ -65,9 +65,9 @@ export default async function CatalogPage({
       },
       orderBy: { lastSyncedAt: "desc" },
       include: {
-        provider: { select: { code: true, displayName: true } },
+        provider: { select: { code: true, displayName: true, isActive: true } },
       },
-      take: 150,
+      take: 600,
     }),
   ]);
 

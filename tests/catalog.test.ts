@@ -34,6 +34,14 @@ beforeAll(async () => {
       role: "ADMIN",
     },
   });
+  await prisma.provider.updateMany({
+    where: { code: { in: ["canboso", "qcst", "vbr"] } },
+    data: { isActive: true },
+  });
+  await prisma.product.updateMany({
+    where: { slug: { in: CANONICAL_SLUGS } },
+    data: { isActive: true },
+  });
 });
 
 afterAll(async () => {

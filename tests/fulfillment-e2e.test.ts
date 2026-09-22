@@ -88,6 +88,7 @@ async function cleanup() {
 beforeAll(async () => {
   await cleanup();
   await prisma.provider.updateMany({ data: { isActive: true } });
+  await prisma.product.updateMany({ data: { isActive: true } });
   userId = (await prisma.user.create({ data: { email: EMAIL } })).id;
   await creditWallet({ userId, amountMinor: 500000, type: "DEPOSIT", reference: "e2e" });
 });
