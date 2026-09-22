@@ -78,7 +78,7 @@ export default async function ResellerDashboardPage({
               <span>📋</span> Rate Sheet
             </Link>
             <Link
-              href={`/${locale}/wallet`}
+              href={`/${locale}/reseller/wallet`}
               className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent)] px-5 text-xs font-bold text-white shadow-xs transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-95"
             >
               + Top-up Balance
@@ -100,7 +100,7 @@ export default async function ResellerDashboardPage({
               Rate: {settings.dzdRate} DZD / USD
             </span>
             <Link
-              href={`/${locale}/wallet`}
+              href={`/${locale}/reseller/wallet`}
               className="text-xs font-bold text-[var(--accent)] hover:underline"
             >
               Add funds →

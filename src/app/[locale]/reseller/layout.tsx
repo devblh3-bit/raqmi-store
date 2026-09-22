@@ -31,7 +31,7 @@ export default async function ResellerLayout({
     { href: `/${locale}/reseller`, label: "Overview" },
     { href: `/${locale}/reseller/rates`, label: "Wholesale Rates" },
     { href: `/${locale}/reseller/orders`, label: "Orders & Keys" },
-    { href: `/${locale}/wallet`, label: "Wallet & Top-up" },
+    { href: `/${locale}/reseller/wallet`, label: "Wallet & Top-up" },
   ] as const;
 
   return (
