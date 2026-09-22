@@ -27,7 +27,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
     redirect(`/${locale}/reseller`);
   }
 
-  // Load user profile and wallet
+  // Load customer profile, wallet, and orders
   const [user, wallet, orders] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },

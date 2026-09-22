@@ -22,3 +22,4 @@ export default async function ResellerOrdersPage({
 
   return <ResellerOrdersExplorer locale={loc} orders={orders} />;
 }
+
