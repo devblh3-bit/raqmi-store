@@ -142,6 +142,23 @@ export const deleteTierPriceOverrideSchema = z.object({
   tierId: z.string().min(1),
 });
 
+export const categorySchema = z.object({
+  nameEn: z.string().trim().min(1, "English name is required").max(100),
+  nameAr: z.string().trim().min(1, "Arabic name is required").max(100),
+  nameFr: z.string().trim().min(1, "French name is required").max(100),
+  slug: z.string().trim().max(100).optional(),
+  descriptionEn: z.string().trim().max(1000).optional().default(""),
+  descriptionAr: z.string().trim().max(1000).optional().default(""),
+  descriptionFr: z.string().trim().max(1000).optional().default(""),
+  image: z.string().trim().optional().nullable(),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.coerce.boolean().default(true),
+});
+
+export const updateCategorySchema = categorySchema.extend({
+  id: z.string().min(1),
+});
+
 function slugify(input: string): string {
   return input
     .toLowerCase()
