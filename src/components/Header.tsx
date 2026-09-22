@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Locale } from "@/i18n";
@@ -44,6 +45,7 @@ function CartIcon({ className = "" }: { className?: string }) {
 
 export default function Header({ locale }: { locale: Locale }) {
   const t = useTranslations("nav");
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const prefix = `/${locale}`;
 
@@ -62,16 +64,24 @@ export default function Header({ locale }: { locale: Locale }) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 lg:flex">
-            {navKeys.map((n) => (
-              <Link
-                key={n.key}
-                href={`${prefix}${n.href}`}
-                className="rounded-full px-3.5 py-1.5 text-[13.5px] font-medium text-[var(--fg-muted)] transition-colors duration-200 hover:text-[var(--fg)]"
-              >
-                {t(n.key)}
-              </Link>
-            ))}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navKeys.map((n) => {
+              const fullHref = `${prefix}${n.href}`;
+              const isActive = pathname === fullHref || pathname?.startsWith(`${fullHref}/`);
+              return (
+                <Link
+                  key={n.key}
+                  href={fullHref}
+                  className={`rounded-full px-3.5 py-1.5 text-[13px] tracking-tight transition-all duration-200 ease-[var(--ease-premium)] ${
+                    isActive
+                      ? "btn-shine bg-[var(--accent)] text-white font-bold shadow-xs active:scale-95"
+                      : "font-medium text-[var(--fg-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:scale-95"
+                  }`}
+                >
+                  {t(n.key)}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-1 sm:gap-1.5">
@@ -127,17 +137,25 @@ export default function Header({ locale }: { locale: Locale }) {
 
         {open && (
           <div className="mt-2 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-[var(--elev-3)] lg:hidden">
-            <nav className="flex flex-col p-1">
-              {navKeys.map((n) => (
-                <Link
-                  key={n.key}
-                  href={`${prefix}${n.href}`}
-                  onClick={() => setOpen(false)}
-                  className="rounded-2xl px-4 py-3 text-sm font-medium tracking-tight text-[var(--fg-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
-                >
-                  {t(n.key)}
-                </Link>
-              ))}
+            <nav className="flex flex-col gap-1 p-1">
+              {navKeys.map((n) => {
+                const fullHref = `${prefix}${n.href}`;
+                const isActive = pathname === fullHref || pathname?.startsWith(`${fullHref}/`);
+                return (
+                  <Link
+                    key={n.key}
+                    href={fullHref}
+                    onClick={() => setOpen(false)}
+                    className={`rounded-2xl px-4 py-3 text-sm tracking-tight transition-all duration-200 ${
+                      isActive
+                        ? "btn-shine bg-[var(--accent)] text-white font-bold shadow-xs active:scale-95"
+                        : "font-medium text-[var(--fg-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:scale-95"
+                    }`}
+                  >
+                    {t(n.key)}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         )}
