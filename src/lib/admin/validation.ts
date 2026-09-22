@@ -86,6 +86,25 @@ export const reorderLinkSchema = z.object({
   direction: z.enum(["up", "down"]),
 });
 
+export const retryOrderItemSchema = z.object({
+  orderItemId: z.string().min(1),
+});
+
+export const manualFulfillItemSchema = z.object({
+  orderItemId: z.string().min(1),
+  payload: z.string().trim().min(1, "Delivery credentials or keys cannot be empty"),
+});
+
+export const refundOrderItemSchema = z.object({
+  orderItemId: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const refundOrderSchema = z.object({
+  orderId: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+});
+
 function slugify(input: string): string {
   return input
     .toLowerCase()

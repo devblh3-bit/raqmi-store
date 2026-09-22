@@ -164,6 +164,7 @@ describe("Admin Offer Curation & Fallback Actions", () => {
     // Verify pricing engine calculated cost ($10) + markup (25%) = $12.50 (1250 minor)
     const quote = await priceForOffer(createdOfferId);
     expect(quote.available).toBe(true);
+    if (!quote.available) throw new Error("quote unavailable");
     expect(quote.priceMinor).toBe(1250);
   });
 

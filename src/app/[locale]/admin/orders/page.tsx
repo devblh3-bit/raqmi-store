@@ -1,5 +1,12 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth/admin";
+import { tryDecryptField } from "@/lib/crypto";
+import {
+  OrderManager,
+  type SerializedOrder,
+  type SerializedOrderItem,
+  type SerializedAccountDelivery,
+} from "./order-manager";
 
 export default async function OrdersPage({
   params,
@@ -9,8 +16,19 @@ export default async function OrdersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { locale } = await params;
+  await requireAdmin(locale);
   const { status } = await searchParams;
-  const valid = ["PENDING", "PAID", "PLACED_WITH_PROVIDER", "COMPLETED", "PARTIALLY_DELIVERED", "FAILED", "REFUNDED"] as const;
+
+  const valid = [
+    "PENDING",
+    "PAID",
+    "PLACED_WITH_PROVIDER",
+    "COMPLETED",
+    "PARTIALLY_DELIVERED",
+    "FAILED",
+    "REFUNDED",
+  ] as const;
+
   const where =
     status && (valid as readonly string[]).includes(status)
       ? { status: status as never }
@@ -19,74 +37,158 @@ export default async function OrdersPage({
   const orders = await prisma.order.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 100,
     include: {
+      user: { select: { id: true, email: true } },
       items: {
         include: {
-          offer: { select: { labelEn: true } },
-          providerOrders: { select: { providerOrderId: true, status: true, attempts: true } },
-          attempts: { select: { status: true, providerOfferId: true } },
+          offer: { select: { labelEn: true, labelAr: true, labelFr: true } },
+          attempts: {
+            orderBy: { attemptedAt: "desc" },
+            include: {
+              providerOffer: {
+                select: {
+                  providerSku: true,
+                  provider: { select: { code: true } },
+                },
+              },
+            },
+          },
+          providerOrders: {
+            orderBy: { createdAt: "desc" },
+            include: {
+              provider: { select: { code: true } },
+            },
+          },
         },
       },
     },
   });
 
+  const serializedOrders: SerializedOrder[] = orders.map((o) => {
+    const items: SerializedOrderItem[] = o.items.map((it) => {
+      // 1. Decrypt Customer Input
+      let customerInput: string | null = null;
+      let customerInputDecrypted = false;
+      if (it.customerInputEnc) {
+        const res = tryDecryptField({
+          recordId: it.id,
+          fieldName: "customerInput",
+          payload: it.customerInputEnc,
+        });
+        if (res.ok) {
+          customerInput = res.value;
+          customerInputDecrypted = true;
+        } else {
+          customerInput = "[Decryption Failed]";
+        }
+      }
+
+      // 2. Decrypt Manual Delivery Payload
+      let manualDeliveryPayload: string | null = null;
+      if (it.deliveryPayloadEnc) {
+        const res = tryDecryptField({
+          recordId: it.id,
+          fieldName: "deliveryPayloadEnc",
+          payload: it.deliveryPayloadEnc,
+        });
+        if (res.ok) {
+          manualDeliveryPayload = res.value;
+        } else {
+          manualDeliveryPayload = "[Decryption Failed]";
+        }
+      }
+
+      // 3. Decrypt Provider Accounts
+      let providerAccounts: SerializedAccountDelivery[] | null = null;
+      for (const po of it.providerOrders) {
+        if (po.deliveryEnc) {
+          const providerOfferId = po.clientOrderId.replace(`oi_${it.id}_`, "");
+          const res = tryDecryptField({
+            recordId: `${it.id}:${providerOfferId}`,
+            fieldName: "delivery",
+            payload: po.deliveryEnc,
+          });
+          if (res.ok) {
+            try {
+              const parsed = JSON.parse(res.value);
+              if (Array.isArray(parsed?.accounts)) {
+                providerAccounts = (providerAccounts ?? []).concat(parsed.accounts);
+              }
+            } catch {
+              // Ignore non-json delivery payload
+            }
+          }
+        }
+      }
+
+      return {
+        id: it.id,
+        offerId: it.offerId,
+        offerLabelEn: it.offer.labelEn,
+        offerLabelAr: it.offer.labelAr,
+        offerLabelFr: it.offer.labelFr,
+        quantity: it.quantity,
+        unitPriceMinor: it.unitPriceMinor.toString(),
+        unitCostMinor: it.unitCostMinor.toString(),
+        costCurrency: it.costCurrency,
+        requiresCustomerInput: it.requiresCustomerInput,
+        customerInput,
+        customerInputDecrypted,
+        manualDeliveryPayload,
+        providerAccounts,
+        status: it.status,
+        attemptCount: it.attemptCount,
+        attempts: it.attempts.map((att) => ({
+          id: att.id,
+          providerOfferId: att.providerOfferId,
+          providerCode: att.providerOffer.provider.code,
+          providerSku: att.providerOffer.providerSku,
+          status: att.status,
+          errorCode: att.errorCode,
+          attemptedAt: att.attemptedAt.toISOString(),
+        })),
+        providerOrders: it.providerOrders.map((po) => ({
+          id: po.id,
+          providerCode: po.provider.code,
+          providerOrderId: po.providerOrderId,
+          clientOrderId: po.clientOrderId,
+          status: po.status,
+          errorCode: po.errorCode,
+          errorDetail: po.errorDetail,
+          attempts: po.attempts,
+          lastPolledAt: po.lastPolledAt?.toISOString() ?? null,
+          nextPollAt: po.nextPollAt?.toISOString() ?? null,
+        })),
+      };
+    });
+
+    return {
+      id: o.id,
+      code: o.code,
+      userId: o.userId,
+      userEmail: o.user?.email ?? null,
+      guestEmail: o.guestEmail,
+      totalMinor: o.totalMinor.toString(),
+      currency: o.currency,
+      status: o.status,
+      paymentStatus: o.paymentStatus,
+      locale: o.locale,
+      createdAt: o.createdAt.toISOString(),
+      items,
+    };
+  });
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-
-      <div className="flex flex-wrap gap-1.5">
-        <Link href={`/${locale}/admin/orders`} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${!status ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}>All</Link>
-        {valid.map((s) => (
-          <Link
-            key={s}
-            href={`/${locale}/admin/orders?status=${s}`}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${status === s ? "bg-[var(--fg)] text-white" : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"}`}
-          >
-            {s}
-          </Link>
-        ))}
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Orders & Fulfillment</h1>
+        <p className="text-sm text-[var(--fg-muted)] mt-1">
+          Monitor incoming orders, inspect decrypted customer inputs & credentials, deliver manual keys, and execute 1-click wallet refunds.
+        </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
-            <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">User</th>
-              <th className="px-4 py-3 text-left">Total</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Items</th>
-              <th className="px-4 py-3 text-left">Created</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {orders.map((o) => (
-              <tr key={o.id} className="hover:bg-[var(--surface-2)]/50">
-                <td className="px-4 py-3 font-mono text-xs">{o.code}</td>
-                <td className="px-4 py-3 font-mono text-xs truncate max-w-32">{o.userId ?? o.guestEmail ?? "—"}</td>
-                <td className="px-4 py-3 font-mono text-xs">${(Number(o.totalMinor) / 100).toFixed(2)}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs font-semibold">{o.status}</span>
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  {o.items.map((it) => (
-                    <span key={it.id} className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs mr-1">
-                      {it.offer.labelEn} ×{it.quantity} · {it.providerOrders[0]?.status ?? it.attempts[0]?.status ?? "—"}
-                    </span>
-                  ))}
-                </td>
-                <td className="px-4 py-3 text-xs text-[var(--fg-muted)]">{o.createdAt.toISOString().slice(0, 10)}</td>
-              </tr>
-            ))}
-            {orders.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--fg-muted)]">No orders in this filter.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <OrderManager orders={serializedOrders} />
     </div>
   );
 }
