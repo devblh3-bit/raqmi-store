@@ -32,6 +32,10 @@ const SEEDED_CATEGORIES = new Set(mockCategories.map((c) => c.slug));
 const seededOnly = <T extends { slug: string }>(rows: T[]) =>
   rows.filter((r) => SEEDED_PRODUCTS.has(r.slug));
 
+beforeAll(async () => {
+  await prisma.provider.updateMany({ where: { code: "seed" }, data: { isActive: true } });
+});
+
 describe("DB catalog matches the seed source", () => {
   it("returns every seeded product with cheapest-price parity", async () => {
     const all = seededOnly(await getProducts("en"));

@@ -4,11 +4,13 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
-import { requestDeposit, DepositError, MIN_DEPOSIT_MINOR, MAX_DEPOSIT_MINOR } from "@/lib/deposits";
+import { requestDeposit, approveDeposit, DepositError, MIN_DEPOSIT_MINOR, MAX_DEPOSIT_MINOR } from "@/lib/deposits";
 import { notifyPendingDeposit } from "@/lib/telegram/notify";
 import { locales } from "@/i18n";
+import { getSystemSettings } from "@/lib/settings";
+import { verifyBscUsdtTransaction } from "@/lib/crypto/bsc-verifier";
 
-export type DepositState = { error?: string; ok?: boolean };
+export type DepositState = { error?: string; ok?: boolean; autoConfirmed?: boolean; message?: string };
 
 // Trust boundary: Server Actions accept direct POSTs, so the session is
 // re-read here and the amount is validated server-side regardless of the form.
@@ -69,6 +71,34 @@ export async function submitDeposit(
     return { error: "UNKNOWN" };
   }
 
+  // Automated On-Chain Verification for USDT (BEP-20) via NodeReal BSC RPC
+  if (method === "USDT_BEP20" && txHash?.trim()) {
+    try {
+      const settings = await getSystemSettings();
+      if (settings.usdtBep20Address?.trim()) {
+        const verifyResult = await verifyBscUsdtTransaction({
+          txHash: txHash.trim(),
+          storeAddress: settings.usdtBep20Address,
+          expectedAmountMinor: amountMinor,
+        });
+
+        if (verifyResult.confirmed) {
+          await approveDeposit({
+            depositId,
+            reviewNote: `NodeReal BSC auto-confirmed: block #${verifyResult.blockNumber}, amount: $${(Number(verifyResult.amountMinor || amountMinor) / 100).toFixed(2)}`,
+          });
+
+          revalidatePath(`/${locale}/wallet`);
+          revalidatePath(`/${locale}/account/wallet`);
+          revalidatePath(`/${locale}/reseller/wallet`);
+          return { ok: true, autoConfirmed: true };
+        }
+      }
+    } catch (verErr) {
+      console.warn("[deposit] on-chain auto-verification error, falling back to manual review:", verErr);
+    }
+  }
+
   // Alert the admin with Approve/Reject buttons. A failed send must not lose
   // the deposit: it is already recorded and visible in the wallet history.
   try {
@@ -94,5 +124,7 @@ export async function submitDeposit(
   }
 
   revalidatePath(`/${locale}/wallet`);
+  revalidatePath(`/${locale}/account/wallet`);
+  revalidatePath(`/${locale}/reseller/wallet`);
   return { ok: true };
 }

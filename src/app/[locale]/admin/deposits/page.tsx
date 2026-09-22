@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { approveDepositAction, rejectDepositAction } from "./actions";
+import { approveDepositAction, rejectDepositAction, verifyDepositOnChainAction } from "./actions";
 
 export default async function DepositsPage({
   params,
@@ -99,7 +99,24 @@ export default async function DepositsPage({
                 </td>
                 <td className="px-4 py-3 text-right">
                   {(d.status === "PENDING" || d.status === "CONFIRMED_ON_CHAIN") && (
-                    <span className="inline-flex gap-1.5">
+                    <span className="inline-flex items-center gap-1.5">
+                      {d.method === "USDT_BEP20" && d.txHash && (
+                        <form
+                          action={async (fd: FormData) => {
+                            "use server";
+                            await verifyDepositOnChainAction(fd);
+                          }}
+                        >
+                          <input type="hidden" name="depositId" value={d.id} />
+                          <button
+                            title="Verify on-chain using NodeReal BSC RPC"
+                            className="rounded-full bg-blue-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-blue-700 inline-flex items-center gap-1 shadow-xs"
+                          >
+                            <span>⚡</span>
+                            <span>Verify</span>
+                          </button>
+                        </form>
+                      )}
                       <form
                         action={async (fd: FormData) => {
                           "use server";

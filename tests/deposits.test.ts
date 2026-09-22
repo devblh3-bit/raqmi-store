@@ -60,6 +60,29 @@ describe("requestDeposit", () => {
     expect(await balance()).toBe(0n);
   });
 
+  it("rejects duplicate on-chain txHash that has already been approved", async () => {
+    const replayHash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const d1 = await requestDeposit({
+      userId,
+      amountMinor: 2000,
+      method: "USDT_BEP20",
+      txHash: replayHash,
+    });
+    await approveDeposit({ depositId: d1.id, reviewedById: adminId });
+
+    // Attempting to submit the exact same txHash again must throw TX_ALREADY_USED
+    await expect(
+      requestDeposit({
+        userId,
+        amountMinor: 2000,
+        method: "USDT_BEP20",
+        txHash: replayHash,
+      }),
+    ).rejects.toMatchObject({
+      code: "TX_ALREADY_USED",
+    });
+  });
+
   it("rejects amounts outside the allowed range", async () => {
     await expect(
       requestDeposit({ userId, amountMinor: MIN_DEPOSIT_MINOR - 1n, method: "MANUAL_BANK" }),

@@ -115,12 +115,16 @@ export default function DepositForm({
   if (state.ok) {
     return (
       <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center space-y-3">
-        <div className="text-4xl">🎉</div>
+        <div className="text-4xl">{state.autoConfirmed ? "⚡" : "🎉"}</div>
         <h3 className="text-base font-bold text-emerald-800 dark:text-emerald-200">
-          {t("submitted")}
+          {state.autoConfirmed
+            ? "Deposit Confirmed On-Chain! ⚡"
+            : t("submitted")}
         </h3>
         <p className="text-xs text-[var(--fg-muted)]">
-          An administrator will verify your receipt and credit your wallet. You will see your balance update shortly.
+          {state.autoConfirmed
+            ? "Your USDT transaction was verified via NodeReal BSC RPC and credited to your wallet balance instantly!"
+            : "An administrator will verify your receipt and credit your wallet. You will see your balance update shortly."}
         </p>
       </div>
     );

@@ -69,3 +69,4 @@ describe("POST /api/upload", () => {
     expect(json.url).toMatch(/^\/uploads\/receipts\/receipt_[a-f0-9-]+\.png$/);
   });
 });
+

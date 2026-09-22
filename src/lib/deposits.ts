@@ -4,7 +4,7 @@ import { Prisma, type DepositMethod, type DepositStatus } from "@prisma/client";
 import { prisma } from "./db";
 import { creditWalletTx, isSerializationConflict, MAX_TXN_ATTEMPTS } from "./wallet";
 
-export type DepositErrorCode = "BAD_AMOUNT" | "NOT_FOUND" | "ALREADY_REVIEWED";
+export type DepositErrorCode = "BAD_AMOUNT" | "NOT_FOUND" | "ALREADY_REVIEWED" | "TX_ALREADY_USED";
 
 export class DepositError extends Error {
   constructor(
@@ -33,13 +33,27 @@ export async function requestDeposit(input: {
   if (amountMinor < MIN_DEPOSIT_MINOR || amountMinor > MAX_DEPOSIT_MINOR) {
     throw new DepositError("BAD_AMOUNT", `amount must be ${MIN_DEPOSIT_MINOR}..${MAX_DEPOSIT_MINOR} minor units`);
   }
+
+  // Anti-replay guard: prevent reusing an already credited on-chain transaction hash
+  if (input.txHash?.trim()) {
+    const existing = await prisma.deposit.findFirst({
+      where: {
+        txHash: input.txHash.trim(),
+        status: { in: ["APPROVED", "CONFIRMED_ON_CHAIN"] },
+      },
+    });
+    if (existing) {
+      throw new DepositError("TX_ALREADY_USED", "This transaction hash has already been credited.");
+    }
+  }
+
   return prisma.deposit.create({
     data: {
       userId: input.userId,
       amountMinor,
       method: input.method,
       proofImageUrl: input.proofImageUrl,
-      txHash: input.txHash,
+      txHash: input.txHash?.trim(),
       chain: input.chain,
       status: "PENDING",
     },
