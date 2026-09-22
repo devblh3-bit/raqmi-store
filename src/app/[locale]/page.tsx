@@ -20,7 +20,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const rest = products.filter((p) => !p.isFeatured && !p.isNew);
 
   return (
-    <div className="ambient-bg">
+    <div>
       <section className="mx-auto max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
         <Reveal>
           <div className="overflow-hidden rounded-[2rem] border border-black/[0.06] dark:border-white/[0.09] bg-[var(--surface)] shadow-[var(--elev-2)]">

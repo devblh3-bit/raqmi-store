@@ -36,10 +36,10 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   --radius: 1rem;
-  --mat-func-bg: linear-gradient(150deg,#fffc,#fff9 55%,#ffffffb8);
+  --mat-func-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.92) 55%, rgba(255, 255, 255, 0.95));
   --mat-func-border: #ffffffbf;
   --mat-func-shadow: 0 1px 2px #1515130a,0 8px 24px #15151314,inset 0 1px 0 #ffffffe6,inset 0 -1px 0 #1515130a;
-  --mat-func-blur: 24px;
+  --mat-func-blur: 28px;
   --dur-base: .24s;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
@@ -70,7 +70,7 @@
   --elev-1: 0 2px 6px #0006;
   --elev-2: 0 4px 20px #0008, 0 1px 3px #0004;
   --elev-3: 0 12px 32px #0009, 0 4px 12px #0006;
-  --mat-func-bg: linear-gradient(150deg,#1c2026cc,#14171cb3 55%,#181c22c2);
+  --mat-func-bg: linear-gradient(150deg, rgba(28, 32, 38, 0.95), rgba(20, 23, 28, 0.92) 55%, rgba(24, 28, 34, 0.95));
   --mat-func-border: #ffffff1f;
   --mat-func-shadow: 0 1px 2px #0009,0 12px 36px #00000073,inset 0 1px 0 #ffffff24,inset 0 -1px 0 #0000004d;
 }

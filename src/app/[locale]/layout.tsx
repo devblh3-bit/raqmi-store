@@ -31,7 +31,7 @@ export default async function LocaleLayout({
       : settings.maintenanceBannerEn;
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} className="flex min-h-full flex-col">
+    <div dir={isRtl ? "rtl" : "ltr"} className="flex min-h-full min-h-screen flex-col ambient-bg">
       <NextIntlClientProvider messages={messages} locale={locale}>
         <CartProvider>
           <Header locale={locale as Locale} />
