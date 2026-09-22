@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { CatalogView } from "./catalog-view";
+import type { CatalogProduct } from "./catalog-table";
+import type { UnlinkedProviderOffer, ExistingProductOption } from "./unlinked-offers-inbox";
 
 export default async function CatalogPage({
   params,
@@ -19,82 +21,157 @@ export default async function CatalogPage({
       }
     : {};
 
-  const products = await prisma.product.findMany({
-    where,
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: {
-      category: { select: { slug: true, nameEn: true } },
-      _count: { select: { offers: true } },
-    },
-    take: 100,
+  const [categories, productsRaw, unlinkedOffersRaw] = await Promise.all([
+    prisma.category.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, slug: true, nameEn: true },
+    }),
+    prisma.product.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        category: { select: { id: true, slug: true, nameEn: true } },
+        offers: {
+          include: {
+            links: {
+              include: {
+                providerOffer: {
+                  select: {
+                    availability: true,
+                    costMinor: true,
+                    currency: true,
+                    stockQuantity: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        _count: { select: { offers: true } },
+      },
+      take: 300,
+    }),
+    prisma.providerOffer.findMany({
+      where: {
+        links: { none: {} },
+      },
+      orderBy: { lastSyncedAt: "desc" },
+      include: {
+        provider: { select: { code: true, displayName: true } },
+      },
+      take: 150,
+    }),
+  ]);
+
+  // Transform products
+  const products: CatalogProduct[] = productsRaw.map((p) => {
+    let health: "HEALTHY" | "PARTIAL" | "OUT_OF_STOCK" | "MANUAL" | "EMPTY" = "EMPTY";
+    if (p.offers.length === 0) {
+      health = "EMPTY";
+    } else {
+      let linkedOffersCount = 0;
+      let availableOffersCount = 0;
+      let outOfStockOffersCount = 0;
+
+      for (const off of p.offers) {
+        const activeLink = off.links.find((l) => l.isEnabled);
+        if (activeLink) {
+          linkedOffersCount++;
+          if (activeLink.providerOffer.availability === "AVAILABLE") {
+            availableOffersCount++;
+          } else if (activeLink.providerOffer.availability === "OUT_OF_STOCK") {
+            outOfStockOffersCount++;
+          }
+        }
+      }
+
+      if (linkedOffersCount === 0) {
+        health = "MANUAL";
+      } else if (availableOffersCount === p.offers.length) {
+        health = "HEALTHY";
+      } else if (outOfStockOffersCount === linkedOffersCount) {
+        health = "OUT_OF_STOCK";
+      } else {
+        health = "PARTIAL";
+      }
+    }
+
+    // Determine pricing summary
+    let priceSummary = "—";
+    const validPrices: number[] = [];
+    for (const off of p.offers) {
+      if (off.compareAtMinor != null) {
+        validPrices.push(Number(off.compareAtMinor));
+      } else {
+        const activeLink = off.links.find((l) => l.isEnabled);
+        if (activeLink) {
+          const cost = Number(activeLink.providerOffer.costMinor);
+          const markup = Number(off.markupPercent);
+          const retail = Math.round(cost * (1 + markup / 100));
+          validPrices.push(retail);
+        }
+      }
+    }
+
+    if (validPrices.length > 0) {
+      const min = Math.min(...validPrices);
+      const max = Math.max(...validPrices);
+      const formatMinor = (minor: number) => {
+        const val = (minor / 100).toFixed(0);
+        return `${Number(val).toLocaleString()} DZD`;
+      };
+      if (min === max) {
+        priceSummary = formatMinor(min);
+      } else {
+        priceSummary = `${formatMinor(min)} – ${formatMinor(max)}`;
+      }
+    }
+
+    return {
+      id: p.id,
+      slug: p.slug,
+      nameEn: p.nameEn,
+      nameAr: p.nameAr,
+      nameFr: p.nameFr,
+      isActive: p.isActive,
+      isFeatured: p.isFeatured,
+      sortOrder: p.sortOrder,
+      category: p.category,
+      offerCount: p._count.offers,
+      health,
+      priceSummary,
+    };
   });
 
+  // Transform unlinked offers
+  const unlinkedOffers: UnlinkedProviderOffer[] = unlinkedOffersRaw.map((o) => ({
+    id: o.id,
+    providerSku: o.providerSku,
+    rawName: o.rawName,
+    rawNameEn: o.rawNameEn,
+    costMinor: o.costMinor.toString(),
+    currency: o.currency,
+    availability: o.availability,
+    stockQuantity: o.stockQuantity,
+    lastSyncedAt: o.lastSyncedAt.toISOString(),
+    provider: o.provider,
+  }));
+
+  // Options for linking existing products
+  const existingProductOptions: ExistingProductOption[] = productsRaw.map((p) => ({
+    id: p.id,
+    nameEn: p.nameEn,
+    slug: p.slug,
+    categoryName: p.category.nameEn,
+  }));
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Catalog</h1>
-        <Link
-          href={`/${locale}/admin/catalog/new`}
-          className="rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[var(--accent-hover)]"
-        >
-          New product
-        </Link>
-      </div>
-
-      <form className="flex gap-2">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search by name or slug…"
-          className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-        />
-        <button className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-semibold hover:bg-[var(--surface-2)]">
-          Search
-        </button>
-      </form>
-
-      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
-            <tr>
-              <th className="px-4 py-3 text-left">Product</th>
-              <th className="px-4 py-3 text-left">Category</th>
-              <th className="px-4 py-3 text-center">Offers</th>
-              <th className="px-4 py-3 text-center">Active</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {products.map((p) => (
-              <tr key={p.id} className="hover:bg-[var(--surface-2)]/50">
-                <td className="px-4 py-3">
-                  <p className="font-semibold">{p.nameEn}</p>
-                  <p className="font-mono text-xs text-[var(--fg-muted)]">{p.slug}</p>
-                </td>
-                <td className="px-4 py-3 text-[var(--fg-muted)]">{p.category.nameEn}</td>
-                <td className="px-4 py-3 text-center">{p._count.offers}</td>
-                <td className="px-4 py-3 text-center">{p.isActive ? "Yes" : "No"}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/${locale}/admin/catalog/${p.id}`} className="font-semibold text-[var(--accent)] hover:underline">
-                    Edit
-                  </Link>
-                  {" · "}
-                  <Link href={`/${locale}/admin/catalog/${p.id}/offers`} className="font-semibold text-[var(--accent)] hover:underline">
-                    Offers
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {products.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[var(--fg-muted)]">
-                  No products found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <CatalogView
+      products={products}
+      categories={categories}
+      unlinkedOffers={unlinkedOffers}
+      existingProductOptions={existingProductOptions}
+      locale={locale}
+    />
   );
 }

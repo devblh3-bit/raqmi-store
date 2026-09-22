@@ -19,6 +19,8 @@ import {
   reorderLinkSchema,
 } from "@/lib/admin/validation";
 
+import { autoTranslateStoreText } from "@/lib/catalog/translation";
+
 function adminError(msg: string) {
   return { error: msg } as const;
 }
@@ -29,8 +31,8 @@ export async function createProduct(formData: FormData) {
   // checkboxes come as "on" or absent
   const parsed = productSchema.safeParse({
     nameEn: raw.nameEn,
-    nameAr: raw.nameAr,
-    nameFr: raw.nameFr,
+    nameAr: raw.nameAr || undefined,
+    nameFr: raw.nameFr || undefined,
     slug: raw.slug || undefined,
     categoryId: raw.categoryId,
     descriptionEn: raw.descriptionEn || undefined,
@@ -47,6 +49,10 @@ export async function createProduct(formData: FormData) {
   });
   if (!parsed.success) return adminError("BAD_REQUEST");
 
+  const auto = autoTranslateStoreText(parsed.data.nameEn);
+  const nameAr = parsed.data.nameAr || auto.ar || parsed.data.nameEn;
+  const nameFr = parsed.data.nameFr || auto.fr || parsed.data.nameEn;
+
   const slug = deriveSlug(parsed.data.nameEn, parsed.data.slug);
   // ensure unique slug
   const existing = await prisma.product.findUnique({ where: { slug } });
@@ -56,12 +62,12 @@ export async function createProduct(formData: FormData) {
     data: {
       slug,
       nameEn: parsed.data.nameEn,
-      nameAr: parsed.data.nameAr,
-      nameFr: parsed.data.nameFr,
+      nameAr,
+      nameFr,
       categoryId: parsed.data.categoryId,
       descriptionEn: parsed.data.descriptionEn ?? "",
-      descriptionAr: parsed.data.descriptionAr ?? "",
-      descriptionFr: parsed.data.descriptionFr ?? "",
+      descriptionAr: parsed.data.descriptionAr || auto.ar || "",
+      descriptionFr: parsed.data.descriptionFr || auto.fr || "",
       shortEn: parsed.data.shortEn ?? "",
       shortAr: parsed.data.shortAr ?? "",
       shortFr: parsed.data.shortFr ?? "",
@@ -590,5 +596,389 @@ export async function deleteOffer(formData: FormData) {
   revalidatePath(`/admin/catalog/${offer.productId}`);
   revalidatePath(`/admin/catalog/${offer.productId}/offers`);
   return { ok: true as const };
+}
+
+export async function toggleProductActive(productId: string) {
+  const session = await requireAdmin();
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true, isActive: true, nameEn: true, slug: true },
+  });
+  if (!product) return adminError("NOT_FOUND");
+
+  const nextActive = !product.isActive;
+  await prisma.product.update({
+    where: { id: productId },
+    data: { isActive: nextActive },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "PRODUCT_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      detail: { field: "isActive", from: product.isActive, to: nextActive, slug: product.slug } as never,
+    },
+  });
+
+  revalidatePath("/admin/catalog");
+  revalidatePath(`/products/${product.slug}`);
+  return { ok: true as const, isActive: nextActive };
+}
+
+export async function toggleProductFeatured(productId: string) {
+  const session = await requireAdmin();
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true, isFeatured: true, slug: true },
+  });
+  if (!product) return adminError("NOT_FOUND");
+
+  const nextFeatured = !product.isFeatured;
+  await prisma.product.update({
+    where: { id: productId },
+    data: { isFeatured: nextFeatured },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "PRODUCT_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      detail: { field: "isFeatured", from: product.isFeatured, to: nextFeatured, slug: product.slug } as never,
+    },
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, isFeatured: nextFeatured };
+}
+
+export async function bulkUpdateProductStatus(productIds: string[], isActive: boolean) {
+  const session = await requireAdmin();
+  if (!productIds || productIds.length === 0) return adminError("BAD_REQUEST");
+
+  await prisma.product.updateMany({
+    where: { id: { in: productIds } },
+    data: { isActive },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "BULK_PRODUCT_STATUS_UPDATED",
+      entity: "Product",
+      entityId: "bulk",
+      detail: { count: productIds.length, isActive, productIds } as never,
+    },
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, count: productIds.length };
+}
+
+export async function bulkUpdateProductCategory(productIds: string[], categoryId: string) {
+  const session = await requireAdmin();
+  if (!productIds || productIds.length === 0 || !categoryId) return adminError("BAD_REQUEST");
+
+  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  if (!category) return adminError("NOT_FOUND");
+
+  await prisma.product.updateMany({
+    where: { id: { in: productIds } },
+    data: { categoryId },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "BULK_PRODUCT_CATEGORY_UPDATED",
+      entity: "Product",
+      entityId: "bulk",
+      detail: { count: productIds.length, categoryId, productIds } as never,
+    },
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, count: productIds.length };
+}
+
+export async function bulkDeleteProducts(productIds: string[]) {
+  const session = await requireAdmin();
+  if (!productIds || productIds.length === 0) return adminError("BAD_REQUEST");
+
+  await prisma.product.deleteMany({
+    where: { id: { in: productIds } },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "BULK_PRODUCTS_DELETED",
+      entity: "Product",
+      entityId: "bulk",
+      detail: { count: productIds.length, productIds } as never,
+    },
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, count: productIds.length };
+}
+
+export async function createProductFromProviderOffer(
+  providerOfferId: string,
+  categoryId?: string,
+  markupPercent: number = 15
+) {
+  const session = await requireAdmin();
+  const providerOffer = await prisma.providerOffer.findUnique({
+    where: { id: providerOfferId },
+    include: { provider: true },
+  });
+  if (!providerOffer) return adminError("NOT_FOUND");
+
+  // Determine category
+  let targetCategoryId = categoryId;
+  if (!targetCategoryId) {
+    const firstCategory = await prisma.category.findFirst({
+      orderBy: { sortOrder: "asc" },
+    });
+    if (!firstCategory) return adminError("NO_CATEGORIES");
+    targetCategoryId = firstCategory.id;
+  }
+
+  const rawTitle = (providerOffer.rawNameEn || providerOffer.rawName).trim();
+  const auto = autoTranslateStoreText(rawTitle);
+
+  let slug = deriveSlug(rawTitle);
+  const existing = await prisma.product.findUnique({ where: { slug } });
+  if (existing) {
+    slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  }
+
+  const dedupeKey = dedupeKeyForOffer({ labelEn: rawTitle, productSlug: slug });
+
+  const result = await prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
+      data: {
+        slug,
+        nameEn: rawTitle,
+        nameAr: auto.ar || rawTitle,
+        nameFr: auto.fr || rawTitle,
+        categoryId: targetCategoryId!,
+        descriptionEn: providerOffer.rawDescriptionEn || providerOffer.rawDescription || "",
+        descriptionAr: auto.ar || "",
+        descriptionFr: auto.fr || "",
+        shortEn: "",
+        shortAr: "",
+        shortFr: "",
+        isActive: true,
+        isFeatured: false,
+        isNew: true,
+        sortOrder: 0,
+      },
+    });
+
+    const offer = await tx.offer.create({
+      data: {
+        productId: product.id,
+        labelEn: rawTitle,
+        labelAr: auto.ar || rawTitle,
+        labelFr: auto.fr || rawTitle,
+        markupPercent: new Prisma.Decimal(markupPercent),
+        productPinned: true,
+        dedupeKey,
+        isActive: true,
+      },
+    });
+
+    await tx.offerProviderLink.create({
+      data: {
+        offerId: offer.id,
+        providerOfferId,
+        priority: 1,
+        isEnabled: true,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: session.userId,
+        action: "PRODUCT_CREATED_FROM_PROVIDER",
+        entity: "Product",
+        entityId: product.id,
+        detail: { slug, providerOfferId, offerId: offer.id } as never,
+      },
+    });
+
+    return { product, offer };
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, productId: result.product.id, offerId: result.offer.id, slug };
+}
+
+export async function linkProviderOfferToExistingProduct(
+  productId: string,
+  providerOfferId: string,
+  labelEn?: string,
+  markupPercent: number = 15
+) {
+  const session = await requireAdmin();
+  const [product, providerOffer] = await Promise.all([
+    prisma.product.findUnique({ where: { id: productId } }),
+    prisma.providerOffer.findUnique({ where: { id: providerOfferId } }),
+  ]);
+
+  if (!product || !providerOffer) return adminError("NOT_FOUND");
+
+  const title = (labelEn?.trim() || providerOffer.rawNameEn || providerOffer.rawName).trim();
+  const auto = autoTranslateStoreText(title);
+  const dedupeKey = dedupeKeyForOffer({ labelEn: title, productSlug: product.slug });
+
+  const result = await prisma.$transaction(async (tx) => {
+    const offer = await tx.offer.create({
+      data: {
+        productId: product.id,
+        labelEn: title,
+        labelAr: auto.ar || title,
+        labelFr: auto.fr || title,
+        markupPercent: new Prisma.Decimal(markupPercent),
+        productPinned: true,
+        dedupeKey,
+        isActive: true,
+      },
+    });
+
+    await tx.offerProviderLink.create({
+      data: {
+        offerId: offer.id,
+        providerOfferId,
+        priority: 1,
+        isEnabled: true,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: session.userId,
+        action: "PROVIDER_OFFER_LINKED_TO_PRODUCT",
+        entity: "Offer",
+        entityId: offer.id,
+        detail: { productId: product.id, providerOfferId, labelEn: title } as never,
+      },
+    });
+
+    return offer;
+  });
+
+  revalidatePath("/admin/catalog");
+  revalidatePath(`/admin/catalog/${productId}`);
+  revalidatePath(`/admin/catalog/${productId}/offers`);
+  return { ok: true as const, offerId: result.id };
+}
+
+export async function createProductWithInitialOffer(formData: FormData) {
+  const session = await requireAdmin();
+  const raw = Object.fromEntries(formData.entries());
+
+  const parsed = productSchema.safeParse({
+    nameEn: raw.nameEn,
+    nameAr: raw.nameAr || undefined,
+    nameFr: raw.nameFr || undefined,
+    slug: raw.slug || undefined,
+    categoryId: raw.categoryId,
+    descriptionEn: raw.descriptionEn || undefined,
+    descriptionAr: raw.descriptionAr || undefined,
+    descriptionFr: raw.descriptionFr || undefined,
+    shortEn: raw.shortEn || undefined,
+    shortAr: raw.shortAr || undefined,
+    shortFr: raw.shortFr || undefined,
+    isActive: raw.isActive === "on" || raw.isActive === "true",
+    isFeatured: raw.isFeatured === "on",
+    isNew: raw.isNew === "on",
+    contentLocked: raw.contentLocked === "on",
+    sortOrder: raw.sortOrder || undefined,
+  });
+  if (!parsed.success) return adminError("BAD_REQUEST");
+
+  const auto = autoTranslateStoreText(parsed.data.nameEn);
+  const nameAr = parsed.data.nameAr || auto.ar || parsed.data.nameEn;
+  const nameFr = parsed.data.nameFr || auto.fr || parsed.data.nameEn;
+
+  const slug = deriveSlug(parsed.data.nameEn, parsed.data.slug);
+  const existing = await prisma.product.findUnique({ where: { slug } });
+  if (existing) return adminError("SLUG_TAKEN");
+
+  const variantLabel = String(raw.variantLabel || "").trim();
+  const variantMarkup = raw.variantMarkup ? Number(raw.variantMarkup) : 15;
+  const providerOfferId = String(raw.providerOfferId || "").trim();
+
+  const product = await prisma.$transaction(async (tx) => {
+    const p = await tx.product.create({
+      data: {
+        slug,
+        nameEn: parsed.data.nameEn,
+        nameAr,
+        nameFr,
+        categoryId: parsed.data.categoryId,
+        descriptionEn: parsed.data.descriptionEn ?? "",
+        descriptionAr: parsed.data.descriptionAr || auto.ar || "",
+        descriptionFr: parsed.data.descriptionFr || auto.fr || "",
+        shortEn: parsed.data.shortEn ?? "",
+        shortAr: parsed.data.shortAr ?? "",
+        shortFr: parsed.data.shortFr ?? "",
+        isActive: parsed.data.isActive ?? true,
+        isFeatured: parsed.data.isFeatured ?? false,
+        isNew: parsed.data.isNew ?? false,
+        contentLocked: parsed.data.contentLocked ?? false,
+        sortOrder: parsed.data.sortOrder ?? 0,
+      },
+    });
+
+    if (variantLabel) {
+      const vAuto = autoTranslateStoreText(variantLabel);
+      const dedupeKey = dedupeKeyForOffer({ labelEn: variantLabel, productSlug: slug });
+      const offer = await tx.offer.create({
+        data: {
+          productId: p.id,
+          labelEn: variantLabel,
+          labelAr: vAuto.ar || variantLabel,
+          labelFr: vAuto.fr || variantLabel,
+          markupPercent: new Prisma.Decimal(variantMarkup),
+          productPinned: true,
+          dedupeKey,
+          isActive: true,
+        },
+      });
+
+      if (providerOfferId) {
+        await tx.offerProviderLink.create({
+          data: {
+            offerId: offer.id,
+            providerOfferId,
+            priority: 1,
+            isEnabled: true,
+          },
+        });
+      }
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId: session.userId,
+        action: "PRODUCT_CREATED",
+        entity: "Product",
+        entityId: p.id,
+        detail: { slug, hasInitialVariant: Boolean(variantLabel) } as never,
+      },
+    });
+
+    return p;
+  });
+
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, id: product.id };
 }
 

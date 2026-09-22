@@ -1,146 +1,142 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { updateProduct } from "../actions";
+import { ProductStudio } from "./product-studio";
+import type { SerializedOffer, SerializedProviderOffer } from "./offers/offer-studio";
 
 export default async function EditProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; provider?: string }>;
 }) {
   const { locale, id } = await params;
-  const [product, categories] = await Promise.all([
-    prisma.product.findUnique({ where: { id } }),
-    prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }], select: { id: true, slug: true, nameEn: true } }),
+  const { tab, q, provider } = await searchParams;
+
+  const [product, categories, rawOffers, rawPool, rawProviders] = await Promise.all([
+    prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: { select: { id: true, nameEn: true, slug: true } },
+      },
+    }),
+    prisma.category.findMany({
+      orderBy: [{ sortOrder: "asc" }],
+      select: { id: true, slug: true, nameEn: true },
+    }),
+    prisma.offer.findMany({
+      where: { productId: id },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        links: {
+          orderBy: { priority: "asc" },
+          include: {
+            providerOffer: {
+              include: {
+                provider: { select: { code: true, displayName: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.providerOffer.findMany({
+      where: {
+        ...(provider ? { provider: { code: provider } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { rawName: { contains: q, mode: "insensitive" } },
+                { rawNameEn: { contains: q, mode: "insensitive" } },
+                { providerSku: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ lastSyncedAt: "desc" }],
+      take: 60,
+      include: {
+        provider: { select: { code: true, displayName: true } },
+      },
+    }),
+    prisma.provider.findMany({
+      select: { code: true, displayName: true },
+      orderBy: { displayName: "asc" },
+    }),
   ]);
+
   if (!product) notFound();
 
+  // Serialize BigInts & Decimals for Client Component
+  const serializedOffers: SerializedOffer[] = rawOffers.map((o) => ({
+    id: o.id,
+    labelEn: o.labelEn,
+    labelAr: o.labelAr,
+    labelFr: o.labelFr,
+    rulesEn: o.rulesEn,
+    rulesAr: o.rulesAr,
+    rulesFr: o.rulesFr,
+    markupPercent: Number(o.markupPercent),
+    compareAtMinor: o.compareAtMinor ? o.compareAtMinor.toString() : null,
+    badge: o.badge,
+    productPinned: o.productPinned,
+    stockQty: o.stockQty,
+    isActive: o.isActive,
+    links: o.links.map((l) => ({
+      id: l.id,
+      priority: l.priority,
+      isEnabled: l.isEnabled,
+      providerOffer: {
+        id: l.providerOffer.id,
+        providerSku: l.providerOffer.providerSku,
+        rawName: l.providerOffer.rawName,
+        rawNameEn: l.providerOffer.rawNameEn,
+        costMinor: l.providerOffer.costMinor.toString(),
+        currency: l.providerOffer.currency,
+        availability: l.providerOffer.availability,
+        stockQuantity: l.providerOffer.stockQuantity,
+        customerInputType: l.providerOffer.customerInputType,
+        customerPrompt: l.providerOffer.customerPrompt,
+        rawWarranty: l.providerOffer.rawWarranty,
+        rawDescription: l.providerOffer.rawDescription,
+        lastSyncedAt: l.providerOffer.lastSyncedAt.toISOString(),
+        provider: {
+          code: l.providerOffer.provider.code,
+          displayName: l.providerOffer.provider.displayName,
+        },
+      },
+    })),
+  }));
+
+  const serializedPool: SerializedProviderOffer[] = rawPool.map((po) => ({
+    id: po.id,
+    providerSku: po.providerSku,
+    rawName: po.rawName,
+    rawNameEn: po.rawNameEn,
+    costMinor: po.costMinor.toString(),
+    currency: po.currency,
+    availability: po.availability,
+    stockQuantity: po.stockQuantity,
+    customerInputType: po.customerInputType,
+    customerPrompt: po.customerPrompt,
+    rawWarranty: po.rawWarranty,
+    rawDescription: po.rawDescription,
+    lastSyncedAt: po.lastSyncedAt.toISOString(),
+    provider: {
+      code: po.provider.code,
+      displayName: po.provider.displayName,
+    },
+  }));
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Edit — {product.nameEn}</h1>
-
-      <form
-        action={async (formData: FormData) => {
-          "use server";
-          const r = await updateProduct(id, formData);
-          if ("error" in r) throw new Error(r.error);
-          redirect(`/${locale}/admin/catalog`);
-        }}
-        className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm"
-      >
-        <Field label="Name (EN)" name="nameEn" required defaultValue={product.nameEn} />
-        <Field label="Name (AR)" name="nameAr" required defaultValue={product.nameAr} />
-        <Field label="Name (FR)" name="nameFr" required defaultValue={product.nameFr} />
-        <Field label="Slug" name="slug" required defaultValue={product.slug} />
-        <Select
-          label="Category"
-          name="categoryId"
-          required
-          defaultValue={product.categoryId}
-          options={categories.map((c) => ({ value: c.id, label: `${c.nameEn} (${c.slug})` }))}
-        />
-        <Field label="Description EN" name="descriptionEn" textarea defaultValue={product.descriptionEn} />
-        <Field label="Description AR" name="descriptionAr" textarea defaultValue={product.descriptionAr} />
-        <Field label="Description FR" name="descriptionFr" textarea defaultValue={product.descriptionFr} />
-        <Field label="Short EN" name="shortEn" defaultValue={product.shortEn} />
-        <Field label="Short AR" name="shortAr" defaultValue={product.shortAr} />
-        <Field label="Short FR" name="shortFr" defaultValue={product.shortFr} />
-        <Field label="Sort order" name="sortOrder" type="number" defaultValue={String(product.sortOrder)} />
-        <Field label="Logo image URL (optional)" name="image" placeholder="https://… or /logos/…" defaultValue={product.image ?? ""} />
-
-        <div className="flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="isActive" defaultChecked={product.isActive} /> Active
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="isFeatured" defaultChecked={product.isFeatured} /> Featured
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="isNew" defaultChecked={product.isNew} /> New
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="contentLocked" defaultChecked={product.contentLocked} /> Content locked
-          </label>
-        </div>
-
-        <button className="rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[var(--accent-hover)]">
-          Save
-        </button>
-      </form>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  name,
-  required,
-  placeholder,
-  defaultValue,
-  type = "text",
-  textarea,
-}: {
-  label: string;
-  name: string;
-  required?: boolean;
-  placeholder?: string;
-  defaultValue?: string;
-  type?: string;
-  textarea?: boolean;
-}) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}</span>
-      {textarea ? (
-        <textarea
-          name={name}
-          required={required}
-          placeholder={placeholder}
-          defaultValue={defaultValue}
-          rows={3}
-          className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-        />
-      ) : (
-        <input
-          name={name}
-          type={type}
-          required={required}
-          placeholder={placeholder}
-          defaultValue={defaultValue}
-          className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-        />
-      )}
-    </label>
-  );
-}
-
-function Select({
-  label,
-  name,
-  required,
-  defaultValue,
-  options,
-}: {
-  label: string;
-  name: string;
-  required?: boolean;
-  defaultValue?: string;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}</span>
-      <select
-        name={name}
-        required={required}
-        defaultValue={defaultValue}
-        className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value} selected={o.value === defaultValue ? true : undefined}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <ProductStudio
+      product={product}
+      categories={categories}
+      offers={serializedOffers}
+      pool={serializedPool}
+      providers={rawProviders}
+      locale={locale}
+      initialTab={tab === "details" ? "DETAILS" : "VARIANTS"}
+    />
   );
 }

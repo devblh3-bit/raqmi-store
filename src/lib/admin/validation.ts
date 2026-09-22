@@ -4,8 +4,8 @@ import { z } from "zod";
 
 export const productSchema = z.object({
   nameEn: z.string().trim().min(1).max(120),
-  nameAr: z.string().trim().min(1).max(120),
-  nameFr: z.string().trim().min(1).max(120),
+  nameAr: z.string().trim().max(120).optional().default(""),
+  nameFr: z.string().trim().max(120).optional().default(""),
   slug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/, "lowercase letters, digits and hyphens only").optional(),
   categoryId: z.string().min(1),
   descriptionEn: z.string().trim().max(2000).optional(),
@@ -33,8 +33,8 @@ export const detachOfferSchema = z.object({
 export const updateOfferLabelsSchema = z.object({
   offerId: z.string().min(1),
   labelEn: z.string().trim().min(1).max(120),
-  labelAr: z.string().trim().min(1).max(120),
-  labelFr: z.string().trim().min(1).max(120),
+  labelAr: z.string().trim().max(120).optional().default(""),
+  labelFr: z.string().trim().max(120).optional().default(""),
   rulesEn: z.string().trim().max(4000).optional(),
   rulesAr: z.string().trim().max(4000).optional(),
   rulesFr: z.string().trim().max(4000).optional(),
@@ -44,8 +44,8 @@ export const createOfferFromProviderSchema = z.object({
   productId: z.string().min(1),
   providerOfferId: z.string().min(1),
   labelEn: z.string().trim().min(1).max(120),
-  labelAr: z.string().trim().min(1).max(120),
-  labelFr: z.string().trim().min(1).max(120),
+  labelAr: z.string().trim().max(120).optional().default(""),
+  labelFr: z.string().trim().max(120).optional().default(""),
   rulesEn: z.string().trim().max(4000).optional().default(""),
   rulesAr: z.string().trim().max(4000).optional().default(""),
   rulesFr: z.string().trim().max(4000).optional().default(""),
