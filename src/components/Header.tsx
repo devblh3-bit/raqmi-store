@@ -102,8 +102,8 @@ export default function Header({ locale }: { locale: Locale }) {
 
             <Link
               href={`${prefix}/cart`}
-              aria-label="Cart"
-              className="relative hidden h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 sm:flex"
+              aria-label={t("cart")}
+              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
             >
               <CartIcon className="h-[16px] w-[16px]" />
             </Link>
@@ -115,7 +115,8 @@ export default function Header({ locale }: { locale: Locale }) {
             <Link
               href={`${prefix}/account`}
               aria-label={t("account")}
-              className="relative hidden h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 sm:flex"
+              title={t("account")}
+              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
             >
               <UserIcon className="h-[16px] w-[16px]" />
             </Link>
@@ -124,7 +125,7 @@ export default function Header({ locale }: { locale: Locale }) {
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] lg:hidden"
+              className="relative inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] lg:hidden"
             >
               <span className="relative block h-3.5 w-3.5">
                 <span className={`absolute left-0 top-0 h-0.5 w-3.5 rounded-full bg-current transition-all duration-300 ease-[var(--ease-premium)] ${open ? "translate-y-[5px] rotate-45" : ""}`} />
@@ -156,6 +157,30 @@ export default function Header({ locale }: { locale: Locale }) {
                   </Link>
                 );
               })}
+
+              <div className="my-1.5 border-t border-[var(--border)]" />
+
+              {/* Mobile Account / Sign In Action Button */}
+              <Link
+                href={`${prefix}/account`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-bold text-white shadow-xs transition hover:bg-[var(--accent-hover)] active:scale-95"
+              >
+                <UserIcon className="h-4 w-4" />
+                <span>
+                  {t("account")} / {locale === "ar" ? "تسجيل الدخول" : locale === "fr" ? "Connexion" : "Sign In"}
+                </span>
+              </Link>
+
+              {/* Mobile Cart Link */}
+              <Link
+                href={`${prefix}/cart`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)] transition active:scale-95"
+              >
+                <CartIcon className="h-4 w-4" />
+                <span>{t("cart")}</span>
+              </Link>
             </nav>
           </div>
         )}

@@ -104,3 +104,4 @@ export function autoTranslateStoreText(englishText: string): { ar: string; fr: s
     fr: frResult,
   };
 }
+
