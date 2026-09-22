@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/admin";
+import { getSystemSettings } from "@/lib/settings";
 
 async function loadDashboardMetrics() {
   const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -69,23 +70,26 @@ export default async function AdminDashboard({
   const { locale } = await params;
   await requireAdmin(locale);
 
-  const dzdRate = 240;
-
   const [
-    walletSum,
-    recentPaidOrders,
-    pendingDepositsCount,
-    failedItemsCount,
-    pendingApplicantsCount,
-    providers,
-    productCount,
-    offerCount,
-    oosOfferCount,
-    resellerCount,
-    recentOrders,
-    recentAuditLogs,
-    syncRuns,
-  ] = await loadDashboardMetrics();
+    settings,
+    [
+      walletSum,
+      recentPaidOrders,
+      pendingDepositsCount,
+      failedItemsCount,
+      pendingApplicantsCount,
+      providers,
+      productCount,
+      offerCount,
+      oosOfferCount,
+      resellerCount,
+      recentOrders,
+      recentAuditLogs,
+      syncRuns,
+    ],
+  ] = await Promise.all([getSystemSettings(), loadDashboardMetrics()]);
+
+  const dzdRate = settings.dzdRate;
 
   const sales24hMinor = recentPaidOrders.reduce((sum, o) => sum + o.totalMinor, 0n);
   const sales24hUsd = Number(sales24hMinor) / 100;

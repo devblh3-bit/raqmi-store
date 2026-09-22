@@ -222,3 +222,4 @@ export async function toggleCategoryActive(formData: FormData) {
   revalidatePath("/");
   return { ok: true as const, isActive: nextActive };
 }
+

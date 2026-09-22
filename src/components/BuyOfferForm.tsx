@@ -12,6 +12,7 @@ const ERROR_KEY: Record<string, string> = {
   INSUFFICIENT_FUNDS: "errorFunds",
   OFFER_UNAVAILABLE: "errorUnavailable",
   INPUT_REQUIRED: "errorInputRequired",
+  MAINTENANCE_MODE: "errorMaintenance",
   BAD_QUANTITY: "errorGeneric",
   EMPTY_CART: "errorGeneric",
   BAD_REQUEST: "errorGeneric",

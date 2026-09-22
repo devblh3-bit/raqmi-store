@@ -9,7 +9,11 @@ process.env.SESSION_SECRET ||= "s".repeat(48);
 // let the real checkout + wallet run against the DB.
 const session = vi.hoisted(() => ({ current: null as { userId: string; role: "CUSTOMER" } | null }));
 const redirects = vi.hoisted(() => ({ to: [] as string[] }));
+const maintenanceState = vi.hoisted(() => ({ active: false }));
 
+vi.mock("../src/lib/settings", () => ({
+  isMaintenanceModeActive: async () => maintenanceState.active,
+}));
 vi.mock("../src/lib/auth/session", () => ({
   getSession: async () => session.current,
 }));
@@ -209,5 +213,17 @@ describe("buyNow action", () => {
     const { state } = await call(form({ offerId: "c".repeat(25), locale: "en" }));
     expect(state).toEqual({ error: "OFFER_UNAVAILABLE" });
     expect(await prisma.order.count({ where: { userId } })).toBe(0);
+  });
+
+  it("blocks purchases and returns MAINTENANCE_MODE when maintenance mode is active", async () => {
+    await creditWallet({ userId, amountMinor: 5000, type: "DEPOSIT", reference: "seed" });
+    maintenanceState.active = true;
+    try {
+      const { state } = await call(form({ offerId, locale: "en" }));
+      expect(state).toEqual({ error: "MAINTENANCE_MODE" });
+      expect(await prisma.order.count({ where: { userId } })).toBe(0);
+    } finally {
+      maintenanceState.active = false;
+    }
   });
 });

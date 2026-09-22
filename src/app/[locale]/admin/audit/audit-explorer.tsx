@@ -243,3 +243,4 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
     </div>
   );
 }
+

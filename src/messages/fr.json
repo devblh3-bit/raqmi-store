@@ -49,6 +49,7 @@
     "placing": "Commande en cours…",
     "errorFunds": "Solde insuffisant. Rechargez puis réessayez.",
     "errorUnavailable": "Cette offre n'est plus disponible.",
+    "errorMaintenance": "La boutique est actuellement en mode maintenance. Les commandes sont temporairement suspendues.",
     "errorInputRequired": "Veuillez remplir les informations de livraison.",
     "errorGeneric": "Une erreur est survenue. Réessayez.",
     "orderPlaced": "Commande passée",

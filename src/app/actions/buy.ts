@@ -7,6 +7,7 @@ import { placeOrder, CheckoutError } from "@/lib/checkout";
 import { InsufficientFundsError } from "@/lib/wallet";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { locales } from "@/i18n";
+import { isMaintenanceModeActive } from "@/lib/settings";
 
 export type BuyState = { error?: string; code?: string };
 
@@ -57,6 +58,10 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
     // to the value the browser supplied.
     const back = safeNextPath(returnTo) ?? `/${locale}/products`;
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
+  }
+
+  if (await isMaintenanceModeActive()) {
+    return { error: "MAINTENANCE_MODE" };
   }
 
   let code: string;

@@ -171,3 +171,16 @@ export function deriveSlug(nameEn: string, existingSlug?: string): string {
   if (existingSlug?.trim()) return existingSlug.trim().toLowerCase();
   return slugify(nameEn);
 }
+
+export const systemSettingsSchema = z.object({
+  dzdRate: z.coerce
+    .number()
+    .positive("Exchange rate must be greater than 0")
+    .max(10000, "Unreasonable exchange rate"),
+  maintenanceMode: z.coerce.boolean().default(false),
+  maintenanceBannerEn: z.string().trim().max(500).optional().default(""),
+  maintenanceBannerAr: z.string().trim().max(500).optional().default(""),
+  maintenanceBannerFr: z.string().trim().max(500).optional().default(""),
+  supportEmail: z.string().trim().email("Invalid email address").optional().or(z.literal("")).default(""),
+});
+

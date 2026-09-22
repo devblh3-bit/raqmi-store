@@ -37,11 +37,15 @@ export const MAX_TXN_ATTEMPTS = 8; // serializable txns abort on concurrent row 
 // Serialization conflicts arrive as P2034 (Prisma ops) or P2010 wrapping Postgres
 // 40001/40P01 (raw queries). Nothing committed either way, safe to rerun.
 export function isSerializationConflict(e: unknown): boolean {
-  return (
-    e instanceof Prisma.PrismaClientKnownRequestError &&
-    (e.code === "P2034" ||
-      (e.code === "P2010" && /40001|40P01|could not serialize|deadlock detected/i.test(e.message)))
-  );
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === "P2034") return true;
+    if (
+      /40001|40P01|could not serialize|deadlock|write conflict/i.test(e.message)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 async function applyDeltaTx(

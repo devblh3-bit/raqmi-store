@@ -25,6 +25,7 @@ export default async function AdminLayout({
     { href: `/${locale}/admin/audit`, label: "Audit Logs" },
     { href: `/${locale}/admin/notifications`, label: "Notifications" },
     { href: `/${locale}/admin/sync`, label: "Sync" },
+    { href: `/${locale}/admin/settings`, label: "Settings" },
   ] as const;
 
   return (

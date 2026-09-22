@@ -49,6 +49,7 @@
     "placing": "Placing order…",
     "errorFunds": "Not enough wallet balance. Add funds and try again.",
     "errorUnavailable": "This offer is no longer available.",
+    "errorMaintenance": "The store is currently in maintenance mode. Ordering is temporarily paused.",
     "errorInputRequired": "Please fill in the delivery info.",
     "errorGeneric": "Something went wrong. Please try again.",
     "orderPlaced": "Order placed",
