@@ -105,6 +105,43 @@ export const refundOrderSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+export const adjustBalanceSchema = z.object({
+  userId: z.string().min(1),
+  direction: z.enum(["credit", "debit"]),
+  amountMinor: z.coerce.number().int().positive("Amount must be a positive integer in cents"),
+  reason: z.string().trim().min(3, "Mandatory audit reason must be at least 3 characters").max(500),
+});
+
+export const updateUserRoleTierSchema = z.object({
+  userId: z.string().min(1),
+  role: z.enum(["CUSTOMER", "RESELLER_APPLICANT", "RESELLER", "ADMIN"]),
+  tierId: z.string().nullable().optional(),
+});
+
+export const reviewResellerApplicationSchema = z.object({
+  userId: z.string().min(1),
+  action: z.enum(["approve", "reject"]),
+  tierId: z.string().optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const tierSchema = z.object({
+  name: z.string().trim().min(1, "Tier name is required").max(50),
+  discountPercent: z.coerce.number().min(0, "Discount cannot be negative").max(100, "Discount cannot exceed 100%"),
+  minDepositMinor: z.coerce.number().int().min(0).default(0),
+});
+
+export const setTierPriceOverrideSchema = z.object({
+  offerId: z.string().min(1),
+  tierId: z.string().min(1),
+  priceMinor: z.coerce.number().int().positive("Price override must be positive"),
+});
+
+export const deleteTierPriceOverrideSchema = z.object({
+  offerId: z.string().min(1),
+  tierId: z.string().min(1),
+});
+
 function slugify(input: string): string {
   return input
     .toLowerCase()
