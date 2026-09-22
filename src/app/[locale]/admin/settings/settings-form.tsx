@@ -10,6 +10,7 @@ import {
 interface SettingsFormProps {
   initialSettings: {
     dzdRate: number;
+    minOfferPriceDzd: number;
     defaultProfitMargin: number;
     baridimobRip: string;
     baridimobHolder: string;
@@ -30,6 +31,9 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
   const [isSendingAlert, startAlertTransition] = useTransition();
 
   const [dzdRate, setDzdRate] = useState(initialSettings.dzdRate.toString());
+  const [minOfferPriceDzd, setMinOfferPriceDzd] = useState(
+    (initialSettings.minOfferPriceDzd ?? 300).toString()
+  );
   const [defaultProfitMargin, setDefaultProfitMargin] = useState(
     initialSettings.defaultProfitMargin.toString()
   );
@@ -58,6 +62,7 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
 
     const fd = new FormData();
     fd.append("dzdRate", dzdRate);
+    fd.append("minOfferPriceDzd", minOfferPriceDzd);
     fd.append("defaultProfitMargin", defaultProfitMargin);
     fd.append("baridimobRip", baridimobRip);
     fd.append("baridimobHolder", baridimobHolder);
@@ -267,6 +272,50 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
               <p className="text-[11px] text-[var(--fg-muted)]">
                 Individual variants can still override this with custom markups in the Catalog Studio. Any variant without custom markup automatically inherits this baseline margin.
               </p>
+
+              {/* Minimum Offer Price Floor (DZD) */}
+              <div className="space-y-3 pt-3 border-t border-[var(--border)]">
+                <label htmlFor="minOfferPriceDzd" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                  🛡️ Minimum Product Price Floor (DZD)
+                </label>
+                <div className="relative">
+                  <input
+                    id="minOfferPriceDzd"
+                    name="minOfferPriceDzd"
+                    type="number"
+                    step="10"
+                    min="0"
+                    max="100000"
+                    required
+                    value={minOfferPriceDzd}
+                    onChange={(e) => setMinOfferPriceDzd(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-base font-bold text-[var(--fg)] outline-none focus:border-purple-500"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--fg-muted)]">
+                    DA Floor
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] font-semibold text-[var(--fg-muted)]">Presets:</span>
+                  {[150, 200, 250, 300, 400, 500].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setMinOfferPriceDzd(preset.toString())}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition-all ${
+                        minOfferPriceDzd === preset.toString()
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                      }`}
+                    >
+                      {preset} DA
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-[var(--fg-muted)]">
+                  Any offer whose calculated retail price is below this floor will be clamped to at least this amount (converted at the active FX rate, ≈ ${(parseFloat(minOfferPriceDzd || "0") / (numericRate || 240)).toFixed(2)} USD).
+                </p>
+              </div>
             </div>
 
             {/* Live Pricing & Wholesale Breakdown Preview */}

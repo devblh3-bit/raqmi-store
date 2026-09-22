@@ -34,6 +34,7 @@ export async function updateSystemSettings(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
   const parsed = systemSettingsSchema.safeParse({
     dzdRate: raw.dzdRate,
+    minOfferPriceDzd: raw.minOfferPriceDzd,
     defaultProfitMargin: raw.defaultProfitMargin,
     baridimobRip: raw.baridimobRip || undefined,
     baridimobHolder: raw.baridimobHolder || undefined,
@@ -53,6 +54,7 @@ export async function updateSystemSettings(formData: FormData) {
 
   const {
     dzdRate,
+    minOfferPriceDzd,
     defaultProfitMargin,
     baridimobRip,
     baridimobHolder,
@@ -68,6 +70,7 @@ export async function updateSystemSettings(formData: FormData) {
 
   const updates = [
     { key: "dzd_rate", value: dzdRate.toString() },
+    { key: "min_offer_price_dzd", value: minOfferPriceDzd.toString() },
     { key: "default_profit_margin", value: defaultProfitMargin.toString() },
     { key: "baridimob_rip", value: baridimobRip },
     { key: "baridimob_holder", value: baridimobHolder },
@@ -116,6 +119,7 @@ export async function updateSystemSettings(formData: FormData) {
         entityId: "global",
         detail: {
           dzdRate,
+          minOfferPriceDzd,
           defaultProfitMargin,
           maintenanceMode,
           supportEmail,

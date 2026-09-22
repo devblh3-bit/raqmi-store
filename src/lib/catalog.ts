@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import type { Locale } from "@/i18n";
 import { convertMinor } from "./money";
 import { usdRateFor } from "./pricing";
+import { getSystemSettings } from "./settings";
 
 /**
  * DB-backed catalog reads. Returns the same shape the storefront already
@@ -107,7 +108,10 @@ function loadProducts(where: Prisma.ProductWhereInput) {
   });
 }
 
-function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
+function toOffer(
+  o: ProductRow["offers"][number],
+  minPriceMinor?: number,
+): CatalogOffer | null {
   // Cheapest enabled link in USD (or converted to USD) wins, matching computeOfferPrice's selection.
   const usable = o.links
     .map((l) => {
@@ -133,7 +137,8 @@ function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
   const best = usable.reduce((a, b) => (b.usdCostMinor < a.usdCostMinor ? b : a));
 
   const markup = Number(o.markupPercent);
-  const price = Math.round(best.usdCostMinor * (1 + markup / 100));
+  const rawPrice = Math.round(best.usdCostMinor * (1 + markup / 100));
+  const price = minPriceMinor !== undefined ? Math.max(rawPrice, minPriceMinor) : rawPrice;
 
   const inputType = best.po.customerInputType;
   return {
@@ -150,8 +155,8 @@ function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
   };
 }
 
-function toProduct(p: ProductRow, locale: Locale): CatalogProduct | null {
-  const offers = p.offers.map(toOffer).filter((o): o is CatalogOffer => o !== null);
+function toProduct(p: ProductRow, locale: Locale, minPriceMinor?: number): CatalogProduct | null {
+  const offers = p.offers.map((o) => toOffer(o, minPriceMinor)).filter((o): o is CatalogOffer => o !== null);
   if (!offers.length) return null; // nothing sellable; hide rather than render a broken card
   return {
     slug: p.slug,
@@ -167,25 +172,42 @@ function toProduct(p: ProductRow, locale: Locale): CatalogProduct | null {
   };
 }
 
+async function resolveMinPriceFloor(): Promise<number> {
+  try {
+    if (typeof getSystemSettings === "function") {
+      const settings = await getSystemSettings();
+      if (settings?.dzdRate && settings?.minOfferPriceDzd !== undefined) {
+        return Math.ceil((settings.minOfferPriceDzd / settings.dzdRate) * 100);
+      }
+    }
+  } catch {
+    // Fall back to 300 DA / 240 rate
+  }
+  return Math.ceil((300 / 240) * 100);
+}
+
 export async function getProducts(locale: Locale): Promise<CatalogProduct[]> {
-  const rows = await loadProducts({});
-  return rows.map((p) => toProduct(p, locale)).filter((p): p is CatalogProduct => p !== null);
+  const [rows, minPriceMinor] = await Promise.all([loadProducts({}), resolveMinPriceFloor()]);
+  return rows.map((p) => toProduct(p, locale, minPriceMinor)).filter((p): p is CatalogProduct => p !== null);
 }
 
 export async function getProductBySlug(
   slug: string,
   locale: Locale,
 ): Promise<CatalogProduct | null> {
-  const [row] = await loadProducts({ slug });
-  return row ? toProduct(row, locale) : null;
+  const [[row], minPriceMinor] = await Promise.all([loadProducts({ slug }), resolveMinPriceFloor()]);
+  return row ? toProduct(row, locale, minPriceMinor) : null;
 }
 
 export async function getProductsByCategory(
   categorySlug: string,
   locale: Locale,
 ): Promise<CatalogProduct[]> {
-  const rows = await loadProducts({ category: { slug: categorySlug } });
-  return rows.map((p) => toProduct(p, locale)).filter((p): p is CatalogProduct => p !== null);
+  const [rows, minPriceMinor] = await Promise.all([
+    loadProducts({ category: { slug: categorySlug } }),
+    resolveMinPriceFloor(),
+  ]);
+  return rows.map((p) => toProduct(p, locale, minPriceMinor)).filter((p): p is CatalogProduct => p !== null);
 }
 
 export async function getCategories(): Promise<CatalogCategory[]> {

@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
 import { computeOfferPrice, usdRateFor, type LinkQuote } from "../src/lib/pricing";
 
 const link = (over: Partial<LinkQuote> = {}): LinkQuote => ({
@@ -122,5 +125,34 @@ describe("computeOfferPrice", () => {
       env: {},
     });
     expect(r).toMatchObject({ available: true, providerOfferId: "usd" });
+  });
+
+  it("clamps price to minPriceMinor when calculated price is lower (e.g. 300 DA floor = 125 cents)", () => {
+    // cost = 50 cents ($0.50), markup = 20% -> 60 cents ($0.60 = 144 DA at 240)
+    // minPriceMinor = 125 cents ($1.25 = 300 DA at 240)
+    const r = computeOfferPrice({
+      links: [link({ costMinor: 50 })],
+      markupPercent: 20,
+      minPriceMinor: 125,
+    });
+    expect(r).toMatchObject({
+      available: true,
+      priceMinor: 125,
+      costMinor: 50,
+    });
+  });
+
+  it("does not alter price if calculated price is already above minPriceMinor", () => {
+    // cost = 500 cents ($5.00), markup = 20% -> 600 cents
+    const r = computeOfferPrice({
+      links: [link({ costMinor: 500 })],
+      markupPercent: 20,
+      minPriceMinor: 125,
+    });
+    expect(r).toMatchObject({
+      available: true,
+      priceMinor: 600,
+      costMinor: 500,
+    });
   });
 });

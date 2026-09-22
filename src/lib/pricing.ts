@@ -7,6 +7,7 @@
  */
 import { prisma } from "./db";
 import { applyMarkupPercent, applyDiscountPercent, convertMinor } from "./money";
+import { getSystemSettings } from "./settings";
 
 export type LinkQuote = {
   providerOfferId: string;
@@ -59,6 +60,7 @@ export function computeOfferPrice(input: {
   links: LinkQuote[];
   markupPercent: number;
   tier?: { discountPercent: number; overridePriceMinor?: number } | null;
+  minPriceMinor?: number;
   env?: Record<string, string | undefined>;
 }): OfferPrice {
   const enabled = input.links.filter((l) => l.isEnabled);
@@ -97,6 +99,10 @@ export function computeOfferPrice(input: {
   if (priceMinor < win.usdCost) {
     priceMinor = win.usdCost;
     clampedToCost = true;
+  }
+
+  if (input.minPriceMinor !== undefined && priceMinor < input.minPriceMinor) {
+    priceMinor = input.minPriceMinor;
   }
 
   return {
@@ -140,6 +146,18 @@ export async function priceForOffer(offerId: string, tierId?: string | null): Pr
     };
   }
 
+  let minPriceMinor = Math.ceil((300 / 240) * 100);
+  try {
+    if (typeof getSystemSettings === "function") {
+      const settings = await getSystemSettings();
+      if (settings?.dzdRate && settings?.minOfferPriceDzd !== undefined) {
+        minPriceMinor = Math.ceil((settings.minOfferPriceDzd / settings.dzdRate) * 100);
+      }
+    }
+  } catch {
+    // Fall back to default 300 DA / 240 rate
+  }
+
   const result = computeOfferPrice({
     links: offer.links.map((l) => ({
       providerOfferId: l.providerOfferId,
@@ -151,6 +169,7 @@ export async function priceForOffer(offerId: string, tierId?: string | null): Pr
     })),
     markupPercent: Number(offer.markupPercent),
     tier,
+    minPriceMinor,
   });
 
   await materialize(offerId, tierId ?? null, result);

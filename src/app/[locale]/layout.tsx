@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StoreMobileNav from "@/components/nav/StoreMobileNav";
 import { CartProvider } from "@/components/CartProvider";
+import { CurrencyProvider } from "@/components/CurrencyProvider";
 import { getSystemSettings } from "@/lib/settings";
 
 export function generateStaticParams() {
@@ -34,22 +35,24 @@ export default async function LocaleLayout({
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className="flex min-h-full min-h-screen flex-col ambient-bg">
       <NextIntlClientProvider messages={messages} locale={locale}>
-        <CartProvider>
-          <Header locale={locale as Locale} />
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          <Footer locale={locale as Locale} />
-          <StoreMobileNav locale={locale as Locale} />
+        <CurrencyProvider dzdRate={settings.dzdRate}>
+          <CartProvider>
+            <Header locale={locale as Locale} />
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <Footer locale={locale as Locale} />
+            <StoreMobileNav locale={locale as Locale} />
 
-          {settings.maintenanceMode && (
-            <aside
-              aria-label="Store Maintenance Notice"
-              className="fixed bottom-20 md:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] sm:max-w-2xl px-5 py-3 rounded-full bg-amber-500 text-zinc-950 border border-amber-600 shadow-2xl shadow-amber-950/20 flex items-center justify-center gap-2.5 text-xs sm:text-sm font-bold text-center pointer-events-auto transition-all"
-            >
-              <span className="text-base leading-none shrink-0">⚠️</span>
-              <span className="tracking-wide">{bannerText}</span>
-            </aside>
-          )}
-        </CartProvider>
+            {settings.maintenanceMode && (
+              <aside
+                aria-label="Store Maintenance Notice"
+                className="fixed bottom-20 md:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] sm:max-w-2xl px-5 py-3 rounded-full bg-amber-500 text-zinc-950 border border-amber-600 shadow-2xl shadow-amber-950/20 flex items-center justify-center gap-2.5 text-xs sm:text-sm font-bold text-center pointer-events-auto transition-all"
+              >
+                <span className="text-base leading-none shrink-0">⚠️</span>
+                <span className="tracking-wide">{bannerText}</span>
+              </aside>
+            )}
+          </CartProvider>
+        </CurrencyProvider>
       </NextIntlClientProvider>
     </div>
   );

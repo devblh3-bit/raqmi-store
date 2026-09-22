@@ -160,6 +160,14 @@ export default function Header({ locale }: { locale: Locale }) {
 
               <div className="my-1.5 border-t border-[var(--border)]" />
 
+              {/* Mobile Region & Currency Selector */}
+              <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-[var(--surface-2)]">
+                <span className="text-xs font-bold text-[var(--fg-muted)]">
+                  {locale === "ar" ? "اللغة والعملة" : locale === "fr" ? "Langue & Devise" : "Language & Currency"}
+                </span>
+                <LocaleSwitcher locale={locale} />
+              </div>
+
               {/* Mobile Account / Sign In Action Button */}
               <Link
                 href={`${prefix}/account`}
