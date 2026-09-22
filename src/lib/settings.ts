@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export interface SystemSettings {
   dzdRate: number;
+  defaultProfitMargin: number;
   maintenanceMode: boolean;
   maintenanceBannerEn: string;
   maintenanceBannerAr: string;
@@ -13,6 +14,7 @@ export interface SystemSettings {
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   dzdRate: 240,
+  defaultProfitMargin: 15,
   maintenanceMode: false,
   maintenanceBannerEn: "Store maintenance in progress. Purchasing is temporarily disabled.",
   maintenanceBannerAr: "أعمال صيانة جارية في المتجر. عمليات الشراء معطلة مؤقتًا.",
@@ -39,8 +41,15 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     const dzdRateRaw = map.get("dzd_rate");
     const dzdRate = dzdRateRaw ? parseFloat(dzdRateRaw) : DEFAULT_SETTINGS.dzdRate;
 
+    const marginRaw = map.get("default_profit_margin");
+    const defaultProfitMargin = marginRaw ? parseFloat(marginRaw) : DEFAULT_SETTINGS.defaultProfitMargin;
+
     return {
       dzdRate: Number.isFinite(dzdRate) && dzdRate > 0 ? dzdRate : DEFAULT_SETTINGS.dzdRate,
+      defaultProfitMargin:
+        Number.isFinite(defaultProfitMargin) && defaultProfitMargin >= 0
+          ? defaultProfitMargin
+          : DEFAULT_SETTINGS.defaultProfitMargin,
       maintenanceMode: map.get("maintenance_mode") === "true",
       maintenanceBannerEn: map.get("maintenance_banner_en") ?? DEFAULT_SETTINGS.maintenanceBannerEn,
       maintenanceBannerAr: map.get("maintenance_banner_ar") ?? DEFAULT_SETTINGS.maintenanceBannerAr,

@@ -84,3 +84,4 @@ export default function AccountMobileNav({ locale }: { locale: string }) {
     </nav>
   );
 }
+

@@ -177,6 +177,11 @@ export const systemSettingsSchema = z.object({
     .number()
     .positive("Exchange rate must be greater than 0")
     .max(10000, "Unreasonable exchange rate"),
+  defaultProfitMargin: z.coerce
+    .number()
+    .min(0, "Profit margin cannot be negative")
+    .max(500, "Unreasonable margin")
+    .default(15),
   maintenanceMode: z.coerce.boolean().default(false),
   maintenanceBannerEn: z.string().trim().max(500).optional().default(""),
   maintenanceBannerAr: z.string().trim().max(500).optional().default(""),

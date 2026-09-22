@@ -67,3 +67,4 @@ describe("Mobile Navigation Configuration and Routing Rules", () => {
     expect(accountTabs).toHaveLength(4);
   });
 });
+

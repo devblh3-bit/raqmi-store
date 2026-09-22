@@ -84,3 +84,4 @@ export default function ResellerMobileNav({ locale }: { locale: string }) {
     </nav>
   );
 }
+

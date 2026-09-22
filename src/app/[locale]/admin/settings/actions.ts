@@ -34,6 +34,7 @@ export async function updateSystemSettings(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
   const parsed = systemSettingsSchema.safeParse({
     dzdRate: raw.dzdRate,
+    defaultProfitMargin: raw.defaultProfitMargin,
     maintenanceMode: raw.maintenanceMode === "true" || raw.maintenanceMode === "on",
     maintenanceBannerEn: raw.maintenanceBannerEn || undefined,
     maintenanceBannerAr: raw.maintenanceBannerAr || undefined,
@@ -47,6 +48,7 @@ export async function updateSystemSettings(formData: FormData) {
 
   const {
     dzdRate,
+    defaultProfitMargin,
     maintenanceMode,
     maintenanceBannerEn,
     maintenanceBannerAr,
@@ -56,6 +58,7 @@ export async function updateSystemSettings(formData: FormData) {
 
   const updates = [
     { key: "dzd_rate", value: dzdRate.toString() },
+    { key: "default_profit_margin", value: defaultProfitMargin.toString() },
     { key: "maintenance_mode", value: maintenanceMode ? "true" : "false" },
     { key: "maintenance_banner_en", value: maintenanceBannerEn },
     { key: "maintenance_banner_ar", value: maintenanceBannerAr },
@@ -98,6 +101,7 @@ export async function updateSystemSettings(formData: FormData) {
         entityId: "global",
         detail: {
           dzdRate,
+          defaultProfitMargin,
           maintenanceMode,
           supportEmail,
         } as never,
@@ -106,6 +110,7 @@ export async function updateSystemSettings(formData: FormData) {
   });
 
   revalidatePath("/admin/settings");
+  revalidatePath("/admin/resellers");
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/products");

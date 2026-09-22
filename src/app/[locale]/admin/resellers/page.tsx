@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/admin";
 import { priceForOffer } from "@/lib/pricing";
+import { getSystemSettings } from "@/lib/settings";
 import {
   ResellerManager,
   type SerializedApplicant,
@@ -16,7 +17,7 @@ export default async function ResellersPage({
   const { locale } = await params;
   await requireAdmin(locale);
 
-  const [applicants, tiers, offers] = await Promise.all([
+  const [applicants, tiers, offers, settings] = await Promise.all([
     prisma.user.findMany({
       where: { role: "RESELLER_APPLICANT" },
       orderBy: { createdAt: "desc" },
@@ -45,7 +46,10 @@ export default async function ResellersPage({
         tierOverrides: true,
       },
     }),
+    getSystemSettings(),
   ]);
+
+  const defaultProfitMargin = settings.defaultProfitMargin;
 
   const serializedApplicants: SerializedApplicant[] = applicants.map((a) => ({
     id: a.id,
@@ -65,14 +69,25 @@ export default async function ResellersPage({
     overridesCount: t._count.overrides,
   }));
 
-  // Fetch prices for active offers
+  // Fetch prices for active offers, applying default profit margin if offer has 0 markup
   const serializedOffers: SerializedMatrixOffer[] = await Promise.all(
     offers.map(async (offer) => {
       const quote = await priceForOffer(offer.id);
-      const retailPriceMinor = quote.available ? quote.priceMinor.toString() : "0";
-      const costMinor = quote.available
-        ? quote.costMinor.toString()
-        : offer.links[0]?.providerOffer.costMinor.toString() ?? "0";
+      const offerMarkup = Number(offer.markupPercent);
+      const effectiveMarkup = offerMarkup > 0 ? offerMarkup : defaultProfitMargin;
+
+      const rawCost = quote.available
+        ? quote.costMinor
+        : Number(offer.links[0]?.providerOffer.costMinor ?? 0);
+
+      const costMinor = rawCost.toString();
+
+      // If offer has an explicit custom markup and quote is available, use it;
+      // otherwise, compute retail price with effective baseline profit margin from settings!
+      const retailPriceMinor =
+        offerMarkup > 0 && quote.available
+          ? quote.priceMinor.toString()
+          : Math.round(rawCost * (1 + effectiveMarkup / 100)).toString();
 
       const overrides: Record<string, string> = {};
       for (const ov of offer.tierOverrides) {
@@ -85,6 +100,7 @@ export default async function ResellersPage({
         labelEn: offer.labelEn,
         retailPriceMinor,
         costMinor,
+        markupPercent: effectiveMarkup,
         overrides,
       };
     }),
@@ -100,9 +116,11 @@ export default async function ResellersPage({
       </div>
 
       <ResellerManager
+        locale={locale}
         applicants={serializedApplicants}
         tiers={serializedTiers}
         offers={serializedOffers}
+        defaultProfitMargin={defaultProfitMargin}
       />
     </div>
   );

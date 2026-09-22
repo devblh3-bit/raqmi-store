@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   reviewResellerApplication,
@@ -34,17 +35,22 @@ export type SerializedMatrixOffer = {
   labelEn: string;
   retailPriceMinor: string;
   costMinor: string;
+  markupPercent?: number;
   overrides: Record<string, string>; // tierId -> priceMinor
 };
 
 export function ResellerManager({
+  locale = "en",
   applicants: initialApplicants,
   tiers: initialTiers,
   offers: initialOffers,
+  defaultProfitMargin = 15,
 }: {
+  locale?: string;
   applicants: SerializedApplicant[];
   tiers: SerializedTier[];
   offers: SerializedMatrixOffer[];
+  defaultProfitMargin?: number;
 }) {
   const [activeTab, setActiveTab] = useState<"applications" | "tiers" | "matrix">("applications");
   const [matrixSearch, setMatrixSearch] = useState("");
@@ -479,10 +485,23 @@ export function ResellerManager({
         <div className="space-y-4">
           <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 text-xs text-[var(--fg-muted)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
             <div>
-              <span className="font-bold text-purple-600 dark:text-purple-400">
-                ⚡ Fixed Wholesale Price Matrix:
-              </span>{" "}
-              Fixed price overrides take absolute precedence over percentage discount formulas. The pricing engine automatically clamps selling price to wholesale cost to prevent losses.
+              <div className="font-bold text-purple-600 dark:text-purple-400">
+                ⚡ Fixed Wholesale Price Matrix
+              </div>
+              <div className="text-[11px] text-[var(--fg-muted)] mt-0.5">
+                Fixed price overrides take absolute precedence over percentage discount formulas.
+              </div>
+              <div className="flex items-center gap-2 pt-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 font-bold px-2.5 py-0.5 text-[11px]">
+                  📈 Baseline Profit Margin: +{defaultProfitMargin}%
+                </span>
+                <Link
+                  href={`/${locale}/admin/settings`}
+                  className="text-purple-600 dark:text-purple-400 hover:underline font-semibold text-[11px]"
+                >
+                  Configure in Settings ⚙️
+                </Link>
+              </div>
             </div>
 
             <div className="w-full md:w-64">
@@ -526,7 +545,12 @@ export function ResellerManager({
                           ${costUsd.toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-xs font-mono font-bold text-[var(--fg)]">
-                          ${retailUsd.toFixed(2)}
+                          <div>${retailUsd.toFixed(2)}</div>
+                          {offer.markupPercent !== undefined && (
+                            <span className="block text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                              +{offer.markupPercent}% margin
+                            </span>
+                          )}
                         </td>
 
                         {initialTiers.map((tier) => {
@@ -565,9 +589,20 @@ export function ResellerManager({
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono text-xs text-[var(--fg-muted)]">
-                                    ${formulaPrice.toFixed(2)}
-                                  </span>
+                                  <div>
+                                    <span className="font-mono text-xs font-bold text-[var(--fg)]">
+                                      ${formulaPrice.toFixed(2)}
+                                    </span>
+                                    {formulaPrice > costUsd ? (
+                                      <span className="block text-[10px] font-medium text-purple-600 dark:text-purple-400 font-mono">
+                                        +${(formulaPrice - costUsd).toFixed(2)} profit
+                                      </span>
+                                    ) : (
+                                      <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                        At cost ($0 profit)
+                                      </span>
+                                    )}
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => {

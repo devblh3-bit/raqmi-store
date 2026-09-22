@@ -10,6 +10,7 @@ import {
 interface SettingsFormProps {
   initialSettings: {
     dzdRate: number;
+    defaultProfitMargin: number;
     maintenanceMode: boolean;
     maintenanceBannerEn: string;
     maintenanceBannerAr: string;
@@ -24,6 +25,9 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
   const [isSendingAlert, startAlertTransition] = useTransition();
 
   const [dzdRate, setDzdRate] = useState(initialSettings.dzdRate.toString());
+  const [defaultProfitMargin, setDefaultProfitMargin] = useState(
+    initialSettings.defaultProfitMargin.toString()
+  );
   const [maintenanceMode, setMaintenanceMode] = useState(initialSettings.maintenanceMode);
   const [bannerEn, setBannerEn] = useState(initialSettings.maintenanceBannerEn);
   const [bannerAr, setBannerAr] = useState(initialSettings.maintenanceBannerAr);
@@ -35,6 +39,7 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
   const [alertStatus, setAlertStatus] = useState<{ ok?: boolean; message?: string } | null>(null);
 
   const numericRate = parseFloat(dzdRate) || 0;
+  const numericMargin = parseFloat(defaultProfitMargin) || 0;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +47,7 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
 
     const fd = new FormData();
     fd.append("dzdRate", dzdRate);
+    fd.append("defaultProfitMargin", defaultProfitMargin);
     fd.append("maintenanceMode", maintenanceMode ? "true" : "false");
     fd.append("maintenanceBannerEn", bannerEn);
     fd.append("maintenanceBannerAr", bannerAr);
@@ -187,7 +193,106 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
           </div>
         </div>
 
-        {/* Section 2: Storefront Operational Mode (Maintenance Mode) */}
+        {/* Section 2: Store Profit Margin & Wholesale Pricing */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">📈 Store Profit Margin & Wholesale Pricing</h2>
+              <p className="text-xs text-[var(--fg-muted)] mt-1">
+                Configure the baseline profit margin applied on supplier costs to calculate retail selling prices. Wholesale reseller discount tiers are calculated off this retail price.
+              </p>
+            </div>
+            <span className="rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 px-3 py-1 text-xs font-semibold">
+              Wholesale Engine
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="space-y-3">
+              <label htmlFor="defaultProfitMargin" className="block text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                Default Store Profit Margin (%)
+              </label>
+              <div className="relative">
+                <input
+                  id="defaultProfitMargin"
+                  name="defaultProfitMargin"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="500"
+                  required
+                  value={defaultProfitMargin}
+                  onChange={(e) => setDefaultProfitMargin(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-base font-bold text-[var(--fg)] outline-none focus:border-purple-500"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--fg-muted)]">
+                  % Margin
+                </span>
+              </div>
+
+              {/* Quick Margin Presets */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[11px] font-semibold text-[var(--fg-muted)]">Presets:</span>
+                {[10, 15, 20, 25, 30].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setDefaultProfitMargin(preset.toString())}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition-all ${
+                      defaultProfitMargin === preset.toString()
+                        ? "bg-purple-600 text-white border-purple-600"
+                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                    }`}
+                  >
+                    +{preset}%
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-[var(--fg-muted)]">
+                Individual variants can still override this with custom markups in the Catalog Studio. Any variant without custom markup automatically inherits this baseline margin.
+              </p>
+            </div>
+
+            {/* Live Pricing & Wholesale Breakdown Preview */}
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 space-y-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                Live Pricing Breakdown Preview ($10.00 Supplier Cost)
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between border-b border-[var(--border)]/50 pb-1">
+                  <span className="text-[var(--fg-muted)]">Wholesale Supplier Cost:</span>
+                  <span className="font-mono font-bold">$10.00</span>
+                </div>
+                <div className="flex justify-between border-b border-[var(--border)]/50 pb-1">
+                  <span className="text-[var(--fg-muted)]">Retail Price (+{numericMargin}%):</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    ${(10 * (1 + numericMargin / 100)).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-[var(--border)]/50 pb-1">
+                  <span className="text-[var(--fg-muted)]">Bronze Reseller (5% OFF):</span>
+                  <span className="font-mono font-bold">
+                    ${Math.max(10, 10 * (1 + numericMargin / 100) * 0.95).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-[var(--border)]/50 pb-1">
+                  <span className="text-[var(--fg-muted)]">Silver Reseller (10% OFF):</span>
+                  <span className="font-mono font-bold">
+                    ${Math.max(10, 10 * (1 + numericMargin / 100) * 0.90).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between pb-1">
+                  <span className="text-[var(--fg-muted)]">Gold Reseller (15% OFF):</span>
+                  <span className="font-mono font-bold">
+                    ${Math.max(10, 10 * (1 + numericMargin / 100) * 0.85).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Storefront Operational Mode (Maintenance Mode) */}
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <div>

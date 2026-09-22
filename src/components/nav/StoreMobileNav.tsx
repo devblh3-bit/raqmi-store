@@ -154,3 +154,4 @@ export default function StoreMobileNav({ locale }: { locale: Locale }) {
     </nav>
   );
 }
+
