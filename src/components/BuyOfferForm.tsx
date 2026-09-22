@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { buyNow, type BuyState } from "@/app/actions/buy";
 import type { CatalogOffer } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
-import { Price } from "./Price";
+import { Price, PriceCompact } from "./Price";
 
 const ERROR_KEY: Record<string, string> = {
   INSUFFICIENT_FUNDS: "errorFunds",
@@ -23,10 +23,14 @@ export default function BuyOfferForm({
   offers,
   locale,
   slug,
+  resellerTier,
+  wholesalePrices,
 }: {
   offers: CatalogOffer[];
   locale: Locale;
   slug: string;
+  resellerTier?: { id: string; name: string; discountPercent: number } | null;
+  wholesalePrices?: Record<string, { price: number; marginCents: number }>;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
@@ -46,39 +50,66 @@ export default function BuyOfferForm({
       <input type="hidden" name="returnTo" value={`/${locale}/products/${slug}`} />
       <input type="hidden" name="offerId" value={selectedOfferId} />
 
-      <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>
+        {resellerTier && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            ⭐ {resellerTier.name} ({resellerTier.discountPercent}% Off)
+          </span>
+        )}
+      </div>
+
       <div className="mt-3 flex flex-col gap-2">
-        {offers.map((o) => (
-          <label
-            key={o.id}
-            className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 transition-colors hover:border-[var(--border-strong)] has-[input:checked]:border-[var(--accent)] has-[input:checked]:bg-[var(--accent-soft)]"
-          >
-            <span className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="offerChoice"
-                value={o.id}
-                checked={selected === o.id}
-                onChange={() => setSelected(o.id)}
-                className="accent-[var(--accent)]"
-              />
-              <span className="text-sm font-semibold">{o.label[locale] ?? o.label.en}</span>
-              {o.badge && (
-                <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[11px] font-bold text-white">
-                  {o.badge}
-                </span>
-              )}
-              {o.stock !== undefined && o.stock <= 5 && (
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
-                  {t("stockLimited")}: {o.stock}
-                </span>
-              )}
-            </span>
-            <span className="text-sm font-bold">
-              <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
-            </span>
-          </label>
-        ))}
+        {offers.map((o) => {
+          const wp = wholesalePrices?.[o.id];
+          return (
+            <label
+              key={o.id}
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 transition-colors hover:border-[var(--border-strong)] has-[input:checked]:border-[var(--accent)] has-[input:checked]:bg-[var(--accent-soft)]"
+            >
+              <span className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="offerChoice"
+                  value={o.id}
+                  checked={selected === o.id}
+                  onChange={() => setSelected(o.id)}
+                  className="accent-[var(--accent)]"
+                />
+                <span className="text-sm font-semibold">{o.label[locale] ?? o.label.en}</span>
+                {o.badge && (
+                  <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[11px] font-bold text-white">
+                    {o.badge}
+                  </span>
+                )}
+                {o.stock !== undefined && o.stock <= 5 && (
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                    {t("stockLimited")}: {o.stock}
+                  </span>
+                )}
+              </span>
+              <span className="text-sm font-bold">
+                {wp ? (
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-[var(--fg-muted)] line-through">
+                        <PriceCompact cents={o.price} locale={locale} />
+                      </span>
+                      <Price cents={wp.price} locale={locale} size="sm" />
+                    </div>
+                    {wp.marginCents > 0 && (
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        Wholesale Rate
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
+                )}
+              </span>
+            </label>
+          );
+        })}
       </div>
 
       {/* Localized offer rules and warranty instructions */}

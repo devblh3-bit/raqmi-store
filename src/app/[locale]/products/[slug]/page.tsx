@@ -3,6 +3,9 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { getProductBySlug } from "@/lib/catalog";
 import { ProductArt } from "@/lib/product-images";
 import BuyOfferForm from "@/components/BuyOfferForm";
+import { getSession } from "@/lib/auth/session";
+import { prisma } from "@/lib/db";
+import { priceForOffer } from "@/lib/pricing";
 import type { Locale } from "@/i18n";
 import Link from "next/link";
 
@@ -17,6 +20,40 @@ export default async function ProductDetail({
   const loc = locale as Locale;
   const p = await getProductBySlug(slug, loc);
   if (!p) notFound();
+
+  // Check if current user is an active reseller
+  const session = await getSession();
+  let resellerTier: { id: string; name: string; discountPercent: number } | null = null;
+  const wholesalePrices: Record<string, { price: number; marginCents: number }> = {};
+
+  if (session?.userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        role: true,
+        tierId: true,
+        tier: { select: { id: true, name: true, discountPercent: true } },
+      },
+    });
+
+    if (user?.role === "RESELLER" && user.tier) {
+      resellerTier = {
+        id: user.tier.id,
+        name: user.tier.name,
+        discountPercent: Number(user.tier.discountPercent),
+      };
+
+      for (const o of p.offers) {
+        const wp = await priceForOffer(o.id, user.tier.id);
+        if (wp.available) {
+          wholesalePrices[o.id] = {
+            price: wp.priceMinor,
+            marginCents: Math.max(0, o.price - wp.priceMinor),
+          };
+        }
+      }
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -47,7 +84,13 @@ export default async function ProductDetail({
         </div>
 
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)]">
-          <BuyOfferForm offers={p.offers} locale={loc} slug={p.slug} />
+          <BuyOfferForm
+            offers={p.offers}
+            locale={loc}
+            slug={p.slug}
+            resellerTier={resellerTier}
+            wholesalePrices={wholesalePrices}
+          />
 
           <div className="mt-6 rounded-2xl bg-[var(--surface-2)] p-4">
             <p className="text-xs font-semibold">Need help?</p>
