@@ -3,6 +3,8 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import type { Locale } from "@/i18n";
+import { convertMinor } from "./money";
+import { usdRateFor } from "./pricing";
 
 /**
  * DB-backed catalog reads. Returns the same shape the storefront already
@@ -106,28 +108,45 @@ function loadProducts(where: Prisma.ProductWhereInput) {
 }
 
 function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
-  // Cheapest enabled USD link wins, matching computeOfferPrice's selection.
+  // Cheapest enabled link in USD (or converted to USD) wins, matching computeOfferPrice's selection.
   const usable = o.links
-    .map((l) => l.providerOffer)
-    .filter((po) => po.currency === "USD" && po.availability !== "OUT_OF_STOCK");
+    .map((l) => {
+      const po = l.providerOffer;
+      if (po.availability === "OUT_OF_STOCK") return null;
+      const isUsd = po.currency.toUpperCase() === "USD";
+      if (isUsd) {
+        return { po, usdCostMinor: Number(po.costMinor) };
+      }
+      const rate = usdRateFor(po.currency);
+      if (rate === null) return null;
+      const converted = convertMinor({
+        amountMinor: Number(po.costMinor),
+        fromCurrency: po.currency,
+        toCurrency: "USD",
+        rate,
+      });
+      return { po, usdCostMinor: converted };
+    })
+    .filter((x): x is { po: (typeof o.links)[number]["providerOffer"]; usdCostMinor: number } => x !== null);
+
   if (!usable.length) return null;
-  const best = usable.reduce((a, b) => (b.costMinor < a.costMinor ? b : a));
+  const best = usable.reduce((a, b) => (b.usdCostMinor < a.usdCostMinor ? b : a));
 
   const markup = Number(o.markupPercent);
-  const price = Math.round(Number(best.costMinor) * (1 + markup / 100));
+  const price = Math.round(best.usdCostMinor * (1 + markup / 100));
 
-  const inputType = best.customerInputType;
+  const inputType = best.po.customerInputType;
   return {
     id: o.id,
     label: localized(o.labelEn, o.labelAr, o.labelFr),
     rules: localized(o.rulesEn, o.rulesAr, o.rulesFr),
     price,
     compareAt: o.compareAtMinor == null ? undefined : Number(o.compareAtMinor),
-    stock: best.stockQuantity ?? undefined,
+    stock: best.po.stockQuantity ?? undefined,
     badge: o.badge ?? undefined,
     // Mirrors checkout.ts's rule so the form asks for exactly what placeOrder requires.
     requiresCustomerInput: !!inputType && inputType !== "none",
-    customerPrompt: best.customerPrompt ?? undefined,
+    customerPrompt: best.po.customerPrompt ?? undefined,
   };
 }
 

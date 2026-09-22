@@ -176,3 +176,4 @@ describe("BSC BEP-20 USDT Verifier (NodeReal RPC)", () => {
     expect(res.reason).toContain("INSUFFICIENT_AMOUNT_RECEIVED");
   });
 });
+

@@ -11,6 +11,13 @@ const gradients: Record<string, string> = {
   adobe: "from-red-600 via-rose-700 to-red-800",
   microsoft: "from-blue-600 via-blue-700 to-sky-800",
   figma: "from-violet-600 via-purple-700 to-fuchsia-800",
+  capcut: "from-slate-900 via-zinc-800 to-neutral-950",
+  windows: "from-blue-600 via-sky-600 to-cyan-700",
+  vpn: "from-emerald-600 via-teal-700 to-cyan-800",
+  gmail: "from-red-600 via-rose-700 to-red-800",
+  aws: "from-amber-600 via-orange-600 to-amber-700",
+  duolingo: "from-emerald-500 via-green-600 to-lime-600",
+  quillbot: "from-green-600 via-emerald-700 to-teal-800",
 };
 
 export function ProductArt({ id, size = 56 }: { id: string; size?: number }) {
