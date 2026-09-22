@@ -10,6 +10,7 @@ coverage
 .DS_Store
 graphify-out
 .playwright-cli
+.playwright-mcp
 .env.bak-*
 # hook telemetry — ponytail writer scratch, never product
 cross-cutting-principles.md

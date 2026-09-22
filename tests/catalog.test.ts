@@ -1,4 +1,4 @@
-import { describe, expect, it, afterAll, vi } from "vitest";
+import { describe, expect, it, afterAll, beforeAll, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -110,5 +110,73 @@ describe("DB catalog matches the seed source", () => {
     expect(en!.offers[0].label.en).toBe(m.offers[0].label.en);
     expect(ar!.offers[0].label.ar).toBe(m.offers[0].label.ar);
     expect(fr!.offers[0].label.fr).toBe(m.offers[0].label.fr);
+  });
+});
+
+/**
+ * Regression guard for the display/checkout parity bug: the storefront listed
+ * offers whose only link pointed at a paused provider, so the card showed a
+ * price and a Buy button while placeOrder refused them with NO_ENABLED_LINK.
+ * pricing.ts treats a paused provider as a disabled link; catalog.ts has to
+ * agree, or buyers reach checkout on offers that cannot be sold.
+ */
+const PAUSED_TAG = "catalog-paused-provider-test";
+
+describe("a paused provider hides its offers from the storefront", () => {
+  let providerId: string;
+
+  async function cleanupPaused() {
+    await prisma.offerProviderLink.deleteMany({
+      where: { offer: { product: { slug: PAUSED_TAG } } },
+    });
+    await prisma.offer.deleteMany({ where: { product: { slug: PAUSED_TAG } } });
+    await prisma.product.deleteMany({ where: { slug: PAUSED_TAG } });
+    await prisma.category.deleteMany({ where: { slug: PAUSED_TAG } });
+    await prisma.providerOffer.deleteMany({ where: { provider: { code: PAUSED_TAG } } });
+    await prisma.provider.deleteMany({ where: { code: PAUSED_TAG } });
+  }
+
+  beforeAll(async () => {
+    await cleanupPaused();
+
+    const category = await prisma.category.create({
+      data: { slug: PAUSED_TAG, nameEn: "P", nameAr: "P", nameFr: "P" },
+    });
+    const product = await prisma.product.create({
+      data: { slug: PAUSED_TAG, categoryId: category.id, nameEn: "P", nameAr: "P", nameFr: "P" },
+    });
+    const provider = await prisma.provider.create({
+      data: { code: PAUSED_TAG, displayName: "Pausable", baseUrl: "https://example.invalid" },
+    });
+    providerId = provider.id;
+
+    const po = await prisma.providerOffer.create({
+      data: {
+        providerId: provider.id, providerSku: "sku-pausable", rawName: "pausable",
+        availability: "AVAILABLE", costMinor: 1000n, currency: "USD",
+      },
+    });
+    const offer = await prisma.offer.create({
+      data: { productId: product.id, labelEn: "P", labelAr: "P", labelFr: "P" },
+    });
+    await prisma.offerProviderLink.create({
+      data: { offerId: offer.id, providerOfferId: po.id },
+    });
+  });
+
+  afterAll(cleanupPaused);
+
+  it("lists the offer while the provider is active, and drops it once paused", async () => {
+    await prisma.provider.update({ where: { id: providerId }, data: { isActive: true } });
+    const live = await getProductBySlug(PAUSED_TAG, "en");
+    expect(live?.offers).toHaveLength(1);
+    expect(live!.offers[0].price).toBe(1000);
+
+    await prisma.provider.update({ where: { id: providerId }, data: { isActive: false } });
+    // Last sellable offer is gone, so the product itself stops rendering
+    // rather than showing a card with no buyable variant.
+    expect(await getProductBySlug(PAUSED_TAG, "en")).toBeNull();
+    expect((await getProductsByCategory(PAUSED_TAG, "en"))).toHaveLength(0);
+    expect((await getProducts("en")).some((p) => p.slug === PAUSED_TAG)).toBe(false);
   });
 });

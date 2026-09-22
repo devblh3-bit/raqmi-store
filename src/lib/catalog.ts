@@ -63,7 +63,9 @@ const offerSelect = {
   compareAtMinor: true,
   badge: true,
   links: {
-    where: { isEnabled: true },
+    // Paused provider = link disabled, mirroring pricing.ts so the storefront
+    // never lists an offer checkout would refuse with NO_ENABLED_LINK.
+    where: { isEnabled: true, providerOffer: { provider: { isActive: true } } },
     orderBy: [{ priority: "asc" }],
     select: {
       providerOffer: {
