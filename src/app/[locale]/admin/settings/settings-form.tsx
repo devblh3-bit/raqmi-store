@@ -278,7 +278,7 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
               <div className="flex items-center justify-between text-xs font-bold text-[var(--fg)]">
                 <div className="flex items-center gap-2">
                   <span>👀</span>
-                  <span>Storefront Banner Live Preview</span>
+                  <span>Storefront Floating Notice Live Preview</span>
                 </div>
                 <div className="flex gap-1">
                   {(["en", "ar", "fr"] as const).map((loc) => (
@@ -297,12 +297,14 @@ export function SettingsForm({ initialSettings, diagnostics }: SettingsFormProps
                   ))}
                 </div>
               </div>
-              <div
-                dir={previewLocale === "ar" ? "rtl" : "ltr"}
-                className="w-full rounded-xl bg-amber-500 text-zinc-950 border border-amber-600 p-3.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 text-center shadow-sm"
-              >
-                <span className="text-base leading-none">⚠️</span>
-                <span className="tracking-wide">{activePreviewBanner || "(No message provided)"}</span>
+              <div className="py-2 flex justify-center">
+                <div
+                  dir={previewLocale === "ar" ? "rtl" : "ltr"}
+                  className="w-full max-w-xl rounded-full bg-amber-500 text-zinc-950 border border-amber-600 px-5 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 text-center shadow-xl shadow-amber-950/15"
+                >
+                  <span className="text-base leading-none shrink-0">⚠️</span>
+                  <span className="tracking-wide">{activePreviewBanner || "(No message provided)"}</span>
+                </div>
               </div>
             </div>
           </div>

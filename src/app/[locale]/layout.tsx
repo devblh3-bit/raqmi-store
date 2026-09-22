@@ -34,18 +34,19 @@ export default async function LocaleLayout({
     <div dir={isRtl ? "rtl" : "ltr"} className="flex min-h-full flex-col">
       <NextIntlClientProvider messages={messages} locale={locale}>
         <CartProvider>
-          {settings.maintenanceMode && (
-            <div
-              role="alert"
-              className="w-full bg-amber-500 text-zinc-950 border-b border-amber-600 px-4 py-2.5 text-center text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm relative z-30"
-            >
-              <span className="text-base leading-none">⚠️</span>
-              <span className="tracking-wide">{bannerText}</span>
-            </div>
-          )}
           <Header locale={locale as Locale} />
           <main className="flex-1">{children}</main>
           <Footer locale={locale as Locale} />
+
+          {settings.maintenanceMode && (
+            <aside
+              aria-label="Store Maintenance Notice"
+              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] sm:max-w-2xl px-5 py-3 rounded-full bg-amber-500 text-zinc-950 border border-amber-600 shadow-2xl shadow-amber-950/20 flex items-center justify-center gap-2.5 text-xs sm:text-sm font-bold text-center pointer-events-auto transition-all"
+            >
+              <span className="text-base leading-none shrink-0">⚠️</span>
+              <span className="tracking-wide">{bannerText}</span>
+            </aside>
+          )}
         </CartProvider>
       </NextIntlClientProvider>
     </div>
