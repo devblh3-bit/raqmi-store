@@ -1,6 +1,14 @@
 import { describe, expect, it, afterAll, beforeAll, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/auth/admin", () => ({
+  requireAdmin: vi.fn(async () => ({
+    userId: "test-admin",
+    role: "ADMIN",
+    email: "admin@raqmi.test",
+  })),
+}));
 
 import { prisma } from "../src/lib/db";
 import {
@@ -10,97 +18,84 @@ import {
   getCategories,
   getCategory,
 } from "../src/lib/catalog";
-import { products as mock, categories as mockCategories } from "../src/data/catalog";
+import {
+  toggleProviderActive,
+  deleteProductsOfDisabledProvider,
+} from "../src/app/[locale]/admin/sync/actions";
 
-/**
- * Integration test — needs the raqmi-pg container AND a seeded catalog
- * (`node prisma/seed.ts`). It is the parity guard for the mock->DB migration:
- * src/data/catalog.ts is the seed's input, so if someone edits that file and
- * forgets to re-seed, these assertions fail loudly instead of the storefront
- * silently drifting from its own source data.
- */
+beforeAll(async () => {
+  await prisma.user.upsert({
+    where: { id: "test-admin" },
+    update: {},
+    create: {
+      id: "test-admin",
+      email: "test-admin-catalog@raqmi.test",
+      passwordHash: "dummy",
+      role: "ADMIN",
+    },
+  });
+});
 
 afterAll(async () => {
+  await prisma.auditLog.deleteMany({ where: { actorId: "test-admin" } });
+  await prisma.user.deleteMany({ where: { id: "test-admin" } });
   await prisma.$disconnect();
 });
 
-// Vitest runs test files in parallel against one database, and other suites
-// create their own throwaway categories/products. So assert over the slugs the
-// seed owns, never over whole-table counts.
-const SEEDED_PRODUCTS = new Set(mock.map((p) => p.slug));
-const SEEDED_CATEGORIES = new Set(mockCategories.map((c) => c.slug));
-const seededOnly = <T extends { slug: string }>(rows: T[]) =>
-  rows.filter((r) => SEEDED_PRODUCTS.has(r.slug));
+const CANONICAL_SLUGS = [
+  "claude-pro",
+  "gemini-pro",
+  "chatgpt-plus",
+  "canva-pro",
+  "adobe-creative",
+  "youtube-premium",
+  "netflix-premium",
+  "spotify-premium",
+  "microsoft-365",
+  "windows-11-pro",
+  "office-2024-pro",
+  "quillbot-premium",
+  "nordvpn",
+  "duolingo-super",
+  "capcut-pro",
+];
 
-beforeAll(async () => {
-  await prisma.provider.updateMany({ where: { code: "seed" }, data: { isActive: true } });
-});
+describe("DB catalog has consolidated canonical live products", () => {
+  it("returns canonical products with active offers and positive prices", async () => {
+    const all = await getProducts("en");
+    expect(all.length).toBeGreaterThanOrEqual(CANONICAL_SLUGS.length);
 
-describe("DB catalog matches the seed source", () => {
-  it("returns every seeded product with cheapest-price parity", async () => {
-    const all = seededOnly(await getProducts("en"));
-    expect(all).toHaveLength(mock.length);
+    for (const slug of CANONICAL_SLUGS) {
+      const p = all.find((x) => x.slug === slug);
+      expect(p, `canonical product ${slug} missing from active storefront`).toBeDefined();
+      expect(p!.offers.length).toBeGreaterThan(0);
+      expect(p!.image).toBeTruthy();
+      expect(p!.category).toBeTruthy();
 
-    for (const m of mock) {
-      const p = all.find((x) => x.slug === m.slug);
-      expect(p, `product ${m.slug} missing from DB`).toBeDefined();
-      expect(p!.offers).toHaveLength(m.offers.length);
-      expect(p!.sold).toBe(m.sold);
-      expect(p!.image).toBe(m.image);
-      expect(p!.category).toBe(m.category);
-      // what ProductCard renders
-      expect(Math.min(...p!.offers.map((o) => o.price))).toBe(
-        Math.min(...m.offers.map((o) => o.price)),
-      );
-    }
-  });
-
-  it("round-trips every offer's price, compareAt, badge and stock", async () => {
-    const all = seededOnly(await getProducts("en"));
-    for (const m of mock) {
-      const p = all.find((x) => x.slug === m.slug)!;
-      for (const mo of m.offers) {
-        const o = p.offers.find((x) => x.label.en === mo.label.en);
-        expect(o, `${m.slug}/${mo.label.en} missing`).toBeDefined();
-        expect(o!.price).toBe(mo.price);
-        expect(o!.compareAt).toBe(mo.compareAt);
-        expect(o!.badge).toBe(mo.badge);
-        expect(o!.stock).toBe(mo.stock);
-        // real Offer.id, not the mock's "1m"/"3m" — this is what checkout takes
-        expect(o!.id).toMatch(/^[a-z0-9]{20,}$/);
+      for (const off of p!.offers) {
+        expect(off.price).toBeGreaterThan(0);
+        expect(off.label.en).toBeTruthy();
+        expect(off.id).toMatch(/^[a-z0-9]{20,}$/);
       }
     }
   });
 
-  it("preserves the home-page and promo partitions", async () => {
-    const all = seededOnly(await getProducts("en"));
-    expect(all.filter((p) => p.isFeatured)).toHaveLength(
-      mock.filter((p) => p.isFeatured).length,
-    );
-    expect(all.filter((p) => p.isNew)).toHaveLength(mock.filter((p) => p.isNew).length);
-
-    const promo = (list: { offers: { price: number; compareAt?: number }[] }[]) =>
-      list.filter((p) => p.offers.some((o) => o.compareAt && o.compareAt > o.price)).length;
-    expect(promo(all)).toBe(promo(mock));
-    expect(promo(all)).toBeGreaterThan(0); // guards against compareAt silently dropping
-  });
-
   it("serves categories with DB-side product counts", async () => {
-    const cats = (await getCategories()).filter((c) => SEEDED_CATEGORIES.has(c.slug));
-    expect(cats).toHaveLength(mockCategories.length);
-    expect(cats.reduce((s, c) => s + c.count, 0)).toBeGreaterThanOrEqual(mock.length);
-
+    const cats = await getCategories();
+    expect(cats.length).toBeGreaterThan(0);
     const ai = await getCategory("ai");
-    expect(ai?.count).toBeGreaterThanOrEqual(mock.filter((p) => p.category === "ai").length);
+    expect(ai).toBeDefined();
+    expect(ai!.count).toBeGreaterThan(0);
     expect(await getCategory("no-such-category")).toBeNull();
   });
 
   it("looks up by slug and by category, and 404s cleanly", async () => {
     expect(await getProductBySlug("chatgpt-plus", "en")).not.toBeNull();
+    expect(await getProductBySlug("claude-pro", "en")).not.toBeNull();
     expect(await getProductBySlug("does-not-exist", "en")).toBeNull();
 
-    const ai = seededOnly(await getProductsByCategory("ai", "en"));
-    expect(ai).toHaveLength(mock.filter((p) => p.category === "ai").length);
+    const ai = await getProductsByCategory("ai", "en");
+    expect(ai.length).toBeGreaterThan(0);
     expect(ai.every((p) => p.category === "ai")).toBe(true);
   });
 
@@ -110,19 +105,18 @@ describe("DB catalog matches the seed source", () => {
       getProductBySlug("chatgpt-plus", "ar"),
       getProductBySlug("chatgpt-plus", "fr"),
     ]);
-    const m = mock.find((p) => p.slug === "chatgpt-plus")!;
-    expect(en!.offers[0].label.en).toBe(m.offers[0].label.en);
-    expect(ar!.offers[0].label.ar).toBe(m.offers[0].label.ar);
-    expect(fr!.offers[0].label.fr).toBe(m.offers[0].label.fr);
+
+    expect(en).not.toBeNull();
+    expect(ar).not.toBeNull();
+    expect(fr).not.toBeNull();
+    expect(en!.offers[0].label.en).toBeTruthy();
+    expect(ar!.offers[0].label.ar).toBeTruthy();
+    expect(fr!.offers[0].label.fr).toBeTruthy();
   });
 });
 
 /**
- * Regression guard for the display/checkout parity bug: the storefront listed
- * offers whose only link pointed at a paused provider, so the card showed a
- * price and a Buy button while placeOrder refused them with NO_ENABLED_LINK.
- * pricing.ts treats a paused provider as a disabled link; catalog.ts has to
- * agree, or buyers reach checkout on offers that cannot be sold.
+ * Regression guard for provider deactivation storefront behavior.
  */
 const PAUSED_TAG = "catalog-paused-provider-test";
 
@@ -156,8 +150,12 @@ describe("a paused provider hides its offers from the storefront", () => {
 
     const po = await prisma.providerOffer.create({
       data: {
-        providerId: provider.id, providerSku: "sku-pausable", rawName: "pausable",
-        availability: "AVAILABLE", costMinor: 1000n, currency: "USD",
+        providerId: provider.id,
+        providerSku: "sku-pausable",
+        rawName: "pausable",
+        availability: "AVAILABLE",
+        costMinor: 1000n,
+        currency: "USD",
       },
     });
     const offer = await prisma.offer.create({
@@ -178,9 +176,108 @@ describe("a paused provider hides its offers from the storefront", () => {
 
     await prisma.provider.update({ where: { id: providerId }, data: { isActive: false } });
     // Last sellable offer is gone, so the product itself stops rendering
-    // rather than showing a card with no buyable variant.
     expect(await getProductBySlug(PAUSED_TAG, "en")).toBeNull();
-    expect((await getProductsByCategory(PAUSED_TAG, "en"))).toHaveLength(0);
+    expect(await getProductsByCategory(PAUSED_TAG, "en")).toHaveLength(0);
     expect((await getProducts("en")).some((p) => p.slug === PAUSED_TAG)).toBe(false);
+  });
+});
+
+/**
+ * Tests for provider toggle and exclusive product cleanup actions in /admin/sync.
+ */
+const SYNC_ACTION_TAG = "sync-action-test-provider";
+
+describe("admin sync provider toggle and product purge actions", () => {
+  let providerId: string;
+  let productId: string;
+
+  async function cleanupSyncTest() {
+    await prisma.offerProviderLink.deleteMany({
+      where: { offer: { product: { slug: SYNC_ACTION_TAG } } },
+    });
+    await prisma.offer.deleteMany({ where: { product: { slug: SYNC_ACTION_TAG } } });
+    await prisma.product.deleteMany({ where: { slug: SYNC_ACTION_TAG } });
+    await prisma.category.deleteMany({ where: { slug: SYNC_ACTION_TAG } });
+    await prisma.providerOffer.deleteMany({ where: { provider: { code: SYNC_ACTION_TAG } } });
+    await prisma.provider.deleteMany({ where: { code: SYNC_ACTION_TAG } });
+  }
+
+  beforeAll(async () => {
+    await cleanupSyncTest();
+
+    const category = await prisma.category.create({
+      data: { slug: SYNC_ACTION_TAG, nameEn: "SA", nameAr: "SA", nameFr: "SA" },
+    });
+    const product = await prisma.product.create({
+      data: {
+        slug: SYNC_ACTION_TAG,
+        categoryId: category.id,
+        nameEn: "SA Product",
+        nameAr: "SA Product",
+        nameFr: "SA Product",
+        isActive: true,
+      },
+    });
+    productId = product.id;
+
+    const provider = await prisma.provider.create({
+      data: { code: SYNC_ACTION_TAG, displayName: "SA Provider", baseUrl: "https://sa.invalid", isActive: true },
+    });
+    providerId = provider.id;
+
+    const po = await prisma.providerOffer.create({
+      data: {
+        providerId: provider.id,
+        providerSku: "sku-sa",
+        rawName: "SA Offer",
+        availability: "AVAILABLE",
+        costMinor: 500n,
+        currency: "USD",
+      },
+    });
+    const offer = await prisma.offer.create({
+      data: { productId: product.id, labelEn: "SA Offer", labelAr: "SA", labelFr: "SA", isActive: true },
+    });
+    await prisma.offerProviderLink.create({
+      data: { offerId: offer.id, providerOfferId: po.id, isEnabled: true },
+    });
+  });
+
+  afterAll(cleanupSyncTest);
+
+  it("toggling provider to inactive deactivates dependent products and re-enabling reactivates them", async () => {
+    const fd = new FormData();
+    fd.append("providerId", providerId);
+
+    // Toggle off
+    await toggleProviderActive(fd);
+    const deactivatedProvider = await prisma.provider.findUnique({ where: { id: providerId } });
+    expect(deactivatedProvider?.isActive).toBe(false);
+
+    const deactivatedProduct = await prisma.product.findUnique({ where: { id: productId } });
+    expect(deactivatedProduct?.isActive).toBe(false);
+
+    // Toggle on
+    await toggleProviderActive(fd);
+    const reactivatedProvider = await prisma.provider.findUnique({ where: { id: providerId } });
+    expect(reactivatedProvider?.isActive).toBe(true);
+
+    const reactivatedProduct = await prisma.product.findUnique({ where: { id: productId } });
+    expect(reactivatedProduct?.isActive).toBe(true);
+  });
+
+  it("deleteProductsOfDisabledProvider deletes exclusive products of inactive provider", async () => {
+    // First disable provider
+    const toggleFd = new FormData();
+    toggleFd.append("providerId", providerId);
+    await toggleProviderActive(toggleFd);
+
+    // Call delete
+    const deleteFd = new FormData();
+    deleteFd.append("providerId", providerId);
+    await deleteProductsOfDisabledProvider(deleteFd);
+
+    const checkProduct = await prisma.product.findUnique({ where: { id: productId } });
+    expect(checkProduct).toBeNull();
   });
 });

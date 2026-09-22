@@ -26,7 +26,7 @@ export type CatalogProduct = {
     nameEn: string;
   };
   offerCount: number;
-  health: "HEALTHY" | "PARTIAL" | "OUT_OF_STOCK" | "MANUAL" | "EMPTY";
+  health: "HEALTHY" | "PARTIAL" | "OUT_OF_STOCK" | "MANUAL" | "EMPTY" | "PROVIDER_PAUSED";
   priceSummary: string;
 };
 
@@ -50,7 +50,7 @@ export function CatalogTable({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE" | "FEATURED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE" | "FEATURED" | "PROVIDER_PAUSED">("ALL");
   const [isPending, startTransition] = useTransition();
   const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
   const [bulkTargetCategoryId, setBulkTargetCategoryId] = useState("");
@@ -72,6 +72,7 @@ export function CatalogTable({
       if (statusFilter === "ACTIVE" && !p.isActive) return false;
       if (statusFilter === "INACTIVE" && p.isActive) return false;
       if (statusFilter === "FEATURED" && !p.isFeatured) return false;
+      if (statusFilter === "PROVIDER_PAUSED" && p.health !== "PROVIDER_PAUSED") return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -84,15 +85,30 @@ export function CatalogTable({
     });
   }, [products, selectedCategory, statusFilter, searchQuery]);
 
+  // Sort products: active products with active suppliers first, paused/provider-paused at the bottom
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      const aDisabled = !a.isActive || a.health === "PROVIDER_PAUSED";
+      const bDisabled = !b.isActive || b.health === "PROVIDER_PAUSED";
+      if (aDisabled !== bDisabled) {
+        return aDisabled ? 1 : -1;
+      }
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+      return a.nameEn.localeCompare(b.nameEn);
+    });
+  }, [filteredProducts]);
+
   // Selection handlers
   const allVisibleSelected =
-    filteredProducts.length > 0 && filteredProducts.every((p) => selectedIds.has(p.id));
+    sortedProducts.length > 0 && sortedProducts.every((p) => selectedIds.has(p.id));
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredProducts.map((p) => p.id)));
+      setSelectedIds(new Set(sortedProducts.map((p) => p.id)));
     }
   };
 
@@ -267,6 +283,16 @@ export function CatalogTable({
             >
               ⭐ Featured ({products.filter((p) => p.isFeatured).length})
             </button>
+            {products.some((p) => p.health === "PROVIDER_PAUSED") && (
+              <button
+                onClick={() => setStatusFilter("PROVIDER_PAUSED")}
+                className={`rounded-full px-3 py-1 transition ${
+                  statusFilter === "PROVIDER_PAUSED" ? "bg-amber-600 text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                }`}
+              >
+                ⏸️ Provider Paused ({products.filter((p) => p.health === "PROVIDER_PAUSED").length})
+              </button>
+            )}
           </div>
         </div>
 
@@ -326,7 +352,7 @@ export function CatalogTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {filteredProducts.map((p) => {
+              {sortedProducts.map((p) => {
                 const isSelected = selectedIds.has(p.id);
                 return (
                   <tr
@@ -402,6 +428,11 @@ export function CatalogTable({
                           🔴 Stockout
                         </span>
                       )}
+                      {p.health === "PROVIDER_PAUSED" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          ⏸️ Provider Paused
+                        </span>
+                      )}
                       {p.health === "MANUAL" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-600 dark:text-sky-400">
                           ⚪ Direct / Keys
@@ -468,7 +499,7 @@ export function CatalogTable({
                 );
               })}
 
-              {filteredProducts.length === 0 && (
+              {sortedProducts.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-[var(--fg-muted)]">
                     <p className="text-base font-semibold">No products found</p>

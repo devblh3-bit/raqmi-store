@@ -1,8 +1,10 @@
 /**
- * Seeds the storefront with real, in-stock products and offers from
- * connected supplier bots (Canboso, QCST, VBR).
+ * Seeds and consolidates the storefront with real, in-stock products and offers
+ * from connected supplier bots (Canboso, QCST, VBR).
  *
- * Idempotent: re-runnable, keyed on product and offer slugs/labels.
+ * Removes the temporary synthetic "seed" provider and placeholder offers,
+ * and attaches real live offers directly onto clean, canonical product slugs.
+ *
  * Run: npx tsx --conditions=react-server --env-file=.env prisma/seed-live-catalog.ts
  */
 import { PrismaClient } from "@prisma/client";
@@ -37,17 +39,17 @@ interface ProductSpec {
   offers: OfferSpec[];
 }
 
-const liveProducts: ProductSpec[] = [
+const canonicalLiveProducts: ProductSpec[] = [
   // =========================================================================
   // CATEGORY: AI & LLM (ai)
   // =========================================================================
   {
-    slug: "claude-api-tokens",
+    slug: "claude-pro",
     categorySlug: "ai",
     name: {
-      en: "Claude API Token Credits",
-      ar: "رصيد توكنات كلود Claude API",
-      fr: "Crédits de Tokens Claude API",
+      en: "Claude AI & API Credits",
+      ar: "كلود الذكاء الاصطناعي وتوكنات API",
+      fr: "Claude AI & Crédits API",
     },
     description: {
       en: "High-performance Claude 3.5 Sonnet, Opus & Haiku API access for coding, autonomous agents, and AI development. Full warranty and instant delivery.",
@@ -121,7 +123,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "google-gemini-pro",
+    slug: "gemini-pro",
     categorySlug: "ai",
     name: {
       en: "Google Gemini Pro AI",
@@ -167,12 +169,54 @@ const liveProducts: ProductSpec[] = [
       },
     ],
   },
+  {
+    slug: "chatgpt-plus",
+    categorySlug: "ai",
+    name: {
+      en: "ChatGPT & Codex API",
+      ar: "شات جي بي تي وتوكنات Codex",
+      fr: "ChatGPT & API Codex",
+    },
+    description: {
+      en: "High-speed OpenAI GPT-4o and Codex developer token credits for automated coding, analysis, and API workflows.",
+      ar: "رصيد توكنات مطوري كودكس و GPT-4o عالي السرعة لمهام البرمجة والتحليل والتطبيقات الذكية.",
+      fr: "Crédits de tokens développeur Codex et GPT-4o haute vitesse pour le codage et les flux API.",
+    },
+    image: "chatgpt",
+    isFeatured: true,
+    soldCount: 420,
+    sortOrder: 3,
+    offers: [
+      {
+        label: {
+          en: "API Codex 30M Token 1 Day (Full Warranty)",
+          ar: "30 مليون توكن كودكس - يوم واحد (ضمان كامل)",
+          fr: "30M Tokens Codex 1 Jour (Garantie Totale)",
+        },
+        badge: "Popular",
+        markupPercent: 50, // 27,000 VND (~$1.08) -> ~$1.62
+        compareAtMinor: 400,
+        links: [{ providerCode: "qcst", providerSku: "prod_c3a078ee442de87202ce", priority: 0 }],
+      },
+      {
+        label: {
+          en: "API Codex 100M Token 1 Day (Full Warranty)",
+          ar: "100 مليون توكن كودكس - يوم واحد (ضمان كامل)",
+          fr: "100M Tokens Codex 1 Jour (Garantie Totale)",
+        },
+        badge: "Best Value",
+        markupPercent: 40, // 66,000 VND (~$2.64) -> ~$3.70
+        compareAtMinor: 800,
+        links: [{ providerCode: "qcst", providerSku: "prod_77397b7a264e838cf7a5", priority: 0 }],
+      },
+    ],
+  },
 
   // =========================================================================
   // CATEGORY: DESIGN & CREATIVE (kreatif)
   // =========================================================================
   {
-    slug: "capcut-pro-editor",
+    slug: "capcut-pro",
     categorySlug: "kreatif",
     name: {
       en: "CapCut Pro Video Editor",
@@ -187,7 +231,7 @@ const liveProducts: ProductSpec[] = [
     image: "capcut",
     isFeatured: true,
     soldCount: 890,
-    sortOrder: 3,
+    sortOrder: 4,
     offers: [
       {
         label: {
@@ -233,7 +277,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "canva-pro-suite",
+    slug: "canva-pro",
     categorySlug: "kreatif",
     name: {
       en: "Canva Pro Design Suite",
@@ -248,7 +292,7 @@ const liveProducts: ProductSpec[] = [
     image: "canva",
     isFeatured: true,
     soldCount: 654,
-    sortOrder: 4,
+    sortOrder: 5,
     offers: [
       {
         label: {
@@ -268,19 +312,39 @@ const liveProducts: ProductSpec[] = [
           fr: "Canva Pro 1 An (Slot - Garantie Totale)",
         },
         badge: "1 Year",
-        markupPercent: 30, // $3.05 -> ~$3.97
+        markupPercent: 30, // $3.05 / 50k VND -> ~$3.97 / $2.60
         compareAtMinor: 1200,
         links: [
           { providerCode: "canboso", providerSku: "6aacd1825271203cb12b8cb8", priority: 0 },
           { providerCode: "qcst", providerSku: "prod_38bd624138507d516acb", priority: 1 },
         ],
       },
+    ],
+  },
+  {
+    slug: "adobe-creative",
+    categorySlug: "kreatif",
+    name: {
+      en: "Adobe Creative Cloud & Express",
+      ar: "أدوبي كرييتف كلاود وإكسبريس",
+      fr: "Adobe Creative Cloud & Express",
+    },
+    description: {
+      en: "Adobe Express Premium with complete cloud templates, fonts, generative AI tools, and 12-month access.",
+      ar: "أدوبي إكسبريس بريميوم مع مكتبة القوالب الكاملة والخطوط وأدوات الذكاء الاصطناعي التوليدي مع وصول 12 شهراً.",
+      fr: "Adobe Express Premium avec modèles cloud complets, polices et outils d'IA générative pendant 12 mois.",
+    },
+    image: "adobe",
+    soldCount: 310,
+    sortOrder: 6,
+    offers: [
       {
         label: {
           en: "Adobe Express Premium 12 Months",
           ar: "أدوبي إكسبريس بريميوم 12 شهراً",
           fr: "Adobe Express Premium 12 Mois",
         },
+        badge: "1 Year",
         markupPercent: 100, // 25,000 VND (~$1.00) -> ~$2.00
         compareAtMinor: 800,
         links: [{ providerCode: "qcst", providerSku: "prod_c0ee59442b26bd007031", priority: 0 }],
@@ -292,7 +356,7 @@ const liveProducts: ProductSpec[] = [
   // CATEGORY: STREAMING (streaming)
   // =========================================================================
   {
-    slug: "youtube-premium-membership",
+    slug: "youtube-premium",
     categorySlug: "streaming",
     name: {
       en: "YouTube Premium & Music",
@@ -307,7 +371,7 @@ const liveProducts: ProductSpec[] = [
     image: "youtube",
     isFeatured: true,
     soldCount: 980,
-    sortOrder: 5,
+    sortOrder: 7,
     offers: [
       {
         label: {
@@ -343,7 +407,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "netflix-4k-uhd",
+    slug: "netflix-premium",
     categorySlug: "streaming",
     name: {
       en: "Netflix 4K Ultra HD",
@@ -357,7 +421,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "netflix",
     soldCount: 420,
-    sortOrder: 6,
+    sortOrder: 8,
     offers: [
       {
         label: {
@@ -373,7 +437,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "spotify-premium-music",
+    slug: "spotify-premium",
     categorySlug: "streaming",
     name: {
       en: "Spotify Premium",
@@ -387,7 +451,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "spotify",
     soldCount: 310,
-    sortOrder: 7,
+    sortOrder: 9,
     offers: [
       {
         label: {
@@ -407,7 +471,7 @@ const liveProducts: ProductSpec[] = [
   // CATEGORY: PRODUCTIVITY & LICENSES (tools & lisensi)
   // =========================================================================
   {
-    slug: "microsoft-365-suite",
+    slug: "microsoft-365",
     categorySlug: "tools",
     name: {
       en: "Microsoft 365 & Office Suite",
@@ -422,7 +486,7 @@ const liveProducts: ProductSpec[] = [
     image: "microsoft",
     isFeatured: true,
     soldCount: 715,
-    sortOrder: 8,
+    sortOrder: 10,
     offers: [
       {
         label: {
@@ -458,7 +522,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "windows-10-11-pro-license",
+    slug: "windows-11-pro",
     categorySlug: "lisensi",
     name: {
       en: "Windows 10 / 11 Pro Genuine License",
@@ -472,7 +536,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "windows",
     soldCount: 560,
-    sortOrder: 9,
+    sortOrder: 11,
     offers: [
       {
         label: {
@@ -498,7 +562,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "office-2024-pro-license",
+    slug: "office-2024-pro",
     categorySlug: "lisensi",
     name: {
       en: "Microsoft Office 2024 Pro Plus Lifetime Key",
@@ -512,7 +576,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "microsoft",
     soldCount: 290,
-    sortOrder: 10,
+    sortOrder: 12,
     offers: [
       {
         label: {
@@ -528,7 +592,7 @@ const liveProducts: ProductSpec[] = [
     ],
   },
   {
-    slug: "quillbot-premium-pro",
+    slug: "quillbot-premium",
     categorySlug: "tools",
     name: {
       en: "QuillBot Premium Paraphraser",
@@ -542,7 +606,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "quillbot",
     soldCount: 185,
-    sortOrder: 11,
+    sortOrder: 13,
     offers: [
       {
         label: {
@@ -565,7 +629,7 @@ const liveProducts: ProductSpec[] = [
   // CATEGORY: VPN & SECURITY (vpn)
   // =========================================================================
   {
-    slug: "ultra-vpn-access",
+    slug: "nordvpn",
     categorySlug: "vpn",
     name: {
       en: "Premium VPN & Privacy Pass",
@@ -577,9 +641,9 @@ const liveProducts: ProductSpec[] = [
       ar: "اتصالات مشفرة وفائقة السرعة لحماية الخصوصية وتخطي الحجب الجغرافي وفتح مكتبات البث العالمية.",
       fr: "Connexions VPN chiffrées à haute vitesse pour contourner les restrictions et sécuriser votre navigation.",
     },
-    image: "vpn",
+    image: "nordvpn",
     soldCount: 380,
-    sortOrder: 12,
+    sortOrder: 14,
     offers: [
       {
         label: {
@@ -619,7 +683,7 @@ const liveProducts: ProductSpec[] = [
   // CATEGORY: EDUCATION (pendidikan)
   // =========================================================================
   {
-    slug: "duolingo-super-learn",
+    slug: "duolingo-super",
     categorySlug: "pendidikan",
     name: {
       en: "Duolingo Super & Max",
@@ -633,7 +697,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "duolingo",
     soldCount: 460,
-    sortOrder: 13,
+    sortOrder: 15,
     offers: [
       {
         label: {
@@ -687,7 +751,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "gmail",
     soldCount: 840,
-    sortOrder: 14,
+    sortOrder: 16,
     offers: [
       {
         label: {
@@ -731,7 +795,7 @@ const liveProducts: ProductSpec[] = [
     },
     image: "aws",
     soldCount: 215,
-    sortOrder: 15,
+    sortOrder: 17,
     offers: [
       {
         label: {
@@ -749,9 +813,69 @@ const liveProducts: ProductSpec[] = [
 ];
 
 async function main() {
-  console.log("Starting Live Provider Catalog Seeder...");
+  console.log("=== Step 1: Purging 'seed' synthetic provider and placeholder offers ===");
 
-  // Load providers map
+  // 1. Delete all links pointing to provider "seed"
+  const deletedLinks = await prisma.offerProviderLink.deleteMany({
+    where: { providerOffer: { provider: { code: "seed" } } },
+  });
+  console.log(`- Deleted ${deletedLinks.count} OfferProviderLinks pointing to 'seed'`);
+
+  // 2. Delete all ProviderOffers belonging to provider "seed"
+  const deletedPos = await prisma.providerOffer.deleteMany({
+    where: { provider: { code: "seed" } },
+  });
+  console.log(`- Deleted ${deletedPos.count} ProviderOffers belonging to 'seed'`);
+
+  // 3. Delete the "seed" provider
+  const deletedProv = await prisma.provider.deleteMany({
+    where: { code: "seed" },
+  });
+  console.log(`- Deleted ${deletedProv.count} 'seed' Provider record`);
+
+  // 4. Remove obsolete duplicate product slugs created in earlier intermediate steps
+  const obsoleteSlugs = [
+    "canva-pro-suite",
+    "youtube-premium-membership",
+    "netflix-4k-uhd",
+    "spotify-premium-music",
+    "microsoft-365-suite",
+    "google-gemini-pro",
+    "claude-api-tokens",
+    "quillbot-premium-pro",
+    "duolingo-super-learn",
+    "ultra-vpn-access",
+    "capcut-pro-editor",
+    "windows-10-11-pro-license",
+    "office-2024-pro-license",
+  ];
+
+  // Also remove unlinked placeholder products (notion-plus, figma-pro) if empty
+  const staleEmpty = ["notion-plus", "figma-pro"];
+  for (const s of staleEmpty) {
+    const prod = await prisma.product.findUnique({
+      where: { slug: s },
+      include: { offers: { include: { links: true } } },
+    });
+    if (prod && prod.offers.every((o) => o.links.length === 0)) {
+      obsoleteSlugs.push(s);
+    }
+  }
+
+  // Delete offers and products for obsolete slugs
+  await prisma.offerProviderLink.deleteMany({
+    where: { offer: { product: { slug: { in: obsoleteSlugs } } } },
+  });
+  await prisma.offer.deleteMany({
+    where: { product: { slug: { in: obsoleteSlugs } } },
+  });
+  const deletedObsoleteProducts = await prisma.product.deleteMany({
+    where: { slug: { in: obsoleteSlugs } },
+  });
+  console.log(`- Removed ${deletedObsoleteProducts.count} duplicate/obsolete product records`);
+
+  console.log("\n=== Step 2: Seeding & Consolidating Canonical Live Products ===");
+
   const providers = await prisma.provider.findMany();
   const providerByCode = new Map(providers.map((p) => [p.code.toLowerCase(), p]));
 
@@ -759,8 +883,7 @@ async function main() {
   let offersUpserted = 0;
   let linksCreated = 0;
 
-  for (const p of liveProducts) {
-    // 1. Find category
+  for (const p of canonicalLiveProducts) {
     const category = await prisma.category.findUnique({
       where: { slug: p.categorySlug },
     });
@@ -769,7 +892,6 @@ async function main() {
       continue;
     }
 
-    // 2. Upsert Product
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
       update: {
@@ -806,9 +928,23 @@ async function main() {
     });
     productsUpserted++;
 
-    // 3. Upsert Offers & Links
+    // Purge any lingering unlinked mock offers on this canonical product
+    const validOfferLabels = new Set(p.offers.map((o) => o.label.en));
+    const staleOffers = await prisma.offer.findMany({
+      where: { productId: product.id, labelEn: { notIn: [...validOfferLabels] } },
+    });
+    if (staleOffers.length > 0) {
+      await prisma.offerProviderLink.deleteMany({
+        where: { offerId: { in: staleOffers.map((o) => o.id) } },
+      });
+      await prisma.offer.deleteMany({
+        where: { id: { in: staleOffers.map((o) => o.id) } },
+      });
+      console.log(`  Cleaned ${staleOffers.length} stale offers from "${p.slug}"`);
+    }
+
+    // Upsert offers & links
     for (const [offerIdx, o] of p.offers.entries()) {
-      // Find existing offer by labelEn within this product
       let offer = await prisma.offer.findFirst({
         where: { productId: product.id, labelEn: o.label.en },
       });
@@ -849,7 +985,6 @@ async function main() {
       }
       offersUpserted++;
 
-      // 4. Attach Provider Links
       for (const linkSpec of o.links) {
         const prov = providerByCode.get(linkSpec.providerCode.toLowerCase());
         if (!prov) {
@@ -896,15 +1031,15 @@ async function main() {
     }
   }
 
-  console.log(`\n✅ Seeding completed!`);
-  console.log(`- Products upserted: ${productsUpserted}`);
-  console.log(`- Offers upserted: ${offersUpserted}`);
-  console.log(`- Provider links created/verified: ${linksCreated}`);
+  console.log(`\n✅ Catalog Consolidation Complete!`);
+  console.log(`- Canonical products: ${productsUpserted}`);
+  console.log(`- Active real offers: ${offersUpserted}`);
+  console.log(`- Provider links: ${linksCreated}`);
 }
 
 main()
   .catch((e) => {
-    console.error("Seeding failed:", e);
+    console.error("Consolidation failed:", e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

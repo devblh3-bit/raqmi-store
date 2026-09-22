@@ -58,6 +58,7 @@ import { prisma } from "../src/lib/db";
 import { placeOrder } from "../src/lib/checkout";
 import { creditWallet } from "../src/lib/wallet";
 import { getProducts } from "../src/lib/catalog";
+import { priceForOffer } from "../src/lib/pricing";
 import { dispatchPendingOrders } from "../src/lib/fulfillment";
 
 /**
@@ -86,7 +87,7 @@ async function cleanup() {
 
 beforeAll(async () => {
   await cleanup();
-  await prisma.provider.updateMany({ where: { code: "seed" }, data: { isActive: true } });
+  await prisma.provider.updateMany({ data: { isActive: true } });
   userId = (await prisma.user.create({ data: { email: EMAIL } })).id;
   await creditWallet({ userId, amountMinor: 500000, type: "DEPOSIT", reference: "e2e" });
 });
@@ -99,12 +100,23 @@ afterAll(async () => {
 describe("purchase to delivery", () => {
   it("carries a real catalog offer from checkout through to a delivered order", async () => {
     const products = await getProducts("en");
-    const product = products.find((p) => p.offers.length > 0)!;
-    const offer = product.offers[0];
+    let targetOffer: { id: string; price: number } | null = null;
+    for (const p of products) {
+      for (const o of p.offers) {
+        const pr = await priceForOffer(o.id);
+        if (pr.available) {
+          targetOffer = { id: o.id, price: pr.priceMinor };
+          break;
+        }
+      }
+      if (targetOffer) break;
+    }
+    expect(targetOffer).not.toBeNull();
+    const offer = targetOffer!;
 
     const order = await placeOrder({
       userId,
-      lines: [{ offerId: offer.id }],
+      lines: [{ offerId: offer.id, customerInput: "customer@example.com" }],
       locale: "en",
     });
 

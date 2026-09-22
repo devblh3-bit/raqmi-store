@@ -33,7 +33,7 @@ export default async function EditProductPage({
           include: {
             providerOffer: {
               include: {
-                provider: { select: { code: true, displayName: true } },
+                provider: { select: { code: true, displayName: true, isActive: true } },
               },
             },
           },
@@ -103,6 +103,7 @@ export default async function EditProductPage({
         provider: {
           code: l.providerOffer.provider.code,
           displayName: l.providerOffer.provider.displayName,
+          isActive: l.providerOffer.provider.isActive,
         },
       },
     })),

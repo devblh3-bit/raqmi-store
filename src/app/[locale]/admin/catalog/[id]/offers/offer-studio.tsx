@@ -10,6 +10,7 @@ import {
   deleteLink,
   reorderLink,
   deleteOffer,
+  reorderOffer,
 } from "../../actions";
 
 export type SerializedProviderOffer = {
@@ -29,6 +30,7 @@ export type SerializedProviderOffer = {
   provider: {
     code: string;
     displayName: string;
+    isActive?: boolean;
   };
 };
 
@@ -174,7 +176,7 @@ export function OfferStudio({
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            {offers.map((offer) => {
+            {offers.map((offer, offerIdx) => {
               const primaryLink = offer.links.find((l) => l.priority === 1) ?? offer.links[0];
               const costFloat = primaryLink ? Number(primaryLink.providerOffer.costMinor) / 100 : 0;
               const retailFloat = costFloat * (1 + offer.markupPercent / 100);
@@ -189,6 +191,41 @@ export function OfferStudio({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
+                        {/* Variant Reorder buttons */}
+                        <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5 text-xs">
+                          <button
+                            disabled={isPending || offerIdx === 0}
+                            onClick={() => {
+                              startTransition(async () => {
+                                const fd = new FormData();
+                                fd.append("offerId", offer.id);
+                                fd.append("direction", "up");
+                                await reorderOffer(fd);
+                              });
+                            }}
+                            title="Move Variant Up"
+                            className="px-1 hover:text-[var(--accent)] disabled:opacity-25"
+                          >
+                            ▲
+                          </button>
+                          <span className="text-[10px] text-[var(--fg-muted)]">#{offerIdx + 1}</span>
+                          <button
+                            disabled={isPending || offerIdx === offers.length - 1}
+                            onClick={() => {
+                              startTransition(async () => {
+                                const fd = new FormData();
+                                fd.append("offerId", offer.id);
+                                fd.append("direction", "down");
+                                await reorderOffer(fd);
+                              });
+                            }}
+                            title="Move Variant Down"
+                            className="px-1 hover:text-[var(--accent)] disabled:opacity-25"
+                          >
+                            ▼
+                          </button>
+                        </div>
+
                         <span className="text-base font-bold text-[var(--fg)]">
                           {offer.labelEn}
                         </span>
@@ -286,6 +323,11 @@ export function OfferStudio({
                               </span>
                               <span className="font-bold text-[var(--fg)]">
                                 [{link.providerOffer.provider.displayName}]
+                                {link.providerOffer.provider.isActive === false && (
+                                  <span className="ml-1 rounded bg-amber-500/10 px-1 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                                    Paused
+                                  </span>
+                                )}
                               </span>
                               <span className="font-mono text-[var(--fg-muted)]">
                                 {link.providerOffer.providerSku}

@@ -46,6 +46,86 @@ export async function toggleProviderActive(formData: FormData): Promise<void> {
 
   const next = !provider.isActive;
   await prisma.provider.update({ where: { id: providerId }, data: { isActive: next } });
+
+  if (!next) {
+    // Provider was disabled: find all products linked to this provider
+    const productsWithOffers = await prisma.product.findMany({
+      where: {
+        offers: {
+          some: {
+            links: {
+              some: {
+                providerOffer: { providerId },
+              },
+            },
+          },
+        },
+      },
+      include: {
+        offers: {
+          include: {
+            links: {
+              include: {
+                providerOffer: {
+                  select: {
+                    providerId: true,
+                    provider: { select: { isActive: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const productsToDeactivate: string[] = [];
+    for (const prod of productsWithOffers) {
+      // Check if product has any enabled link to any OTHER active provider
+      const hasOtherActiveProvider = prod.offers.some((offer) =>
+        offer.links.some(
+          (link) =>
+            link.isEnabled &&
+            link.providerOffer.providerId !== providerId &&
+            link.providerOffer.provider.isActive,
+        ),
+      );
+      if (!hasOtherActiveProvider) {
+        productsToDeactivate.push(prod.id);
+      }
+    }
+
+    if (productsToDeactivate.length > 0) {
+      await prisma.product.updateMany({
+        where: { id: { in: productsToDeactivate } },
+        data: { isActive: false },
+      });
+    }
+  } else {
+    // Provider was enabled: re-activate products linked to this provider
+    const productsToActivate = await prisma.product.findMany({
+      where: {
+        offers: {
+          some: {
+            links: {
+              some: {
+                providerOffer: { providerId },
+              },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (productsToActivate.length > 0) {
+      await prisma.product.updateMany({
+        where: { id: { in: productsToActivate.map((p) => p.id) } },
+        data: { isActive: true },
+      });
+    }
+  }
+
   await prisma.auditLog.create({
     data: {
       actorId: session.userId,
@@ -55,7 +135,110 @@ export async function toggleProviderActive(formData: FormData): Promise<void> {
       detail: { code: provider.code } as never,
     },
   });
+
   revalidatePath("/admin/sync");
+  revalidatePath("/admin/catalog");
+  revalidatePath("/[locale]/admin/sync", "page");
+  revalidatePath("/[locale]/admin/catalog", "page");
+}
+
+export async function deleteProductsOfDisabledProvider(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const providerId = String(formData.get("providerId") ?? "");
+  const provider = await prisma.provider.findUnique({ where: { id: providerId } });
+  if (!provider || provider.isActive) {
+    return;
+  }
+
+  // Find products whose offers ONLY connect to this provider
+  const candidateProducts = await prisma.product.findMany({
+    where: {
+      offers: {
+        some: {
+          links: {
+            some: {
+              providerOffer: { providerId },
+            },
+          },
+        },
+      },
+    },
+    include: {
+      offers: {
+        include: {
+          links: {
+            include: {
+              providerOffer: { select: { providerId: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const exclusiveProductIds: string[] = [];
+  for (const prod of candidateProducts) {
+    const hasOtherProviderLinks = prod.offers.some((offer) =>
+      offer.links.some((l) => l.providerOffer.providerId !== providerId),
+    );
+    if (!hasOtherProviderLinks) {
+      exclusiveProductIds.push(prod.id);
+    }
+  }
+
+  if (exclusiveProductIds.length === 0) {
+    return;
+  }
+
+  // Check for any customer orders referencing offers on these products
+  const productsWithOrders = await prisma.orderItem.findMany({
+    where: { offer: { productId: { in: exclusiveProductIds } } },
+    select: { offer: { select: { productId: true } } },
+  });
+  const orderProductIds = new Set(productsWithOrders.map((oi) => oi.offer.productId));
+
+  const safeToDelete = exclusiveProductIds.filter((id) => !orderProductIds.has(id));
+  const mustOnlyDeactivate = exclusiveProductIds.filter((id) => orderProductIds.has(id));
+
+  let deletedCount = 0;
+  if (safeToDelete.length > 0) {
+    await prisma.offerProviderLink.deleteMany({
+      where: { offer: { productId: { in: safeToDelete } } },
+    });
+    await prisma.offer.deleteMany({
+      where: { productId: { in: safeToDelete } },
+    });
+    const res = await prisma.product.deleteMany({
+      where: { id: { in: safeToDelete } },
+    });
+    deletedCount = res.count;
+  }
+
+  if (mustOnlyDeactivate.length > 0) {
+    await prisma.product.updateMany({
+      where: { id: { in: mustOnlyDeactivate } },
+      data: { isActive: false },
+    });
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: "PRODUCTS_PURGED_FROM_DISABLED_PROVIDER",
+      entity: "Provider",
+      entityId: providerId,
+      detail: {
+        providerCode: provider.code,
+        deletedProductCount: deletedCount,
+        deactivatedProductCount: mustOnlyDeactivate.length,
+      } as never,
+    },
+  });
+
+  revalidatePath("/admin/sync");
+  revalidatePath("/admin/catalog");
+  revalidatePath("/[locale]/admin/sync", "page");
+  revalidatePath("/[locale]/admin/catalog", "page");
 }
 
 export async function refreshProviderBalance(formData: FormData): Promise<void> {

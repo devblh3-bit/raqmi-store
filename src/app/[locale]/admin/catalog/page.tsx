@@ -41,6 +41,14 @@ export default async function CatalogPage({
                     costMinor: true,
                     currency: true,
                     stockQuantity: true,
+                    provider: {
+                      select: {
+                        id: true,
+                        code: true,
+                        displayName: true,
+                        isActive: true,
+                      },
+                    },
                   },
                 },
               },
@@ -65,16 +73,25 @@ export default async function CatalogPage({
 
   // Transform products
   const products: CatalogProduct[] = productsRaw.map((p) => {
-    let health: "HEALTHY" | "PARTIAL" | "OUT_OF_STOCK" | "MANUAL" | "EMPTY" = "EMPTY";
+    let health: "HEALTHY" | "PARTIAL" | "OUT_OF_STOCK" | "MANUAL" | "EMPTY" | "PROVIDER_PAUSED" = "EMPTY";
     if (p.offers.length === 0) {
       health = "EMPTY";
     } else {
+      let totalLinksCount = 0;
+      let activeProviderLinksCount = 0;
       let linkedOffersCount = 0;
       let availableOffersCount = 0;
       let outOfStockOffersCount = 0;
 
       for (const off of p.offers) {
-        const activeLink = off.links.find((l) => l.isEnabled);
+        totalLinksCount += off.links.length;
+        for (const l of off.links) {
+          if (l.isEnabled && l.providerOffer.provider.isActive) {
+            activeProviderLinksCount++;
+          }
+        }
+
+        const activeLink = off.links.find((l) => l.isEnabled && l.providerOffer.provider.isActive);
         if (activeLink) {
           linkedOffersCount++;
           if (activeLink.providerOffer.availability === "AVAILABLE") {
@@ -85,7 +102,9 @@ export default async function CatalogPage({
         }
       }
 
-      if (linkedOffersCount === 0) {
+      if (totalLinksCount > 0 && activeProviderLinksCount === 0) {
+        health = "PROVIDER_PAUSED";
+      } else if (linkedOffersCount === 0) {
         health = "MANUAL";
       } else if (availableOffersCount === p.offers.length) {
         health = "HEALTHY";
@@ -103,11 +122,15 @@ export default async function CatalogPage({
       if (off.compareAtMinor != null) {
         validPrices.push(Number(off.compareAtMinor));
       } else {
-        const activeLink = off.links.find((l) => l.isEnabled);
+        const activeLink = off.links.find((l) => l.isEnabled && l.providerOffer.provider.isActive);
         if (activeLink) {
-          const cost = Number(activeLink.providerOffer.costMinor);
+          let costUsdCents = Number(activeLink.providerOffer.costMinor);
+          if (activeLink.providerOffer.currency === "VND") {
+            const fxVndUsd = Number(process.env.FX_RATE_VND_USD || "0.00004");
+            costUsdCents = Math.round(costUsdCents * fxVndUsd);
+          }
           const markup = Number(off.markupPercent);
-          const retail = Math.round(cost * (1 + markup / 100));
+          const retail = Math.round(costUsdCents * (1 + markup / 100));
           validPrices.push(retail);
         }
       }
@@ -117,8 +140,8 @@ export default async function CatalogPage({
       const min = Math.min(...validPrices);
       const max = Math.max(...validPrices);
       const formatMinor = (minor: number) => {
-        const val = (minor / 100).toFixed(0);
-        return `${Number(val).toLocaleString()} DZD`;
+        const val = (minor / 100).toFixed(2);
+        return `$${val}`;
       };
       if (min === max) {
         priceSummary = formatMinor(min);

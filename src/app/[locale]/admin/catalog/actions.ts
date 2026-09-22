@@ -598,6 +598,56 @@ export async function deleteOffer(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function reorderOffer(formData: FormData) {
+  await requireAdmin();
+  const offerId = String(formData.get("offerId") ?? "");
+  const direction = String(formData.get("direction") ?? "");
+  if (!offerId || (direction !== "up" && direction !== "down")) {
+    return adminError("BAD_REQUEST");
+  }
+
+  const offer = await prisma.offer.findUnique({
+    where: { id: offerId },
+    include: {
+      product: {
+        include: {
+          offers: {
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          },
+        },
+      },
+    },
+  });
+  if (!offer) return adminError("NOT_FOUND");
+
+  const offers = offer.product.offers;
+  const currentIndex = offers.findIndex((o) => o.id === offerId);
+  if (currentIndex === -1) return adminError("NOT_FOUND");
+
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= offers.length) {
+    return { ok: true as const };
+  }
+
+  const targetOffer = offers[targetIndex];
+
+  await prisma.$transaction([
+    prisma.offer.update({
+      where: { id: offer.id },
+      data: { sortOrder: targetIndex },
+    }),
+    prisma.offer.update({
+      where: { id: targetOffer.id },
+      data: { sortOrder: currentIndex },
+    }),
+  ]);
+
+  revalidatePath(`/admin/catalog/${offer.productId}`);
+  revalidatePath(`/admin/catalog/${offer.productId}/offers`);
+  revalidatePath(`/products/${offer.product.slug}`);
+  return { ok: true as const };
+}
+
 export async function toggleProductActive(productId: string) {
   const session = await requireAdmin();
   const product = await prisma.product.findUnique({
