@@ -2,10 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Locale } from "@/i18n";
 import ThemeToggle from "./ThemeToggle";
 import LocaleSwitcher from "./LocaleSwitcher";
+import { SearchModal } from "./SearchModal";
 
 const navKeys = [
   { key: "products", href: "/products" },
@@ -47,7 +48,22 @@ export default function Header({ locale }: { locale: Locale }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const prefix = `/${locale}`;
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (
+        (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="sticky top-0 z-40 pt-3 sm:pt-4">
@@ -86,7 +102,9 @@ export default function Header({ locale }: { locale: Locale }) {
 
           <div className="flex items-center gap-1 sm:gap-1.5">
             <button
-              className="flex h-8 items-center gap-2 rounded-full bg-[var(--surface)]/60 px-3 text-[13px] text-[var(--fg-muted)] shadow-[inset_0_0_0_1px_var(--border)] backdrop-blur-md transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] sm:h-9 sm:w-40 sm:justify-between lg:w-48"
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="flex h-8 items-center gap-2 rounded-full bg-[var(--surface)]/60 px-3 text-[13px] text-[var(--fg-muted)] shadow-[inset_0_0_0_1px_var(--border)] backdrop-blur-md transition-all duration-200 hover:bg-[var(--surface)] hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95 cursor-pointer sm:h-9 sm:w-40 sm:justify-between lg:w-48"
               aria-label="Search..."
             >
               <span className="flex items-center gap-2">
@@ -160,6 +178,20 @@ export default function Header({ locale }: { locale: Locale }) {
 
               <div className="my-1.5 border-t border-[var(--border)]" />
 
+              {/* Mobile Search Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setSearchOpen(true);
+                }}
+                className="flex items-center gap-3 w-full rounded-2xl bg-[var(--surface-2)] px-4 py-3 text-sm font-medium text-[var(--fg-muted)] hover:bg-[var(--surface-3)] hover:text-[var(--fg)] transition active:scale-95 text-start cursor-pointer"
+              >
+                <SearchIcon className="h-4 w-4" />
+                <span>{locale === "ar" ? "ابحث عن المنتجات..." : locale === "fr" ? "Rechercher des produits..." : "Search products..."}</span>
+                <kbd className="ms-auto rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--fg-faint)]">/</kbd>
+              </button>
+
               {/* Mobile Region & Currency Selector */}
               <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-[var(--surface-2)]">
                 <span className="text-xs font-bold text-[var(--fg-muted)]">
@@ -193,6 +225,12 @@ export default function Header({ locale }: { locale: Locale }) {
           </div>
         )}
       </header>
+
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        locale={locale}
+      />
     </div>
   );
 }

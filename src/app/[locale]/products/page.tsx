@@ -18,8 +18,15 @@ export default async function AplikasiPage({
 
   let list = await getProducts(loc);
   if (q) {
-    const needle = q.toLowerCase();
-    list = list.filter((p) => p.name.toLowerCase().includes(needle) || p.description.toLowerCase().includes(needle));
+    const needle = q.trim().toLowerCase();
+    list = list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(needle) ||
+        p.description.toLowerCase().includes(needle) ||
+        p.slug.toLowerCase().includes(needle) ||
+        p.category.toLowerCase().includes(needle) ||
+        p.offers.some((o) => (o.label[loc] ?? o.label.en ?? "").toLowerCase().includes(needle))
+    );
   }
   if (urutkan === "termurah") list.sort((a, b) => Math.min(...a.offers.map((o) => o.price)) - Math.min(...b.offers.map((o) => o.price)));
   if (urutkan === "termahal") list.sort((a, b) => Math.min(...b.offers.map((o) => o.price)) - Math.min(...a.offers.map((o) => o.price)));
@@ -34,17 +41,37 @@ export default async function AplikasiPage({
             {q ? `Search: “${q}” · ${list.length} results` : `${list.length} products · ${t("searchPlaceholder")}`}
           </p>
         </div>
-        <form className="flex gap-2">
+        <form method="GET" className="flex flex-wrap items-center gap-2">
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder={t("searchPlaceholder") ?? "Search products..."}
+              className="h-9 w-44 sm:w-60 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-medium outline-none focus:border-[var(--accent)]"
+            />
+            {q && (
+              <a
+                href={`/${locale}/products`}
+                className="absolute right-3 text-xs font-bold text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                title="Clear search"
+              >
+                ✕
+              </a>
+            )}
+          </div>
           <select
             name="urutkan"
             defaultValue={urutkan ?? "terbaru"}
-            className="h-9 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-medium"
+            className="h-9 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium outline-none focus:border-[var(--accent)]"
           >
             <option value="terbaru">Newest</option>
             <option value="termurah">Cheapest</option>
             <option value="termahal">Most expensive</option>
           </select>
-          <button className="h-9 rounded-full bg-[var(--fg)] px-4 text-sm font-semibold text-white">Sort</button>
+          <button type="submit" className="h-9 rounded-full bg-[var(--accent)] px-4 text-xs font-bold text-white shadow-xs hover:bg-[var(--accent-hover)] transition">
+            Filter
+          </button>
         </form>
       </div>
       {list.length === 0 ? (
