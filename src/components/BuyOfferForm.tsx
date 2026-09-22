@@ -80,6 +80,25 @@ export default function BuyOfferForm({
         ))}
       </div>
 
+      {/* Localized offer rules and warranty instructions */}
+      {offer?.rules && (offer.rules[locale] || offer.rules.en) && (
+        <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/70 p-3.5 text-xs">
+          <div className="flex items-center gap-1.5 font-bold text-[var(--fg)]">
+            <span>🛡️</span>
+            <span>
+              {locale === "ar"
+                ? "تفاصيل الضمان والتعليمات:"
+                : locale === "fr"
+                  ? "Garantie & Instructions :"
+                  : "Warranty & Instructions:"}
+            </span>
+          </div>
+          <p className="mt-1 leading-relaxed text-[var(--fg-muted)] whitespace-pre-line">
+            {offer.rules[locale] || offer.rules.en}
+          </p>
+        </div>
+      )}
+
       {offer?.requiresCustomerInput && (
         <div className="mt-4">
           <label htmlFor="customerInput" className="block text-sm font-semibold">

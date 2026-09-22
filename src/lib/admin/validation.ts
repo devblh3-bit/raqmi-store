@@ -35,9 +35,55 @@ export const updateOfferLabelsSchema = z.object({
   labelEn: z.string().trim().min(1).max(120),
   labelAr: z.string().trim().min(1).max(120),
   labelFr: z.string().trim().min(1).max(120),
-  rulesEn: z.string().trim().max(2000).optional(),
-  rulesAr: z.string().trim().max(2000).optional(),
-  rulesFr: z.string().trim().max(2000).optional(),
+  rulesEn: z.string().trim().max(4000).optional(),
+  rulesAr: z.string().trim().max(4000).optional(),
+  rulesFr: z.string().trim().max(4000).optional(),
+});
+
+export const createOfferFromProviderSchema = z.object({
+  productId: z.string().min(1),
+  providerOfferId: z.string().min(1),
+  labelEn: z.string().trim().min(1).max(120),
+  labelAr: z.string().trim().min(1).max(120),
+  labelFr: z.string().trim().min(1).max(120),
+  rulesEn: z.string().trim().max(4000).optional().default(""),
+  rulesAr: z.string().trim().max(4000).optional().default(""),
+  rulesFr: z.string().trim().max(4000).optional().default(""),
+  markupPercent: z.coerce.number().min(0).max(1000).default(0),
+  compareAtMinor: z.coerce.number().int().min(0).optional().nullable(),
+  badge: z.string().trim().max(40).optional().nullable(),
+});
+
+export const attachBackupProviderSchema = z.object({
+  offerId: z.string().min(1),
+  providerOfferId: z.string().min(1),
+});
+
+export const updateOfferFullSchema = z.object({
+  offerId: z.string().min(1),
+  labelEn: z.string().trim().min(1).max(120),
+  labelAr: z.string().trim().min(1).max(120),
+  labelFr: z.string().trim().min(1).max(120),
+  rulesEn: z.string().trim().max(4000).optional().default(""),
+  rulesAr: z.string().trim().max(4000).optional().default(""),
+  rulesFr: z.string().trim().max(4000).optional().default(""),
+  markupPercent: z.coerce.number().min(0).max(1000).default(0),
+  compareAtMinor: z.coerce.number().int().min(0).optional().nullable(),
+  badge: z.string().trim().max(40).optional().nullable(),
+});
+
+export const toggleLinkSchema = z.object({
+  linkId: z.string().min(1),
+  isEnabled: z.coerce.boolean(),
+});
+
+export const deleteLinkSchema = z.object({
+  linkId: z.string().min(1),
+});
+
+export const reorderLinkSchema = z.object({
+  linkId: z.string().min(1),
+  direction: z.enum(["up", "down"]),
 });
 
 function slugify(input: string): string {

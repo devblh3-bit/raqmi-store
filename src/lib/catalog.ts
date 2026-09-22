@@ -21,6 +21,7 @@ import type { Locale } from "@/i18n";
 export type CatalogOffer = {
   id: string; // real Offer.id — this is what checkout takes
   label: Record<string, string>;
+  rules?: Record<string, string>;
   price: number; // USD minor
   compareAt?: number;
   stock?: number;
@@ -59,6 +60,9 @@ const offerSelect = {
   labelEn: true,
   labelAr: true,
   labelFr: true,
+  rulesEn: true,
+  rulesAr: true,
+  rulesFr: true,
   markupPercent: true,
   compareAtMinor: true,
   badge: true,
@@ -116,6 +120,7 @@ function toOffer(o: ProductRow["offers"][number]): CatalogOffer | null {
   return {
     id: o.id,
     label: localized(o.labelEn, o.labelAr, o.labelFr),
+    rules: localized(o.rulesEn, o.rulesAr, o.rulesFr),
     price,
     compareAt: o.compareAtMinor == null ? undefined : Number(o.compareAtMinor),
     stock: best.stockQuantity ?? undefined,
