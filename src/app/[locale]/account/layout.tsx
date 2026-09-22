@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import AccountMobileNav from "@/components/nav/AccountMobileNav";
 
 export default async function AccountLayout({
   children,
@@ -34,50 +35,34 @@ export default async function AccountLayout({
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 md:flex-row">
-      {/* Mobile Top Customer Bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xs md:hidden">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--accent)]">
-              👤 Client
+      {/* Mobile Top Customer Header */}
+      <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xs md:hidden">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--accent)]">
+            👤 Client
+          </span>
+          {user?.email && (
+            <span className="max-w-[130px] truncate text-[11px] font-medium text-[var(--fg-faint)] sm:max-w-[200px]" dir="ltr">
+              {user.email}
             </span>
-            {user?.email && (
-              <span className="max-w-[130px] truncate text-[11px] font-medium text-[var(--fg-faint)] sm:max-w-[200px]" dir="ltr">
-                {user.email}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/${locale}`}
-              className="text-[11px] font-medium text-[var(--fg-muted)] hover:text-[var(--fg)]"
-            >
-              Store ↗
-            </Link>
-            <form action="/api/auth/logout" method="post">
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400"
-              >
-                Sign Out
-              </button>
-            </form>
-          </div>
+          )}
         </div>
 
-        {/* Scrollable Navigation Chips for Mobile */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
-          {nav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}`}
+            className="text-[11px] font-medium text-[var(--fg-muted)] hover:text-[var(--fg)]"
+          >
+            Store ↗
+          </Link>
+          <form action="/api/auth/logout" method="post">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400"
             >
-              <span>{n.icon}</span>
-              <span>{n.label}</span>
-            </Link>
-          ))}
+              Sign Out
+            </button>
+          </form>
         </div>
       </div>
 
@@ -145,7 +130,9 @@ export default async function AccountLayout({
       </aside>
 
       {/* Main Content Pane */}
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="min-w-0 flex-1 pb-20 md:pb-0">{children}</div>
+      <AccountMobileNav locale={locale} />
     </div>
   );
 }
+
