@@ -15,3 +15,5 @@ graphify-out
 # hook telemetry — ponytail writer scratch, never product
 cross-cutting-principles.md
 skill-observations/
+public/uploads/*
+!public/uploads/receipts/.gitkeep
