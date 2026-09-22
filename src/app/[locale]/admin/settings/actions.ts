@@ -159,3 +159,4 @@ export async function getTelegramDiagnostics(): Promise<TelegramDiagnostics> {
     };
   }
 }
+

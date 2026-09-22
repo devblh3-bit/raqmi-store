@@ -26,6 +26,9 @@ export const DEFAULT_SETTINGS: SystemSettings = {
  */
 export async function getSystemSettings(): Promise<SystemSettings> {
   try {
+    if (!prisma?.systemSetting) {
+      return DEFAULT_SETTINGS;
+    }
     const rows = await prisma.systemSetting.findMany();
     const map = new Map<string, string>(rows.map((r) => [r.key, r.value]));
 
@@ -41,7 +44,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
       supportEmail: map.get("support_email") ?? DEFAULT_SETTINGS.supportEmail,
     };
   } catch (err) {
-    console.error("[settings] failed to read system settings, falling back to defaults", err);
+    console.warn("[settings] failed to read system settings, falling back to defaults", err);
     return DEFAULT_SETTINGS;
   }
 }
@@ -61,3 +64,4 @@ export async function isMaintenanceModeActive(): Promise<boolean> {
   const settings = await getSystemSettings();
   return settings.maintenanceMode;
 }
+
