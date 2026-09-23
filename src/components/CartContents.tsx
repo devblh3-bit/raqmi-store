@@ -88,10 +88,10 @@ export default function CartContents({
         <article className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)]">
           <label htmlFor="cart-guest-email" className="block text-sm font-semibold">
             {locale === "ar"
-              ? "البريد الإلكتروني لاستلام الطلب"
+              ? "البريد الإلكتروني لحسابك وإيصال الطلب"
               : locale === "fr"
-                ? "Adresse e-mail pour recevoir la commande"
-                : "Email address for order delivery"}
+                ? "Votre adresse e-mail (accès compte & reçu)"
+                : "Your Email Address (account access & receipt)"}
           </label>
           <input
             id="cart-guest-email"

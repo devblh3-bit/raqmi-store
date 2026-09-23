@@ -67,7 +67,19 @@
     "agencyNotice": "Frais d'agence et d'exécution inclus",
     "guestEmailNotice": "Nous vous enverrons votre reçu et le lien d'accès à cette adresse e-mail.",
     "accessNoticeTitle": "Accès à la commande et au compte",
-    "accessNoticeBody": "Utilisez votre e-mail pour vous connecter et vérifier votre commande ou consultez votre boîte de réception."
+    "accessNoticeBody": "Utilisez votre e-mail pour vous connecter et vérifier votre commande ou consultez votre boîte de réception.",
+    "deliveryTypeNone": "⚡ Livraison instantanée (Aucune info requise)",
+    "deliveryTypeEmail": "📧 Activation sur votre e-mail",
+    "deliveryTypeUsername": "👤 Requiert un identifiant / nom d'utilisateur",
+    "deliveryTypeCustom": "📝 Requiert des infos d'activation",
+    "modalTitle": "Finaliser votre mandat d'achat",
+    "modalConfirm": "Confirmer et mandater",
+    "modalCancel": "Annuler",
+    "modalSubtitle": "Veuillez renseigner les informations ci-dessous pour finaliser l'activation.",
+    "useSameEmail": "Utiliser également cet e-mail pour l'activation",
+    "activationDetails": "Détails d'activation",
+    "accountAccessDetails": "Accès au compte et reçu",
+    "deliveryRequirementsTitle": "Mode de livraison"
   },
   "track": {
     "title": "Suivi de commande",

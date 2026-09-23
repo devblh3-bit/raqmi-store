@@ -67,7 +67,19 @@
     "agencyNotice": "Includes automated agency & procurement fee",
     "guestEmailNotice": "We will send your order receipt and direct access link to this email address.",
     "accessNoticeTitle": "Order & Account Access",
-    "accessNoticeBody": "Use the email to login and check your order or check your email inbox."
+    "accessNoticeBody": "Use the email to login and check your order or check your email inbox.",
+    "deliveryTypeNone": "⚡ Instant Delivery (No Info Required)",
+    "deliveryTypeEmail": "📧 Requires Activation Email",
+    "deliveryTypeUsername": "👤 Requires Username / ID",
+    "deliveryTypeCustom": "📝 Requires Activation Info",
+    "modalTitle": "Complete Procurement Authorization",
+    "modalConfirm": "Confirm & Procure",
+    "modalCancel": "Cancel",
+    "modalSubtitle": "Please provide the details below to complete automated activation and delivery.",
+    "useSameEmail": "Use this email for subscription activation",
+    "activationDetails": "Activation Details",
+    "accountAccessDetails": "Account Access & Receipt",
+    "deliveryRequirementsTitle": "Delivery Method"
   },
   "track": {
     "title": "Track order",

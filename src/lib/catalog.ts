@@ -32,6 +32,7 @@ export type CatalogOffer = {
   badge?: string;
   /** Provider wants a value from the buyer (e.g. the account email) before fulfillment. */
   requiresCustomerInput: boolean;
+  customerInputType?: string;
   customerPrompt?: string;
 };
 
@@ -154,6 +155,7 @@ function toOffer(
     badge: o.badge ?? undefined,
     // Mirrors checkout.ts's rule so the form asks for exactly what placeOrder requires.
     requiresCustomerInput: !!inputType && inputType !== "none",
+    customerInputType: inputType ?? "NONE",
     customerPrompt: best.po.customerPrompt ?? undefined,
   };
 }
