@@ -72,14 +72,12 @@
     "deliveryTypeEmail": "📧 Activation sur votre e-mail",
     "deliveryTypeUsername": "👤 Requiert un identifiant / nom d'utilisateur",
     "deliveryTypeCustom": "📝 Requiert des infos d'activation",
-    "modalTitle": "Finaliser votre mandat d'achat",
-    "modalConfirm": "Confirmer et mandater",
-    "modalCancel": "Annuler",
-    "modalSubtitle": "Veuillez renseigner les informations ci-dessous pour finaliser l'activation.",
-    "useSameEmail": "Utiliser également cet e-mail pour l'activation",
-    "activationDetails": "Détails d'activation",
-    "accountAccessDetails": "Accès au compte et reçu",
-    "deliveryRequirementsTitle": "Mode de livraison"
+    "deliveryRequirementsTitle": "Mode de livraison",
+    "singleEmailLabel": "Votre adresse e-mail (activation & reçu)",
+    "singleEmailNotice": "Cet e-mail servira à la fois à activer votre abonnement et à vous envoyer le reçu et le lien d'accès.",
+    "activateDifferentEmail": "Activer sur une adresse e-mail différente",
+    "activationEmailLabel": "Adresse e-mail à activer",
+    "accountEmailLabel": "Votre adresse e-mail (accès compte & reçu)"
   },
   "track": {
     "title": "Suivi de commande",

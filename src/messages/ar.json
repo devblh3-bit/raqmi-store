@@ -72,14 +72,12 @@
     "deliveryTypeEmail": "📧 يتطلب بريد إلكتروني للتفعيل",
     "deliveryTypeUsername": "👤 يتطلب اسم مستخدم أو معرف",
     "deliveryTypeCustom": "📝 يتطلب بيانات للتفعيل",
-    "modalTitle": "إتمام تفويض الشراء والتفعيل",
-    "modalConfirm": "تأكيد التفويض والتنفيذ",
-    "modalCancel": "إلغاء",
-    "modalSubtitle": "يرجى تعبئة البيانات أدناه لإتمام التفعيل والتسليم الفوري لطلبك.",
-    "useSameEmail": "استخدام نفس البريد الإلكتروني للتفعيل أيضاً",
-    "activationDetails": "بيانات التفعيل",
-    "accountAccessDetails": "حسابك وإيصال الطلب",
-    "deliveryRequirementsTitle": "طريقة التسليم"
+    "deliveryRequirementsTitle": "طريقة التسليم",
+    "singleEmailLabel": "البريد الإلكتروني للتفعيل وحسابك",
+    "singleEmailNotice": "سنستخدم هذا البريد لتفعيل الاشتراك وإرسال إيصال الطلب ورابط الدخول إلى حسابك.",
+    "activateDifferentEmail": "التفعيل على بريد إلكتروني مختلف",
+    "activationEmailLabel": "البريد الإلكتروني المطلوب تفعيله",
+    "accountEmailLabel": "البريد الإلكتروني لحسابك واستلام الطلب"
   },
   "track": {
     "title": "تتبع الطلب",

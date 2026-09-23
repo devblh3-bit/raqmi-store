@@ -72,14 +72,12 @@
     "deliveryTypeEmail": "📧 Requires Activation Email",
     "deliveryTypeUsername": "👤 Requires Username / ID",
     "deliveryTypeCustom": "📝 Requires Activation Info",
-    "modalTitle": "Complete Procurement Authorization",
-    "modalConfirm": "Confirm & Procure",
-    "modalCancel": "Cancel",
-    "modalSubtitle": "Please provide the details below to complete automated activation and delivery.",
-    "useSameEmail": "Use this email for subscription activation",
-    "activationDetails": "Activation Details",
-    "accountAccessDetails": "Account Access & Receipt",
-    "deliveryRequirementsTitle": "Delivery Method"
+    "deliveryRequirementsTitle": "Delivery Method",
+    "singleEmailLabel": "Your Email Address (for activation & account receipt)",
+    "singleEmailNotice": "This email will be used to activate your subscription and send your order receipt & login access link.",
+    "activateDifferentEmail": "Activate on a different email address",
+    "activationEmailLabel": "Target Google/Account Email to Activate",
+    "accountEmailLabel": "Your Account Email (for receipt & login access)"
   },
   "track": {
     "title": "Track order",
