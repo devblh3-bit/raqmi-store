@@ -10,6 +10,7 @@ import {
   deleteLink,
   reorderLink,
   deleteOffer,
+  toggleOfferActive,
   reorderOffer,
 } from "../../actions";
 import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
@@ -444,6 +445,24 @@ export function OfferStudio({
                         className="rounded-full bg-[var(--surface)] px-3 py-1.5 font-semibold text-[var(--accent)] hover:bg-[var(--border)]"
                       >
                         ✏️ Edit Labels, Rules & Markup
+                      </button>
+
+                      <button
+                        disabled={isPending}
+                        onClick={() => {
+                          startTransition(async () => {
+                            const fd = new FormData();
+                            fd.append("offerId", offer.id);
+                            await toggleOfferActive(fd);
+                          });
+                        }}
+                        className={`rounded-full px-3 py-1.5 font-semibold transition ${
+                          offer.isActive
+                            ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300"
+                            : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
+                        }`}
+                      >
+                        {offer.isActive ? "⏸️ Deactivate" : "▶️ Activate Variant"}
                       </button>
                     </div>
 

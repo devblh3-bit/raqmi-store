@@ -681,6 +681,48 @@ export async function deleteOffer(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function toggleOfferActive(formData: FormData) {
+  const session = await requireAdmin();
+  const offerId = String(formData.get("offerId") ?? "");
+  if (!offerId) return adminError("BAD_REQUEST");
+
+  const offer = await prisma.offer.findUnique({
+    where: { id: offerId },
+    select: { id: true, productId: true, isActive: true, labelEn: true },
+  });
+  if (!offer) return adminError("NOT_FOUND");
+
+  const nextActive = !offer.isActive;
+  let nextLabelEn = offer.labelEn;
+  if (nextActive && nextLabelEn.startsWith("[Archived] ")) {
+    nextLabelEn = nextLabelEn.replace("[Archived] ", "").trim();
+  }
+
+  await prisma.offer.update({
+    where: { id: offer.id },
+    data: {
+      isActive: nextActive,
+      labelEn: nextLabelEn,
+      sortOrder: nextActive ? 0 : 9999,
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.userId,
+      action: nextActive ? "OFFER_ACTIVATED" : "OFFER_DEACTIVATED",
+      entity: "Offer",
+      entityId: offer.id,
+      detail: { productId: offer.productId, isActive: nextActive } as never,
+    },
+  });
+
+  revalidatePath(`/admin/catalog/${offer.productId}`);
+  revalidatePath(`/admin/catalog/${offer.productId}/offers`);
+  revalidatePath("/admin/catalog");
+  return { ok: true as const, isActive: nextActive };
+}
+
 export async function reorderOffer(formData: FormData) {
   await requireAdmin();
   const offerId = String(formData.get("offerId") ?? "");
