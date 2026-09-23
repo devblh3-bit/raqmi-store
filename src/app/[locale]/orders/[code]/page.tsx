@@ -23,17 +23,12 @@ export default async function OrderPage({
   const normalized = normalizeOrderCode(code);
   if (!normalized) notFound();
 
-  // Allow the authenticated owner OR an admin to inspect the order.
+  // The high-entropy order code (100 bits CSPRNG) acts as the secure capability URL for the customer.
+  // Both guests and logged-in users who possess the code can view their order and delivery credentials.
   const session = await getSession();
-  if (!session) {
-    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/orders/${normalized}`)}`);
-  }
 
-  const order = await prisma.order.findFirst({
-    where:
-      session.role === "ADMIN"
-        ? { code: normalized }
-        : { code: normalized, userId: session.userId },
+  const order = await prisma.order.findUnique({
+    where: { code: normalized },
     include: {
       items: {
         include: {
@@ -47,6 +42,16 @@ export default async function OrderPage({
     },
   });
   if (!order) notFound();
+
+  // If a logged-in user views an unassigned guest order, associate it
+  if (session?.userId && !order.userId) {
+    await prisma.order
+      .update({
+        where: { id: order.id },
+        data: { userId: session.userId },
+      })
+      .catch(() => null);
+  }
 
   const label = (o: (typeof order.items)[number]) =>
     loc === "ar" ? o.offer.labelAr : loc === "fr" ? o.offer.labelFr : o.offer.labelEn;

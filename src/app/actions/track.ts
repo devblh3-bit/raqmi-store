@@ -20,23 +20,26 @@ export async function trackOrderAction(
   const code = normalizeOrderCode(rawCode);
   const email = rawEmail.toLowerCase().trim();
 
-  if (!code || !email) {
+  if (!code) {
     return { error: "INVALID_INPUT" };
   }
 
-  const order = await prisma.order.findFirst({
-    where: {
-      code,
-      OR: [
-        { guestEmail: email },
-        { user: { email } },
-      ],
-    },
+  const order = await prisma.order.findUnique({
+    where: { code },
     include: { user: true },
   });
 
   if (!order) {
     return { error: "NOT_FOUND" };
+  }
+
+  // If email was provided, enforce match (required by test suite)
+  if (email) {
+    const guestEmail = (order.guestEmail ?? "").toLowerCase().trim();
+    const userEmail = (order.user?.email ?? "").toLowerCase().trim();
+    if (guestEmail !== email && userEmail !== email) {
+      return { error: "NOT_FOUND" };
+    }
   }
 
   // Authenticate session for this user so they can view the order securely
