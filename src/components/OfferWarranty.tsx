@@ -67,24 +67,31 @@ export function OfferWarranty({
         : "100% Genuine License";
 
   if (mode === "accordion") {
+    const viewRulesHint =
+      locale === "ar" ? "عرض التفاصيل" : locale === "fr" ? "Afficher" : "View rules";
+
     return (
       <details
-        open
         className={`group mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 transition-colors ${className}`}
       >
         <summary className="flex cursor-pointer items-center justify-between p-3.5 select-none text-xs font-bold text-[var(--fg)] outline-none hover:text-[var(--accent)]">
-          <div className="flex items-center gap-2">
-            <span className="text-base" aria-hidden>🛡️</span>
-            <span>{title}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base shrink-0" aria-hidden>🛡️</span>
+            <span className="truncate">{title}</span>
             {formatted.title && (
-              <span className="hidden sm:inline-block rounded-md bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)] border border-[var(--border)]">
+              <span className="truncate max-w-[140px] rounded-md bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)] border border-[var(--border)]">
                 {formatted.title}
               </span>
             )}
           </div>
-          <span className="text-xs text-[var(--fg-muted)] transition-transform duration-200 group-open:rotate-180">
-            ▾
-          </span>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)] shrink-0">
+            <span className="text-[11px] font-normal group-open:hidden">
+              {viewRulesHint}
+            </span>
+            <span className="transition-transform duration-200 group-open:rotate-180">
+              ▾
+            </span>
+          </div>
         </summary>
         <div className="border-t border-[var(--border)]/60 px-4 pb-4 pt-2.5">
           <p className="text-xs sm:text-sm leading-relaxed text-[var(--fg-muted)] whitespace-pre-line">
@@ -140,3 +147,4 @@ export function OfferWarranty({
     </div>
   );
 }
+

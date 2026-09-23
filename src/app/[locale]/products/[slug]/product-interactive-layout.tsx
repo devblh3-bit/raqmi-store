@@ -8,7 +8,7 @@ import type { CatalogProduct } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 
 // Display mode for offer warranty: "card" (Option 1) | "accordion" (Option 2)
-const WARRANTY_MODE = "card" as const;
+const WARRANTY_MODE = "accordion" as const;
 
 export function ProductInteractiveLayout({
   product,

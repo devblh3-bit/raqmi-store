@@ -73,3 +73,4 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     expect(element.type).toBe("div");
   });
 });
+
