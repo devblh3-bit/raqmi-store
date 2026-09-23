@@ -142,7 +142,19 @@ function toOffer(
   const baseCost = best.usdCostMinor;
   const agencyFee = Math.max(0, price - baseCost);
 
-  const inputType = best.po.customerInputType;
+  const rawInputType = (best.po.customerInputType ?? "").trim().toUpperCase();
+  const customerInputType = rawInputType || "NONE";
+  const requiresCustomerInput = customerInputType !== "NONE";
+
+  // Sanitize customerPrompt: strip provider HTML tags (e.g. <blockquote>)
+  let cleanPrompt: string | undefined = undefined;
+  if (best.po.customerPrompt) {
+    const stripped = best.po.customerPrompt.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (stripped.length > 0) {
+      cleanPrompt = stripped;
+    }
+  }
+
   return {
     id: o.id,
     label: localized(o.labelEn, o.labelAr, o.labelFr),
@@ -154,9 +166,9 @@ function toOffer(
     stock: best.po.stockQuantity ?? undefined,
     badge: o.badge ?? undefined,
     // Mirrors checkout.ts's rule so the form asks for exactly what placeOrder requires.
-    requiresCustomerInput: !!inputType && inputType !== "none",
-    customerInputType: inputType ?? "NONE",
-    customerPrompt: best.po.customerPrompt ?? undefined,
+    requiresCustomerInput,
+    customerInputType,
+    customerPrompt: cleanPrompt,
   };
 }
 

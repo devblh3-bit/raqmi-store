@@ -292,7 +292,7 @@ export default function BuyOfferForm({
             <div>
               <div className="flex items-center justify-between">
                 <label htmlFor="customerActivationEmail" className="block text-xs font-bold text-[var(--fg)]">
-                  {offer.customerPrompt || tc("activationEmailLabel")}
+                  {tc("activationEmailLabel")}
                 </label>
                 <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
                   {tc("deliveryTypeEmail")}
@@ -409,7 +409,9 @@ export default function BuyOfferForm({
           <div>
             <div className="flex items-center justify-between">
               <label htmlFor="customerNonEmailInput" className="block text-xs font-bold text-[var(--fg)]">
-                {offer.customerPrompt || tc("customerInput")}
+                {offer.customerPrompt && !offer.customerPrompt.includes("<") && /^[\w\s.,@/:-]+$/.test(offer.customerPrompt) && offer.customerPrompt.length < 80
+                  ? offer.customerPrompt
+                  : tc("customerInput")}
               </label>
               <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">
                 {tc("deliveryTypeUsername")}
@@ -423,7 +425,11 @@ export default function BuyOfferForm({
               value={customerInput}
               onChange={(e) => setCustomerInput(e.target.value)}
               maxLength={500}
-              placeholder={offer.customerPrompt ?? "@username"}
+              placeholder={
+                offer.customerPrompt && !offer.customerPrompt.includes("<") && /^[\w\s.,@/:-]+$/.test(offer.customerPrompt) && offer.customerPrompt.length < 80
+                  ? offer.customerPrompt
+                  : "@username"
+              }
               className="mt-1.5 h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
             />
           </div>

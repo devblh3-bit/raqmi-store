@@ -54,6 +54,7 @@ beforeAll(async () => {
     data: {
       providerId: provider.id, providerSku: "sku-plain", rawName: "plain",
       availability: "AVAILABLE", costMinor: 1000n, currency: "USD",
+      customerInputType: "NONE",
     },
   });
   const poInput = await prisma.providerOffer.create({
@@ -162,6 +163,33 @@ describe("placeOrder", () => {
     expect(await prisma.order.count({ where: { userId } })).toBe(0);
     const wallet = await prisma.wallet.findUniqueOrThrow({ where: { userId } });
     expect(wallet.balanceMinor).toBe(5000n);
+  });
+
+  it("allows instant orders when customerInputType is NONE without input", async () => {
+    await creditWallet({ userId, amountMinor: 5000, type: "DEPOSIT", reference: "seed" });
+
+    const order = await placeOrder({ userId, lines: [{ offerId }] });
+    expect(order.items[0].requiresCustomerInput).toBe(false);
+    expect(order.items[0].customerInputEnc).toBeNull();
+  });
+
+  it("falls back to guestEmail when an email offer omits customerInput", async () => {
+    await creditWallet({ userId, amountMinor: 5000, type: "DEPOSIT", reference: "seed" });
+
+    const order = await placeOrder({
+      userId,
+      guestEmail: "guest-fallback@example.com",
+      lines: [{ offerId: inputOfferId }],
+    });
+    const item = order.items[0];
+    expect(item.requiresCustomerInput).toBe(true);
+    expect(
+      decryptField({
+        recordId: item.id,
+        fieldName: "customerInput",
+        payload: item.customerInputEnc!,
+      }),
+    ).toBe("guest-fallback@example.com");
   });
 
   it("rejects bad quantities and an empty cart", async () => {

@@ -91,10 +91,21 @@ export async function placeOrder(input: {
       select: { costMinor: true, currency: true, customerInputType: true },
     });
 
-    const inputType = providerOffer.customerInputType;
-    const requiresCustomerInput = !!inputType && inputType !== "none";
-    if (requiresCustomerInput && !line.customerInput?.trim()) {
-      throw new CheckoutError("INPUT_REQUIRED", `offer needs customer input (${inputType})`, line.offerId);
+    const normalizedInputType = (providerOffer.customerInputType ?? "").trim().toUpperCase();
+    const requiresCustomerInput = Boolean(normalizedInputType && normalizedInputType !== "NONE");
+
+    // For EMAIL input requirement: if caller didn't provide a customerInput override,
+    // fallback cleanly to the guest email if provided.
+    const effectiveInput =
+      line.customerInput?.trim() ||
+      (normalizedInputType === "EMAIL" && guestEmail?.trim() ? guestEmail.trim() : undefined);
+
+    if (requiresCustomerInput && !effectiveInput) {
+      throw new CheckoutError(
+        "INPUT_REQUIRED",
+        `offer needs customer input (${normalizedInputType || "REQUIRED"})`,
+        line.offerId,
+      );
     }
 
     const procurementCostUsdMinor = BigInt(price.costMinor);
@@ -111,7 +122,7 @@ export async function placeOrder(input: {
       costCurrency: providerOffer.currency,
       fxRateSnapshot: price.breakdown.fxRate,
       requiresCustomerInput,
-      customerInput: requiresCustomerInput ? line.customerInput!.trim() : undefined,
+      customerInput: requiresCustomerInput ? effectiveInput : undefined,
     });
   }
 
