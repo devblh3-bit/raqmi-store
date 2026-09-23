@@ -9,6 +9,7 @@ import type { CatalogOffer } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 import { Price, PriceCompact } from "./Price";
 import { formatVariantTitle } from "@/lib/variant-formatter";
+import { OfferWarranty, type WarrantyDisplayMode } from "./OfferWarranty";
 
 const ERROR_KEY: Record<string, string> = {
   INSUFFICIENT_FUNDS: "errorFunds",
@@ -30,6 +31,7 @@ export default function BuyOfferForm({
   selectedOfferId: controlledOfferId,
   onSelectOffer,
   isLoggedIn = false,
+  warrantyMode = "card",
 }: {
   offers: CatalogOffer[];
   locale: Locale;
@@ -39,6 +41,7 @@ export default function BuyOfferForm({
   selectedOfferId?: string;
   onSelectOffer?: (id: string) => void;
   isLoggedIn?: boolean;
+  warrantyMode?: WarrantyDisplayMode;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
@@ -237,6 +240,15 @@ export default function BuyOfferForm({
           );
         })}
       </div>
+
+      {/* CONTEXTUAL WARRANTY & INSTRUCTIONS FOR SELECTED OFFER (Option 1 / Option 2) */}
+      {offer && (
+        <OfferWarranty
+          offer={offer}
+          locale={locale}
+          mode={warrantyMode}
+        />
+      )}
 
       {/* DYNAMIC IN-PAGE INPUT SECTION */}
       {/* CASE 1: Offer requires NO input (Instant Delivery) */}

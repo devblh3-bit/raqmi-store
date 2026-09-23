@@ -7,6 +7,9 @@ import BuyOfferForm from "@/components/BuyOfferForm";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 
+// Display mode for offer warranty: "card" (Option 1) | "accordion" (Option 2)
+const WARRANTY_MODE = "card" as const;
+
 export function ProductInteractiveLayout({
   product,
   locale,
@@ -26,35 +29,9 @@ export function ProductInteractiveLayout({
     product.offers[0]?.id ?? ""
   );
 
-  const selectedOffer =
-    product.offers.find((o) => o.id === selectedOfferId) ?? product.offers[0];
-
-  const defaultWarranty =
-    locale === "ar"
-      ? "ضمان استبدال كامل طوال فترة الاشتراك. تسليم فوري وتلقائي مع دعم فني متواصل على مدار الساعة."
-      : locale === "fr"
-        ? "Garantie de remplacement complet pendant la durée de l'abonnement. Livraison instantanée avec assistance technique 24/7."
-        : "Full replacement guarantee during the subscription period. Fast automated delivery and 24/7 technical support.";
-
-  const warrantyTitle =
-    locale === "ar"
-      ? "تفاصيل الضمان والتعليمات:"
-      : locale === "fr"
-        ? "Garantie & Instructions :"
-        : "Warranty & Instructions:";
-
-  // Check if current variant has custom rules, fallback to any variant with rules, or default guarantee
-  const currentRules =
-    selectedOffer?.rules && (selectedOffer.rules[locale] || selectedOffer.rules.en);
-  const anyRules = product.offers
-    .map((o) => o.rules?.[locale] || o.rules?.en)
-    .find((r) => !!r && r.trim().length > 0);
-
-  const warrantyText = (currentRules?.trim() || anyRules?.trim() || defaultWarranty).trim();
-
   return (
     <div className="mt-4 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      {/* Left Column: Product Details, Description & Warranty */}
+      {/* Left Column: Product Details, Description & Store Assurance */}
       <div className="flex flex-col justify-between rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
         <div>
           <div className="flex items-start gap-4">
@@ -84,17 +61,50 @@ export function ProductInteractiveLayout({
             </p>
           </div>
 
-          {/* Under the description: 🛡️ Warranty & Instructions */}
+          {/* Store Peace of Mind & Guarantees */}
           <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4 sm:p-5">
             <div className="flex items-center gap-2 font-bold text-[var(--fg)]">
               <span className="text-base" aria-hidden>🛡️</span>
               <span className="text-sm font-bold">
-                {warrantyTitle}
+                {locale === "ar"
+                  ? "ضمانات متجر رقمي"
+                  : locale === "fr"
+                    ? "Engagements & Garanties Raqmi"
+                    : "Raqmi Store Guarantees"}
               </span>
             </div>
-            <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-[var(--fg-muted)] whitespace-pre-line">
-              {warrantyText}
-            </p>
+            <ul className="mt-3 space-y-2 text-xs text-[var(--fg-muted)]">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                <span>
+                  {locale === "ar"
+                    ? "تراخيص واشتراكات رقمية رسمية 100% بدون أي انقطاعات غير مصرح بها."
+                    : locale === "fr"
+                      ? "Abonnements et licences 100% officiels avec transparence complète."
+                      : "100% official digital subscriptions and licenses with complete transparency."}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                <span>
+                  {locale === "ar"
+                    ? "ضمان الاستبدال الفوري عبر صفحة تتبع الطلب في حال واجهتك أي مشكلة."
+                    : locale === "fr"
+                      ? "Garantie de remplacement immédiat via le suivi de commande en cas de problème."
+                      : "Immediate replacement guarantee via Track Order if you face any issues."}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                <span>
+                  {locale === "ar"
+                    ? "تعامل مالي شرعي وشفاف وفق عقد وكالة بأجرة محددة ومعلنة."
+                    : locale === "fr"
+                      ? "Courtage islamique transparent avec honoraires de mandat clairement affichés."
+                      : "Transparent Islamic agency (Tawkeel) with upfront brokerage fee."}
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -110,6 +120,7 @@ export function ProductInteractiveLayout({
           selectedOfferId={selectedOfferId}
           onSelectOffer={setSelectedOfferId}
           isLoggedIn={isLoggedIn}
+          warrantyMode={WARRANTY_MODE}
         />
 
         <div className="mt-6 rounded-2xl bg-[var(--surface-2)] p-4">
