@@ -31,3 +31,4 @@ describe("formatVariantTitle", () => {
     expect(res.tags).toEqual([]);
   });
 });
+

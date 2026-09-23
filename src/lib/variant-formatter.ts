@@ -53,3 +53,4 @@ export function formatVariantTitle(raw: string): FormattedVariant {
     tags,
   };
 }
+
