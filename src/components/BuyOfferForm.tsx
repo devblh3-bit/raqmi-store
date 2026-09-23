@@ -99,7 +99,7 @@ export default function BuyOfferForm({
   };
 
   return (
-    <form action={action} className="pb-24 sm:pb-0">
+    <form action={action} className="pb-28 sm:pb-0">
       <input type="hidden" name="locale" value={locale} />
       {/* Where to come back to after signing in. Validated server-side. */}
       <input type="hidden" name="returnTo" value={`/${locale}/products/${slug}`} />
@@ -173,7 +173,7 @@ export default function BuyOfferForm({
 
                   <div className="flex flex-col min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-sm font-semibold text-[var(--fg)] truncate">
+                      <span className="text-sm font-semibold text-[var(--fg)] leading-snug break-words">
                         {formatted.title}
                       </span>
                       {o.badge && (
@@ -186,33 +186,33 @@ export default function BuyOfferForm({
                     {/* Subtitle Feature Tags */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {oInputType === "NONE" ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                           <span>⚡</span>
-                          <span>{tc("deliveryTypeNone")}</span>
+                          <span>{locale === "ar" ? "تسليم فوري" : locale === "fr" ? "Instantané" : "Instant"}</span>
                         </span>
                       ) : oInputType === "EMAIL" ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 shrink-0">
                           <span>📧</span>
-                          <span>{tc("deliveryTypeEmail")}</span>
+                          <span>{locale === "ar" ? "تفعيل بالبريد" : locale === "fr" ? "Sur e-mail" : "Email Activation"}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400 shrink-0">
                           <span>👤</span>
-                          <span>{tc("deliveryTypeUsername")}</span>
+                          <span>{locale === "ar" ? "اسم المستخدم" : locale === "fr" ? "Identifiant" : "Username / ID"}</span>
                         </span>
                       )}
 
                       {formatted.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)]"
+                          className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)] shrink-0"
                         >
                           {tag}
                         </span>
                       ))}
 
                       {o.stock !== undefined && o.stock <= 5 && (
-                        <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                        <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 shrink-0">
                           {t("stockLimited")}: {o.stock}
                         </span>
                       )}
@@ -228,7 +228,7 @@ export default function BuyOfferForm({
                         <span className="text-xs text-[var(--fg-muted)] line-through">
                           <PriceCompact cents={o.price} locale={locale} />
                         </span>
-                        <Price cents={itemWp.price} locale={locale} size="sm" />
+                        <Price cents={itemWp.price} locale={locale} size="sm" compactSecondary />
                       </div>
                       {itemWp.marginCents > 0 && (
                         <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -237,7 +237,7 @@ export default function BuyOfferForm({
                       )}
                     </div>
                   ) : (
-                    <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
+                    <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" compactSecondary />
                   )}
                 </div>
               </div>

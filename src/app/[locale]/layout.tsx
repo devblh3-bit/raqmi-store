@@ -38,7 +38,7 @@ export default async function LocaleLayout({
         <CurrencyProvider dzdRate={settings.dzdRate}>
           <CartProvider>
             <Header locale={locale as Locale} />
-            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <main className="flex-1 pb-24 md:pb-8">{children}</main>
             <Footer locale={locale as Locale} />
             <StoreMobileNav locale={locale as Locale} />
 

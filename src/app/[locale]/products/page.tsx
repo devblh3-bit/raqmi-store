@@ -41,14 +41,14 @@ export default async function AplikasiPage({
             {q ? `Search: “${q}” · ${list.length} results` : `${list.length} products · ${t("searchPlaceholder")}`}
           </p>
         </div>
-        <form method="GET" className="flex flex-wrap items-center gap-2">
-          <div className="relative flex items-center">
+        <form method="GET" className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial flex items-center min-w-[140px]">
             <input
               type="text"
               name="q"
               defaultValue={q ?? ""}
               placeholder={t("searchPlaceholder") ?? "Search products..."}
-              className="h-9 w-44 sm:w-60 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-medium outline-none focus:border-[var(--accent)]"
+              className="h-9 w-full sm:w-60 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-medium outline-none focus:border-[var(--accent)]"
             />
             {q && (
               <a
@@ -69,7 +69,7 @@ export default async function AplikasiPage({
             <option value="termurah">Cheapest</option>
             <option value="termahal">Most expensive</option>
           </select>
-          <button type="submit" className="h-9 rounded-full bg-[var(--accent)] px-4 text-xs font-bold text-white shadow-xs hover:bg-[var(--accent-hover)] transition">
+          <button type="submit" className="h-9 rounded-full bg-[var(--accent)] px-4 text-xs font-bold text-white shadow-xs hover:bg-[var(--accent-hover)] transition shrink-0">
             Filter
           </button>
         </form>

@@ -8,11 +8,13 @@ export function Price({
   locale,
   compareAt,
   size = "md",
+  compactSecondary = false,
 }: {
   cents: number;
   locale: Locale;
   compareAt?: number;
   size?: "sm" | "md" | "lg";
+  compactSecondary?: boolean;
 }) {
   const { currency, dzdRate, formatAmount } = useCurrency();
   const sizes = {
@@ -30,15 +32,15 @@ export function Price({
       : null;
 
   return (
-    <div className="flex flex-wrap items-baseline gap-2">
+    <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
       <span className={`font-bold tracking-tight ${sizes[size]}`}>{primary}</span>
       {compareAtText && (
         <span className="text-xs font-medium text-[var(--fg-faint)] line-through">
           {compareAtText}
         </span>
       )}
-      <span className="text-[11px] font-medium text-[var(--fg-faint)]">
-        {secondary} <span className="font-normal opacity-80">· indicative</span>
+      <span className="text-[11px] font-medium text-[var(--fg-faint)] whitespace-nowrap">
+        {secondary} {!compactSecondary && <span className="font-normal opacity-80">· indicative</span>}
       </span>
     </div>
   );

@@ -121,7 +121,7 @@ export default function Header({ locale }: { locale: Locale }) {
             <Link
               href={`${prefix}/cart`}
               aria-label={t("cart")}
-              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
+              className="relative hidden lg:flex h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
             >
               <CartIcon className="h-[16px] w-[16px]" />
             </Link>
@@ -134,7 +134,7 @@ export default function Header({ locale }: { locale: Locale }) {
               href={`${prefix}/account`}
               aria-label={t("account")}
               title={t("account")}
-              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
+              className="relative hidden lg:flex h-9 w-9 items-center justify-center rounded-full text-[var(--fg-muted)] transition-all duration-200 hover:bg-[var(--surface)]/80 hover:text-[var(--fg)] hover:shadow-[var(--elev-1)] active:scale-95"
             >
               <UserIcon className="h-[16px] w-[16px]" />
             </Link>

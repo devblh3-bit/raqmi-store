@@ -14,10 +14,15 @@ export default function StoreMobileNav({ locale }: { locale: Locale }) {
   const totalCartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Suppress storefront bottom bar when inside dedicated management portals
+  // or on product detail pages where the mobile sticky purchase bar takes precedence
+  const isProductDetailPage =
+    Boolean(pathname?.startsWith(`/${locale}/products/`) && pathname !== `/${locale}/products`);
+
   const isPortal =
     pathname?.startsWith(`/${locale}/admin`) ||
     pathname?.startsWith(`/${locale}/reseller`) ||
-    pathname?.startsWith(`/${locale}/account`);
+    pathname?.startsWith(`/${locale}/account`) ||
+    isProductDetailPage;
 
   if (isPortal) {
     return null;

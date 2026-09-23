@@ -6,17 +6,22 @@ describe("Mobile Navigation Configuration and Routing Rules", () => {
       return (
         pathname.startsWith(`/${locale}/admin`) ||
         pathname.startsWith(`/${locale}/reseller`) ||
-        pathname.startsWith(`/${locale}/account`)
+        pathname.startsWith(`/${locale}/account`) ||
+        (pathname.startsWith(`/${locale}/products/`) && pathname !== `/${locale}/products`)
       );
     }
 
-    // Public storefront routes -> Store nav is ACTIVE
+    // Public storefront browsing routes -> Store nav is ACTIVE
     expect(shouldSuppressStoreNav("/en", "en")).toBe(false);
     expect(shouldSuppressStoreNav("/en/products", "en")).toBe(false);
     expect(shouldSuppressStoreNav("/en/categories/software", "en")).toBe(false);
     expect(shouldSuppressStoreNav("/en/cart", "en")).toBe(false);
     expect(shouldSuppressStoreNav("/fr/promo", "fr")).toBe(false);
     expect(shouldSuppressStoreNav("/ar/track-order", "ar")).toBe(false);
+
+    // Product detail routes -> Store nav is SUPPRESSED in favor of product sticky purchase bar
+    expect(shouldSuppressStoreNav("/en/products/chatgpt-plus", "en")).toBe(true);
+    expect(shouldSuppressStoreNav("/en/products/gemini-pro", "en")).toBe(true);
 
     // Dedicated portal routes -> Store nav is SUPPRESSED in favor of portal bottom bar
     expect(shouldSuppressStoreNav("/en/admin", "en")).toBe(true);
