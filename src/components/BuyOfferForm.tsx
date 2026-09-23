@@ -8,6 +8,7 @@ import { buyNow, type BuyState } from "@/app/actions/buy";
 import type { CatalogOffer } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 import { Price, PriceCompact } from "./Price";
+import { formatVariantTitle } from "@/lib/variant-formatter";
 
 const ERROR_KEY: Record<string, string> = {
   INSUFFICIENT_FUNDS: "errorFunds",
@@ -74,8 +75,26 @@ export default function BuyOfferForm({
   const isGuestEmailValid = isLoggedIn || guestEmail.trim().length > 0;
   const canSubmit = !pending && Boolean(offer) && isActivationValid && isGuestEmailValid;
 
+  const formattedSelected = offer
+    ? formatVariantTitle(offer.label[locale] ?? offer.label.en)
+    : { title: "", tags: [] };
+
+  const handleStickyClick = (e: React.MouseEvent) => {
+    if (!canSubmit) {
+      e.preventDefault();
+      // Scroll directly to the first unfilled required input on mobile
+      const firstInvalid = document.querySelector<HTMLInputElement>(
+        "form input[required]:invalid, form input[required]:placeholder-shown"
+      );
+      if (firstInvalid) {
+        firstInvalid.focus();
+        firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  };
+
   return (
-    <form action={action}>
+    <form action={action} className="pb-24 sm:pb-0">
       <input type="hidden" name="locale" value={locale} />
       {/* Where to come back to after signing in. Validated server-side. */}
       <input type="hidden" name="returnTo" value={`/${locale}/products/${slug}`} />
@@ -83,13 +102,11 @@ export default function BuyOfferForm({
 
       {/* Hidden inputs to pass computed values to server action if unified */}
       {!isLoggedIn && isEmailActivation && !differentActivationEmail ? (
-        <>
-          <input type="hidden" name="customerInput" value={guestEmail} />
-        </>
+        <input type="hidden" name="customerInput" value={guestEmail} />
       ) : null}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{t("chooseOffer")}</h2>
+        <h2 className="text-sm font-semibold text-[var(--fg)]">{t("chooseOffer")}</h2>
         {resellerTier && (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
             ⭐ {resellerTier.name} ({resellerTier.discountPercent}% Off)
@@ -97,59 +114,107 @@ export default function BuyOfferForm({
         )}
       </div>
 
+      {/* COMPACT & VISUAL VARIANT CARDS */}
       <div className="mt-3 flex flex-col gap-2">
         {offers.map((o) => {
           const itemWp = wholesalePrices?.[o.id];
           const oInputType = (o.customerInputType || (o.requiresCustomerInput ? "TEXT" : "NONE")).toUpperCase();
+          const formatted = formatVariantTitle(o.label[locale] ?? o.label.en);
+          const isSelected = selected === o.id;
 
           return (
             <label
               key={o.id}
-              className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 transition-colors hover:border-[var(--border-strong)] has-[input:checked]:border-[var(--accent)] has-[input:checked]:bg-[var(--accent-soft)]"
+              className={`relative flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-3.5 py-2.5 transition-all duration-200 ${
+                isSelected
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent)]/30 shadow-xs"
+                  : "border-[var(--border)] bg-[var(--surface-2)]/60 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
+              }`}
             >
-              <span className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {/* Custom Animated Checkmark Radio Circle */}
+                <div
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                    isSelected
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-fg)] scale-105"
+                      : "border-[var(--border-strong)] bg-[var(--surface)] text-transparent"
+                  }`}
+                  aria-hidden
+                >
+                  <svg
+                    className="h-3 w-3 stroke-[2.5]"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+
                 <input
                   type="radio"
                   name="offerChoice"
                   value={o.id}
-                  checked={selected === o.id}
+                  checked={isSelected}
                   onChange={() => setSelected(o.id)}
-                  className="accent-[var(--accent)]"
+                  className="sr-only"
                 />
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{o.label[locale] ?? o.label.en}</span>
+
+                <div className="flex flex-col min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-semibold text-[var(--fg)] truncate">
+                      {formatted.title}
+                    </span>
                     {o.badge && (
-                      <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[11px] font-bold text-white">
+                      <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
                         {o.badge}
                       </span>
                     )}
                   </div>
-                  {/* Visual delivery requirement indicator */}
-                  <div className="flex items-center gap-2">
+
+                  {/* Subtitle Feature Tags */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
                     {oInputType === "NONE" ? (
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        {tc("deliveryTypeNone")}
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span>⚡</span>
+                        <span>{tc("deliveryTypeNone")}</span>
                       </span>
                     ) : oInputType === "EMAIL" ? (
-                      <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                        {tc("deliveryTypeEmail")}
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                        <span>📧</span>
+                        <span>{tc("deliveryTypeEmail")}</span>
                       </span>
                     ) : (
-                      <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
-                        {tc("deliveryTypeUsername")}
+                      <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                        <span>👤</span>
+                        <span>{tc("deliveryTypeUsername")}</span>
                       </span>
                     )}
+
+                    {formatted.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+
                     {o.stock !== undefined && o.stock <= 5 && (
-                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                      <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
                         {t("stockLimited")}: {o.stock}
                       </span>
                     )}
                   </div>
                 </div>
-              </span>
+              </div>
 
-              <span className="text-sm font-bold">
+              {/* Price section */}
+              <div className="text-right shrink-0">
                 {itemWp ? (
                   <div className="flex flex-col items-end">
                     <div className="flex items-center gap-1.5">
@@ -167,7 +232,7 @@ export default function BuyOfferForm({
                 ) : (
                   <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
                 )}
-              </span>
+              </div>
             </label>
           );
         })}
@@ -511,6 +576,31 @@ export default function BuyOfferForm({
           →
         </span>
       </button>
+
+      {/* MOBILE STICKY BOTTOM CHECKOUT BAR */}
+      {offer && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-md px-4 py-3 shadow-[var(--elev-3)] sm:hidden flex items-center justify-between gap-3 safe-area-pb">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold text-[var(--fg)]">
+              {formattedSelected.title}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Price cents={effectivePrice} locale={locale} size="sm" />
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                {locale === "ar" ? "شامل الأتعاب" : "Inc. fee"}
+              </span>
+            </div>
+          </div>
+          <button
+            type="submit"
+            onClick={handleStickyClick}
+            disabled={pending}
+            className="btn-shine inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-xs font-bold text-[var(--accent-fg)] shadow-sm shrink-0 active:scale-95 disabled:opacity-60"
+          >
+            {pending ? tc("placing") : tc("agencyProcure")} ➔
+          </button>
+        </div>
+      )}
     </form>
   );
 }
