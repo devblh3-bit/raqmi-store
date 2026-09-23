@@ -83,7 +83,8 @@ describe("DB catalog has consolidated canonical live products", () => {
       expect(p!.category).toBeTruthy();
 
       for (const off of p!.offers) {
-        expect(off.price).toBeGreaterThanOrEqual(120); // Minimum price floor of 300 DA (120 cents at 250 rate)
+        expect(off.price).toBeGreaterThan(0);
+        expect(off.price).toBe(off.baseCost + off.agencyFee);
         expect(off.baseCost).toBeGreaterThan(0);
         expect(off.agencyFee).toBeGreaterThanOrEqual(0);
         expect(off.label.en).toBeTruthy();

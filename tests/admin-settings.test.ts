@@ -59,7 +59,6 @@ describe("Admin System Settings & Telegram Diagnostics", () => {
   it("returns default settings when database has no records", async () => {
     const settings = await getSystemSettings();
     expect(settings.dzdRate).toBe(DEFAULT_SETTINGS.dzdRate);
-    expect(settings.minOfferPriceDzd).toBe(300);
     expect(settings.maintenanceMode).toBe(false);
     expect(settings.supportEmail).toBe(DEFAULT_SETTINGS.supportEmail);
     expect(await isMaintenanceModeActive()).toBe(false);
@@ -69,7 +68,6 @@ describe("Admin System Settings & Telegram Diagnostics", () => {
   it("updates settings, persists them in database, and creates an audit log", async () => {
     const fd = new FormData();
     fd.append("dzdRate", "248.5");
-    fd.append("minOfferPriceDzd", "350");
     fd.append("maintenanceMode", "true");
     fd.append("maintenanceBannerEn", "Emergency maintenance in progress. Please check back at 18:00 UTC.");
     fd.append("maintenanceBannerAr", "صيانة طارئة جارية. يرجى العودة لاحقاً.");
@@ -82,7 +80,6 @@ describe("Admin System Settings & Telegram Diagnostics", () => {
     // Verify persisted settings
     const settings = await getSystemSettings();
     expect(settings.dzdRate).toBe(248.5);
-    expect(settings.minOfferPriceDzd).toBe(350);
     expect(settings.maintenanceMode).toBe(true);
     expect(settings.maintenanceBannerEn).toBe("Emergency maintenance in progress. Please check back at 18:00 UTC.");
     expect(settings.maintenanceBannerAr).toBe("صيانة طارئة جارية. يرجى العودة لاحقاً.");
@@ -104,7 +101,6 @@ describe("Admin System Settings & Telegram Diagnostics", () => {
     expect(audit).not.toBeNull();
     const detail = audit?.detail as Record<string, unknown>;
     expect(detail.dzdRate).toBe(248.5);
-    expect(detail.minOfferPriceDzd).toBe(350);
     expect(detail.maintenanceMode).toBe(true);
     expect(detail.supportEmail).toBe("ops@raqmi.dz");
   });

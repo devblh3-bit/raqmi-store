@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 
 export interface SystemSettings {
   dzdRate: number;
-  minOfferPriceDzd: number;
   defaultProfitMargin: number;
   baridimobRip: string;
   baridimobHolder: string;
@@ -20,7 +19,6 @@ export interface SystemSettings {
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   dzdRate: 240,
-  minOfferPriceDzd: 300,
   defaultProfitMargin: 15,
   baridimobRip: "",
   baridimobHolder: "",
@@ -53,18 +51,11 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     const dzdRateRaw = map.get("dzd_rate");
     const dzdRate = dzdRateRaw ? parseFloat(dzdRateRaw) : DEFAULT_SETTINGS.dzdRate;
 
-    const minPriceRaw = map.get("min_offer_price_dzd");
-    const minOfferPriceDzd = minPriceRaw ? parseFloat(minPriceRaw) : DEFAULT_SETTINGS.minOfferPriceDzd;
-
     const marginRaw = map.get("default_profit_margin");
     const defaultProfitMargin = marginRaw ? parseFloat(marginRaw) : DEFAULT_SETTINGS.defaultProfitMargin;
 
     return {
       dzdRate: Number.isFinite(dzdRate) && dzdRate > 0 ? dzdRate : DEFAULT_SETTINGS.dzdRate,
-      minOfferPriceDzd:
-        Number.isFinite(minOfferPriceDzd) && minOfferPriceDzd >= 0
-          ? minOfferPriceDzd
-          : DEFAULT_SETTINGS.minOfferPriceDzd,
       defaultProfitMargin:
         Number.isFinite(defaultProfitMargin) && defaultProfitMargin >= 0
           ? defaultProfitMargin

@@ -177,11 +177,6 @@ export const systemSettingsSchema = z.object({
     .number()
     .positive("Exchange rate must be greater than 0")
     .max(10000, "Unreasonable exchange rate"),
-  minOfferPriceDzd: z.coerce
-    .number()
-    .min(0, "Minimum price floor cannot be negative")
-    .max(1000000, "Unreasonable minimum price floor")
-    .default(300),
   defaultProfitMargin: z.coerce
     .number()
     .min(0, "Profit margin cannot be negative")
