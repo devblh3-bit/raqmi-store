@@ -25,7 +25,9 @@ export type CatalogOffer = {
   id: string; // real Offer.id — this is what checkout takes
   label: Record<string, string>;
   rules?: Record<string, string>;
-  price: number; // USD minor
+  price: number; // USD minor (total charged)
+  baseCost: number; // Wholesale subscription cost in USD minor units (Amanat al-Muwakkil)
+  agencyFee: number; // Agency & execution service fee in USD minor units (Ujrat al-Wikalah)
   compareAt?: number;
   stock?: number;
   badge?: string;
@@ -139,6 +141,8 @@ function toOffer(
   const markup = Number(o.markupPercent);
   const rawPrice = Math.round(best.usdCostMinor * (1 + markup / 100));
   const price = minPriceMinor !== undefined ? Math.max(rawPrice, minPriceMinor) : rawPrice;
+  const baseCost = best.usdCostMinor;
+  const agencyFee = Math.max(0, price - baseCost);
 
   const inputType = best.po.customerInputType;
   return {
@@ -146,6 +150,8 @@ function toOffer(
     label: localized(o.labelEn, o.labelAr, o.labelFr),
     rules: localized(o.rulesEn, o.rulesAr, o.rulesFr),
     price,
+    baseCost,
+    agencyFee,
     compareAt: o.compareAtMinor == null ? undefined : Number(o.compareAtMinor),
     stock: best.po.stockQuantity ?? undefined,
     badge: o.badge ?? undefined,

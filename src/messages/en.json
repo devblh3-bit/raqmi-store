@@ -57,7 +57,14 @@
     "status": "Status",
     "total": "Total",
     "backToProducts": "Continue shopping",
-    "notFound": "Order not found."
+    "notFound": "Order not found.",
+    "agencyProcure": "Authorize & Procure",
+    "baseCost": "Wholesale Base Cost",
+    "agencyFee": "Agency & Execution Fee",
+    "totalAuthorized": "Total Authorized Capital",
+    "tawkeelDeclaration": "By proceeding, you formally commission Raqmi as your automated purchasing agent to procure and activate this digital subscription on your behalf, for the agreed agency fee above per our",
+    "termsLink": "Agency Agreement & Terms",
+    "agencyNotice": "Includes automated agency & procurement fee"
   },
   "track": {
     "title": "Track order",

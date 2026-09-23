@@ -104,6 +104,8 @@ describe("placeOrder", () => {
     expect(order.items).toHaveLength(1);
     expect(order.items[0].unitPriceMinor).toBe(1000n);
     expect(order.items[0].unitCostMinor).toBe(1000n);
+    expect(order.items[0].procurementCostUsdMinor).toBe(1000n);
+    expect(order.items[0].agencyFeeMinor).toBe(0n);
     expect(order.items[0].status).toBe("AWAITING_FULFILLMENT");
 
     const wallet = await prisma.wallet.findUniqueOrThrow({ where: { userId } });

@@ -74,26 +74,40 @@ export default async function OrderPage({
           {order.items.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-2)] px-4 py-3"
+              className="flex flex-col gap-1.5 rounded-2xl bg-[var(--surface-2)] px-4 py-3"
             >
-              <span className="text-sm">
-                <span className="font-semibold">{name(item)}</span>
-                <span className="text-[var(--fg-muted)]"> · {label(item)}</span>
-                {item.quantity > 1 && (
-                  <span className="text-[var(--fg-muted)]"> × {item.quantity}</span>
-                )}
-              </span>
-              <span className="text-sm font-semibold">
-                <Price cents={Number(item.unitPriceMinor)} locale={loc} size="sm" />
-              </span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm">
+                  <span className="font-semibold">{name(item)}</span>
+                  <span className="text-[var(--fg-muted)]"> · {label(item)}</span>
+                  {item.quantity > 1 && (
+                    <span className="text-[var(--fg-muted)]"> × {item.quantity}</span>
+                  )}
+                </span>
+                <span className="text-sm font-semibold">
+                  <Price cents={Number(item.unitPriceMinor)} locale={loc} size="sm" />
+                </span>
+              </div>
+              {item.agencyFeeMinor != null && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--fg-muted)] border-t border-[var(--border)]/40 pt-1.5 mt-0.5">
+                  <span>{t("baseCost")}: <Price cents={Number(item.procurementCostUsdMinor ?? 0n)} locale={loc} size="sm" /></span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    {t("agencyFee")}: <Price cents={Number(item.agencyFeeMinor)} locale={loc} size="sm" />
+                  </span>
+                </div>
+              )}
             </li>
           ))}
         </ul>
 
         <p className="mt-6 text-xs leading-5 text-[var(--fg-faint)]">
-          Delivery is pending provider fulfillment. Track this code any time at{" "}
-          <Link href={`/${locale}/track-order`} className="font-semibold text-[var(--accent)] hover:underline">
-            Track Order
+          {loc === "ar"
+            ? "يتم تنفيذ هذا الطلب عبر الوكالة والتوريد الفوري المعتمد وفق "
+            : loc === "fr"
+              ? "Cette commande est traitée sous contrat de mandat d'approvisionnement selon "
+              : "This order is fulfilled under automated agency procurement according to "}
+          <Link href={`/${locale}/terms`} className="font-semibold text-[var(--accent)] hover:underline">
+            {t("termsLink")}
           </Link>
           .
         </p>

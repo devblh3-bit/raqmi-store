@@ -28,6 +28,9 @@ export default function Footer({ locale }: { locale: Locale }) {
             <p className="text-sm font-semibold">Support</p>
             <div className="mt-3 flex flex-col gap-2 text-sm text-[var(--fg-muted)]">
               <Link href={`${p}/track-order`} className="hover:text-[var(--fg)]">Track order</Link>
+              <Link href={`${p}/terms`} className="hover:text-[var(--fg)]">
+                {locale === "ar" ? "عقد الوكالة والشروط" : locale === "fr" ? "Conditions & Mandat" : "Terms & Agency Agreement"}
+              </Link>
               <a href="https://t.me/Devblh_bot" target="_blank" rel="noreferrer" className="hover:text-[var(--fg)]">Telegram</a>
             </div>
           </div>

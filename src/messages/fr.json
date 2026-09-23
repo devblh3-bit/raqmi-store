@@ -57,7 +57,14 @@
     "status": "Statut",
     "total": "Total",
     "backToProducts": "Continuer les achats",
-    "notFound": "Commande introuvable."
+    "notFound": "Commande introuvable.",
+    "agencyProcure": "Mandater et Commander",
+    "baseCost": "Coût de base de l'abonnement",
+    "agencyFee": "Frais d'agence et d'automatisation",
+    "totalAuthorized": "Capital total mandaté",
+    "tawkeelDeclaration": "En validant, vous mandatez formellement Raqmi comme votre agent automatisé pour commander et activer cet abonnement en votre nom, pour les frais d'agence convenus ci-dessus selon notre",
+    "termsLink": "Contrat de Mandat et Conditions",
+    "agencyNotice": "Frais d'agence et d'exécution inclus"
   },
   "track": {
     "title": "Suivi de commande",

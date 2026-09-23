@@ -338,6 +338,8 @@ model OrderItem {
   unitCostMinor         BigInt // provider currency minor, snapshotted
   costCurrency          String               @default("USD")
   fxRateSnapshot        Decimal?             @db.Decimal(18, 8)
+  procurementCostUsdMinor BigInt? // Exact wholesale cost in USD cents (Amanat al-Muwakkil)
+  agencyFeeMinor          BigInt? // Earned agency service fee (Ujrat al-Wikalah)
   requiresCustomerInput Boolean              @default(false)
   customerInputEnc      String? // envelope-encrypted (crypto.ts format), purge 30d after COMPLETED
   deliveryPayloadEnc    String? // envelope-encrypted, purge 90d

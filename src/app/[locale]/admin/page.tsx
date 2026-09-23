@@ -59,6 +59,10 @@ async function loadDashboardMetrics() {
       take: 3,
       include: { provider: { select: { displayName: true } } },
     }),
+    prisma.orderItem.aggregate({
+      where: { status: "COMPLETED" },
+      _sum: { agencyFeeMinor: true, procurementCostUsdMinor: true },
+    }),
   ]);
 }
 
@@ -86,6 +90,7 @@ export default async function AdminDashboard({
       recentOrders,
       recentAuditLogs,
       syncRuns,
+      agencyAccounting,
     ],
   ] = await Promise.all([getSystemSettings(), loadDashboardMetrics()]);
 
@@ -95,6 +100,11 @@ export default async function AdminDashboard({
   const sales24hUsd = Number(sales24hMinor) / 100;
   const walletLiabilityMinor = walletSum._sum.balanceMinor ?? 0n;
   const walletLiabilityUsd = Number(walletLiabilityMinor) / 100;
+
+  const agencyFeesEarnedMinor = agencyAccounting._sum.agencyFeeMinor ?? 0n;
+  const agencyFeesEarnedUsd = Number(agencyFeesEarnedMinor) / 100;
+  const procurementCostsDisbursedMinor = agencyAccounting._sum.procurementCostUsdMinor ?? 0n;
+  const procurementCostsDisbursedUsd = Number(procurementCostsDisbursedMinor) / 100;
 
   const lowBalanceProviders = providers.filter((p) => {
     if (p.balanceMinor === null || p.lowBalanceThresholdMinor === null) return false;
@@ -184,16 +194,29 @@ export default async function AdminDashboard({
       </div>
 
       {/* Main KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm space-y-1">
           <div className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">
-            24h Sales Volume
+            24h Authorized Flow
           </div>
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-bold text-[var(--fg)]">
             ${sales24hUsd.toFixed(2)}
           </div>
           <div className="text-[11px] text-[var(--fg-muted)]">
             {recentPaidOrders.length} orders · ≈ {Math.round(sales24hUsd * dzdRate).toLocaleString()} DZD
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 shadow-sm space-y-1">
+          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+            <span>Agency Ujrah (Revenue)</span>
+            <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">أجرة</span>
+          </div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            ${agencyFeesEarnedUsd.toFixed(2)}
+          </div>
+          <div className="text-[11px] text-[var(--fg-muted)]">
+            Pass-Through: ${procurementCostsDisbursedUsd.toFixed(2)}
           </div>
         </div>
 
@@ -224,7 +247,7 @@ export default async function AdminDashboard({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm space-y-1">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm space-y-1 col-span-2 lg:col-span-1">
           <div className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">
             Reseller Network
           </div>

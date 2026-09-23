@@ -113,8 +113,20 @@ export default function CartContents({ locale }: { locale: Locale }) {
             </p>
           )
         )}
-        <button disabled={pending || missingInput} className="btn-shine mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] disabled:opacity-60">
-          {pending ? tc("placing") : t("checkout")}
+
+        <div className="mt-4 rounded-xl bg-[var(--surface-2)]/40 border border-[var(--border)]/60 p-3 text-[11px] leading-relaxed text-[var(--fg-muted)]">
+          <span>📜 {tc("tawkeelDeclaration")}{" "}</span>
+          <Link
+            href={`/${locale}/terms`}
+            className="font-semibold text-[var(--accent)] underline underline-offset-2 hover:opacity-80"
+            target="_blank"
+          >
+            {tc("termsLink")}
+          </Link>
+          .
+        </div>
+        <button disabled={pending || missingInput} className="btn-shine mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] disabled:opacity-60">
+          {pending ? tc("placing") : tc("agencyProcure")}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { useTranslations } from "next-intl";
 import { buyNow, type BuyState } from "@/app/actions/buy";
@@ -194,11 +195,56 @@ export default function BuyOfferForm({
         {t("addToCart")}
       </button>
 
+      {offer && (() => {
+        const wp = wholesalePrices?.[offer.id];
+        const effectivePrice = wp ? wp.price : offer.price;
+        const effectiveFee = Math.max(0, effectivePrice - offer.baseCost);
+        return (
+          <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-3.5 text-xs space-y-2">
+            <div className="flex items-center justify-between text-[var(--fg-muted)]">
+              <span>{tc("baseCost")}</span>
+              <span className="font-medium text-[var(--fg)]">
+                <Price cents={offer.baseCost} locale={locale} size="sm" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[var(--fg-muted)]">
+              <span className="flex items-center gap-1">
+                <span>{tc("agencyFee")}</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                  {locale === "ar" ? "أجرة الوكالة" : "Brokerage"}
+                </span>
+              </span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <Price cents={effectiveFee} locale={locale} size="sm" />
+              </span>
+            </div>
+            <div className="border-t border-[var(--border)] pt-2 flex items-center justify-between font-bold text-[var(--fg)]">
+              <span>{tc("totalAuthorized")}</span>
+              <span>
+                <Price cents={effectivePrice} locale={locale} size="sm" />
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+
+      <div className="mt-3 rounded-xl bg-[var(--surface-2)]/40 border border-[var(--border)]/60 p-2.5 text-[11px] leading-relaxed text-[var(--fg-muted)]">
+        <span>📜 {tc("tawkeelDeclaration")}{" "}</span>
+        <Link
+          href={`/${locale}/terms`}
+          className="font-semibold text-[var(--accent)] underline underline-offset-2 hover:opacity-80"
+          target="_blank"
+        >
+          {tc("termsLink")}
+        </Link>
+        .
+      </div>
+
       <button
         disabled={pending || !offers.length}
-        className="btn-shine group mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+        className="btn-shine group mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
       >
-        {pending ? tc("placing") : t("buyNow")}
+        {pending ? tc("placing") : tc("agencyProcure")}
         <span
           aria-hidden
           className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs transition-transform duration-300 ease-[var(--ease-premium)] group-hover:translate-x-0.5"

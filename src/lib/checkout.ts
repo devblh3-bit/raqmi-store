@@ -38,6 +38,8 @@ type PricedLine = {
   quantity: number;
   unitPriceMinor: bigint;
   unitCostMinor: bigint;
+  procurementCostUsdMinor: bigint;
+  agencyFeeMinor: bigint;
   costCurrency: string;
   fxRateSnapshot: number | null;
   requiresCustomerInput: boolean;
@@ -94,12 +96,17 @@ export async function placeOrder(input: {
       throw new CheckoutError("INPUT_REQUIRED", `offer needs customer input (${inputType})`, line.offerId);
     }
 
+    const procurementCostUsdMinor = BigInt(price.costMinor);
+    const agencyFeeMinor = BigInt(Math.max(0, price.priceMinor - price.costMinor));
+
     priced.push({
       id: randomUUID(), // known up front so the encryption AAD binds to the real row id
       offerId: line.offerId,
       quantity,
       unitPriceMinor: BigInt(price.priceMinor),
       unitCostMinor: providerOffer.costMinor,
+      procurementCostUsdMinor,
+      agencyFeeMinor,
       costCurrency: providerOffer.currency,
       fxRateSnapshot: price.breakdown.fxRate,
       requiresCustomerInput,
@@ -135,6 +142,8 @@ export async function placeOrder(input: {
                   quantity: l.quantity,
                   unitPriceMinor: l.unitPriceMinor,
                   unitCostMinor: l.unitCostMinor,
+                  procurementCostUsdMinor: l.procurementCostUsdMinor,
+                  agencyFeeMinor: l.agencyFeeMinor,
                   costCurrency: l.costCurrency,
                   fxRateSnapshot: l.fxRateSnapshot,
                   requiresCustomerInput: l.requiresCustomerInput,
