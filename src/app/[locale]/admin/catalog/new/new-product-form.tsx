@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
+import { formatProviderCostDisplay } from "@/lib/money";
 import { createProductWithInitialOffer } from "../actions";
 
 export type CategoryItem = {
@@ -350,11 +351,14 @@ export function NewProductForm({
                   className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
                 >
                   <option value="">-- None (Manual Variant) --</option>
-                  {supplierPool.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.provider.displayName}: {s.rawNameEn || s.rawName} ({(Number(s.costMinor) / 100).toFixed(2)} {s.currency})
-                    </option>
-                  ))}
+                  {supplierPool.map((s) => {
+                    const costDisplay = formatProviderCostDisplay(s.costMinor, s.currency);
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {s.provider.displayName}: {s.rawNameEn || s.rawName} ({costDisplay.primary}{costDisplay.secondary ? ` · ${costDisplay.secondary}` : ""})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             )}

@@ -116,6 +116,81 @@ export function convertMinor(opts: {
   return assertInt(roundHalfUp(targetMinor), "FX result");
 }
 
+/** Default VND -> USD exchange rate (25,000 VND per 1 USD). */
+export const DEFAULT_FX_RATE_VND_USD = 0.00004;
+
+/**
+ * Converts a provider offer's cost in any supported currency (USD, VND, etc.)
+ * to USD minor units (cents).
+ *
+ * - USD costMinor is already cents (exponent 2).
+ * - VND costMinor is whole dongs (exponent 0) -> multiplied by fxRate * 100.
+ */
+export function providerCostToUsdMinor(
+  costMinor: number | bigint | string,
+  currency: string,
+  fxRate?: number | null,
+): Minor {
+  const amount = Number(costMinor);
+  const cur = currency.toUpperCase();
+  if (cur === "USD") {
+    return toMinor(Math.round(amount));
+  }
+  const rate = fxRate ?? (cur === "VND" ? DEFAULT_FX_RATE_VND_USD : 1);
+  return convertMinor({
+    amountMinor: Math.round(amount),
+    fromCurrency: cur,
+    toCurrency: "USD",
+    rate,
+  });
+}
+
+export type ProviderCostDisplay = {
+  primary: string;
+  secondary?: string;
+  usdMinor: Minor;
+  usdFloat: number;
+};
+
+/**
+ * Formats a provider's raw cost clearly in its native currency plus USD equivalent if non-USD.
+ * e.g. for VND: { primary: "50,000 VND", secondary: "≈ $2.00 USD", usdMinor: 200, usdFloat: 2.00 }
+ * e.g. for USD: { primary: "$5.00 USD", secondary: undefined, usdMinor: 500, usdFloat: 5.00 }
+ */
+export function formatProviderCostDisplay(
+  costMinor: number | bigint | string,
+  currency: string,
+  fxRate?: number | null,
+): ProviderCostDisplay {
+  const cur = currency.toUpperCase();
+  const num = Number(costMinor);
+  const usdMinor = providerCostToUsdMinor(num, cur, fxRate);
+  const usdFloat = usdMinor / 100;
+  const usdFormatted = `$${usdFloat.toFixed(2)} USD`;
+
+  if (cur === "USD") {
+    return {
+      primary: usdFormatted,
+      usdMinor,
+      usdFloat,
+    };
+  }
+  if (cur === "VND") {
+    return {
+      primary: `${Math.round(num).toLocaleString()} VND`,
+      secondary: `≈ ${usdFormatted}`,
+      usdMinor,
+      usdFloat,
+    };
+  }
+  return {
+    primary: `${num.toLocaleString()} ${cur}`,
+    secondary: `≈ ${usdFormatted}`,
+    usdMinor,
+    usdFloat,
+  };
+}
+
 /** Format via Intl only. Locales: en, fr, ar (ar-DZ). Currency must be in the exponent table. */
 export function formatMinor(opts: {
   amountMinor: number;

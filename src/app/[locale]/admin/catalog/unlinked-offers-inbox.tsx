@@ -7,6 +7,7 @@ import {
   linkProviderOfferToExistingProduct,
 } from "./actions";
 import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
+import { providerCostToUsdMinor, formatProviderCostDisplay } from "@/lib/money";
 
 export type UnlinkedProviderOffer = {
   id: string;
@@ -153,10 +154,7 @@ export function UnlinkedOffersInbox({
       }
 
       const getNormalizedUsdCost = (item: UnlinkedProviderOffer) => {
-        const minor = Number(item.costMinor);
-        if (item.currency === "VND") return minor * 0.00004;
-        if (item.currency === "DZD") return minor / 240;
-        return minor;
+        return providerCostToUsdMinor(item.costMinor, item.currency);
       };
 
       if (sortBy === "COST_ASC") {
@@ -521,21 +519,8 @@ export function UnlinkedOffersInbox({
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {paginatedOffers.map((o) => {
-                const costMinorNum = Number(o.costMinor);
                 const isAvailable = o.availability?.toUpperCase() === "AVAILABLE";
-
-                // Converted cost display
-                let costFormatted = `${(costMinorNum / 100).toFixed(2)} ${o.currency}`;
-                let costSubtext: string | null = null;
-                if (o.currency === "VND") {
-                  const usdEst = (costMinorNum * 0.00004 / 100).toFixed(2);
-                  costFormatted = `${costMinorNum.toLocaleString()} VND`;
-                  costSubtext = `≈ $${usdEst} USD`;
-                } else if (o.currency === "DZD") {
-                  const usdEst = (costMinorNum / 100 / 240).toFixed(2);
-                  costFormatted = `${(costMinorNum / 100).toLocaleString()} DZD`;
-                  costSubtext = `≈ $${usdEst} USD`;
-                }
+                const costDisplay = formatProviderCostDisplay(o.costMinor, o.currency);
 
                 return (
                   <tr key={o.id} className="transition-colors hover:bg-[var(--surface-2)]/50">
@@ -567,11 +552,11 @@ export function UnlinkedOffersInbox({
                     {/* Cost */}
                     <td className="px-4 py-3">
                       <div className="font-mono font-bold text-[var(--fg)]">
-                        {costFormatted}
+                        {costDisplay.primary}
                       </div>
-                      {costSubtext && (
+                      {costDisplay.secondary && (
                         <div className="font-mono text-xs text-[var(--fg-muted)]">
-                          {costSubtext}
+                          {costDisplay.secondary}
                         </div>
                       )}
                     </td>
@@ -695,7 +680,10 @@ export function UnlinkedOffersInbox({
               <p>
                 <span className="text-[var(--fg-muted)]">Supplier Cost:</span>{" "}
                 <span className="font-mono font-bold">
-                  {(Number(createModalOffer.costMinor) / 100).toFixed(2)} {createModalOffer.currency}
+                  {(() => {
+                    const d = formatProviderCostDisplay(createModalOffer.costMinor, createModalOffer.currency);
+                    return `${d.primary}${d.secondary ? ` (${d.secondary})` : ""}`;
+                  })()}
                 </span>
               </p>
             </div>

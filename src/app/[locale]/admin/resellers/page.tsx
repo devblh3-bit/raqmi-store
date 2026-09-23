@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/admin";
 import { priceForOffer } from "@/lib/pricing";
+import { providerCostToUsdMinor } from "@/lib/money";
 import { getSystemSettings } from "@/lib/settings";
 import {
   ResellerManager,
@@ -40,7 +41,7 @@ export default async function ResellersPage({
         links: {
           where: { isEnabled: true },
           orderBy: { priority: "asc" },
-          include: { providerOffer: { select: { costMinor: true } } },
+          include: { providerOffer: { select: { costMinor: true, currency: true } } },
           take: 1,
         },
         tierOverrides: true,
@@ -78,7 +79,9 @@ export default async function ResellersPage({
 
       const rawCost = quote.available
         ? quote.costMinor
-        : Number(offer.links[0]?.providerOffer.costMinor ?? 0);
+        : offer.links[0]
+          ? providerCostToUsdMinor(offer.links[0].providerOffer.costMinor, offer.links[0].providerOffer.currency)
+          : 0;
 
       const costMinor = rawCost.toString();
 

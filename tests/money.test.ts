@@ -13,6 +13,8 @@ import {
   sumMinor,
   allocateMinor,
   computeRefundMinor,
+  providerCostToUsdMinor,
+  formatProviderCostDisplay,
 } from "../src/lib/money";
 
 describe("branded type constructors", () => {
@@ -211,5 +213,40 @@ describe("partial-refund math", () => {
     expect(() => computeRefundMinor({ unitPriceMinor: 500, orderedQty: -1, deliveredQty: 0 })).toThrow();
     expect(() => computeRefundMinor({ unitPriceMinor: 500, orderedQty: 1.5, deliveredQty: 0 })).toThrow();
     expect(() => computeRefundMinor({ unitPriceMinor: 500, orderedQty: 1, deliveredQty: -1 })).toThrow();
+  });
+});
+
+describe("providerCostToUsdMinor & formatProviderCostDisplay", () => {
+  it("converts USD costs directly without modification", () => {
+    expect(providerCostToUsdMinor(500, "USD")).toBe(500);
+    expect(providerCostToUsdMinor(12n, "USD")).toBe(12);
+
+    const display = formatProviderCostDisplay(500, "USD");
+    expect(display.primary).toBe("$5.00 USD");
+    expect(display.secondary).toBeUndefined();
+    expect(display.usdMinor).toBe(500);
+    expect(display.usdFloat).toBe(5.0);
+  });
+
+  it("converts VND costs correctly using exponent 0 and FX rate", () => {
+    // 25,000 VND * 0.00004 = $1.00 USD = 100 cents
+    expect(providerCostToUsdMinor(25000, "VND")).toBe(100);
+    // 50,000 VND * 0.00004 = $2.00 USD = 200 cents
+    expect(providerCostToUsdMinor(50000, "VND")).toBe(200);
+    // 60,000 VND * 0.00004 = $2.40 USD = 240 cents
+    expect(providerCostToUsdMinor(60000, "VND")).toBe(240);
+    // 299,760 VND * 0.00004 = $11.9904 USD -> 1199 cents
+    expect(providerCostToUsdMinor(299760, "VND")).toBe(1199);
+
+    const display = formatProviderCostDisplay(60000, "VND");
+    expect(display.primary).toBe("60,000 VND");
+    expect(display.secondary).toBe("≈ $2.40 USD");
+    expect(display.usdMinor).toBe(240);
+    expect(display.usdFloat).toBe(2.4);
+  });
+
+  it("supports custom FX rates", () => {
+    // Custom rate: 1 VND = 0.00005 USD (20,000 VND per USD)
+    expect(providerCostToUsdMinor(20000, "VND", 0.00005)).toBe(100);
   });
 });

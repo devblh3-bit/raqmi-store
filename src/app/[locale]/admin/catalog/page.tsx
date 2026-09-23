@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { providerCostToUsdMinor } from "@/lib/money";
 import { CatalogView } from "./catalog-view";
 import type { CatalogProduct } from "./catalog-table";
 import type { UnlinkedProviderOffer, ExistingProductOption } from "./unlinked-offers-inbox";
@@ -124,11 +125,10 @@ export default async function CatalogPage({
       } else {
         const activeLink = off.links.find((l) => l.isEnabled && l.providerOffer.provider.isActive);
         if (activeLink) {
-          let costUsdCents = Number(activeLink.providerOffer.costMinor);
-          if (activeLink.providerOffer.currency === "VND") {
-            const fxVndUsd = Number(process.env.FX_RATE_VND_USD || "0.00004");
-            costUsdCents = Math.round(costUsdCents * fxVndUsd);
-          }
+          const costUsdCents = providerCostToUsdMinor(
+            activeLink.providerOffer.costMinor,
+            activeLink.providerOffer.currency,
+          );
           const markup = Number(off.markupPercent);
           const retail = Math.round(costUsdCents * (1 + markup / 100));
           validPrices.push(retail);

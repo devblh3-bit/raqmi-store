@@ -13,6 +13,7 @@ import {
   reorderOffer,
 } from "../../actions";
 import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
+import { formatProviderCostDisplay } from "@/lib/money";
 
 export type SerializedProviderOffer = {
   id: string;
@@ -179,7 +180,10 @@ export function OfferStudio({
           <div className="mt-4 space-y-4">
             {offers.map((offer, offerIdx) => {
               const primaryLink = offer.links.find((l) => l.priority === 1) ?? offer.links[0];
-              const costFloat = primaryLink ? Number(primaryLink.providerOffer.costMinor) / 100 : 0;
+              const costDisplay = primaryLink
+                ? formatProviderCostDisplay(primaryLink.providerOffer.costMinor, primaryLink.providerOffer.currency)
+                : null;
+              const costFloat = costDisplay ? costDisplay.usdFloat : 0;
               const retailFloat = costFloat * (1 + offer.markupPercent / 100);
               const dzdEst = Math.round(retailFloat * 240);
 
@@ -267,7 +271,12 @@ export function OfferStudio({
                         </span>
                       </div>
                       <p className="font-mono text-xs text-[var(--fg-muted)]">
-                        Wholesale: ${costFloat.toFixed(2)} · Markup: +{offer.markupPercent}%
+                        Wholesale: {costDisplay ? (
+                          <>
+                            <span className="font-bold text-[var(--fg)]">{costDisplay.primary}</span>
+                            {costDisplay.secondary && <span className="ml-1 text-[var(--fg-muted)]">({costDisplay.secondary})</span>}
+                          </>
+                        ) : "$0.00"} · Markup: +{offer.markupPercent}%
                       </p>
                     </div>
                   </div>
@@ -306,7 +315,10 @@ export function OfferStudio({
 
                     <div className="mt-2 space-y-1.5">
                       {offer.links.map((link, idx) => {
-                        const linkCost = Number(link.providerOffer.costMinor) / 100;
+                        const linkDisplay = formatProviderCostDisplay(
+                          link.providerOffer.costMinor,
+                          link.providerOffer.currency,
+                        );
                         return (
                           <div
                             key={link.id}
@@ -334,7 +346,8 @@ export function OfferStudio({
                                 {link.providerOffer.providerSku}
                               </span>
                               <span className="text-[var(--fg-muted)]">
-                                · Cost: ${linkCost.toFixed(2)} {link.providerOffer.currency}
+                                · Cost: <span className="font-semibold text-[var(--fg)]">{linkDisplay.primary}</span>
+                                {linkDisplay.secondary && <span className="ml-1 text-[var(--fg-muted)]">({linkDisplay.secondary})</span>}
                               </span>
                               <span
                                 className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
@@ -515,7 +528,7 @@ export function OfferStudio({
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {filteredPool.map((po) => {
-                const costFloat = Number(po.costMinor) / 100;
+                const costDisplay = formatProviderCostDisplay(po.costMinor, po.currency);
                 return (
                   <tr key={po.id} className="hover:bg-[var(--surface-2)]/40">
                     <td className="px-4 py-3">
@@ -529,8 +542,13 @@ export function OfferStudio({
                         SKU: {po.providerSku}
                       </p>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-[var(--fg)]">
-                      ${costFloat.toFixed(2)} {po.currency}
+                    <td className="px-4 py-3 font-mono">
+                      <div className="font-bold text-[var(--fg)]">{costDisplay.primary}</div>
+                      {costDisplay.secondary && (
+                        <div className="text-[11px] font-normal text-[var(--fg-muted)]">
+                          {costDisplay.secondary}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -646,7 +664,8 @@ function CreateVariantModal({
 }) {
   const [isPending, startTransition] = useTransition();
 
-  const costFloat = Number(providerOffer.costMinor) / 100;
+  const costDisplay = formatProviderCostDisplay(providerOffer.costMinor, providerOffer.currency);
+  const costFloat = costDisplay.usdFloat;
   const [markupPercent, setMarkupPercent] = useState<number>(25);
   const [compareAtDollars, setCompareAtDollars] = useState<string>("");
   const [badge, setBadge] = useState<string>("");
@@ -687,7 +706,7 @@ function CreateVariantModal({
               · <span className="font-mono text-[var(--fg-muted)]">SKU: {providerOffer.providerSku}</span>
             </div>
             <div className="font-mono font-bold text-[var(--fg)]">
-              Wholesale Cost: ${costFloat.toFixed(2)} {providerOffer.currency}
+              Wholesale Cost: {costDisplay.primary} {costDisplay.secondary && <span className="text-xs font-normal text-[var(--fg-muted)]">({costDisplay.secondary})</span>}
             </div>
           </div>
           {providerOffer.rawWarranty && (
@@ -914,7 +933,7 @@ function AttachBackupModal({
 }) {
   const [isPending, startTransition] = useTransition();
   const [selectedOfferId, setSelectedOfferId] = useState<string>(offers[0]?.id || "");
-  const costFloat = Number(providerOffer.costMinor) / 100;
+  const costDisplay = formatProviderCostDisplay(providerOffer.costMinor, providerOffer.currency);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -934,7 +953,8 @@ function AttachBackupModal({
             Supplier: [{providerOffer.provider.displayName}] · SKU: {providerOffer.providerSku}
           </p>
           <p className="font-mono text-[var(--fg-muted)]">
-            Cost: ${costFloat.toFixed(2)} {providerOffer.currency} · Status:{" "}
+            Cost: <span className="font-bold text-[var(--fg)]">{costDisplay.primary}</span>
+            {costDisplay.secondary && <span className="ml-1">({costDisplay.secondary})</span>} · Status:{" "}
             {providerOffer.availability}
           </p>
           {providerOffer.rawWarranty && (
@@ -1021,7 +1041,10 @@ function EditOfferModal({
   const [isPending, startTransition] = useTransition();
 
   const primaryLink = offer.links.find((l) => l.priority === 1) ?? offer.links[0];
-  const costFloat = primaryLink ? Number(primaryLink.providerOffer.costMinor) / 100 : 0;
+  const costDisplay = primaryLink
+    ? formatProviderCostDisplay(primaryLink.providerOffer.costMinor, primaryLink.providerOffer.currency)
+    : null;
+  const costFloat = costDisplay ? costDisplay.usdFloat : 0;
 
   const [markupPercent, setMarkupPercent] = useState<number>(offer.markupPercent);
   const [compareAtDollars, setCompareAtDollars] = useState<string>(
