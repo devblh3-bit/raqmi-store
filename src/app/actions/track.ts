@@ -62,3 +62,4 @@ export async function trackOrderAction(
 
   redirect(`/${locale}/orders/${code}`);
 }
+

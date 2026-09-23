@@ -5,10 +5,12 @@ import { useState } from "react";
 export function CopyButton({
   text,
   label = "Copy",
+  copiedLabel,
   className = "",
 }: {
   text: string;
   label?: string;
+  copiedLabel?: string;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -19,19 +21,21 @@ export function CopyButton({
     setTimeout(() => setCopied(false), 2200);
   };
 
+  const resolvedCopiedLabel = copiedLabel ?? "Copied!";
+
   return (
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all duration-200 active:scale-95 ${
+      className={`inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-bold transition-all duration-200 shadow-xs active:scale-95 ${
         copied
-          ? "bg-emerald-600 text-white"
-          : "border border-emerald-500/40 bg-emerald-500/20 text-emerald-800 hover:bg-emerald-500 hover:text-white dark:text-emerald-200"
+          ? "bg-emerald-700 text-white ring-2 ring-emerald-400/40"
+          : "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
       } ${className}`}
     >
       {copied ? (
         <>
-          <span>✓</span> Copied!
+          <span className="text-sm">✓</span> {resolvedCopiedLabel}
         </>
       ) : (
         <>
@@ -41,4 +45,3 @@ export function CopyButton({
     </button>
   );
 }
-

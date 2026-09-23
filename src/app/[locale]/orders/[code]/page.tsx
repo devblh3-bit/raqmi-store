@@ -119,6 +119,13 @@ export default async function OrderPage({
     (i) => i.status === "AWAITING_FULFILLMENT" || i.status === "PLACED",
   );
 
+  const isRefunded = order.status === "REFUNDED";
+  const isCompleted = order.status === "COMPLETED";
+  const isFailed = order.status === "FAILED";
+
+  const copyLabel = loc === "ar" ? "نسخ" : loc === "fr" ? "Copier" : "Copy";
+  const copiedLabel = loc === "ar" ? "تم النسخ!" : loc === "fr" ? "Copié !" : "Copied!";
+
   return (
     <>
       <ClearCartAfterCheckout />
@@ -126,28 +133,50 @@ export default async function OrderPage({
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
           <div className="flex items-center justify-between">
             <span
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                order.status === "COMPLETED"
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold border ${
+                isCompleted
+                  ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-800"
+                  : isRefunded
+                    ? "bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/70 dark:text-purple-200 dark:border-purple-800"
+                    : isFailed
+                      ? "bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-800"
+                      : "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800"
               }`}
             >
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  order.status === "COMPLETED" ? "bg-emerald-500" : "bg-amber-500"
+                className={`h-2 w-2 rounded-full ${
+                  isCompleted
+                    ? "bg-emerald-600 dark:bg-emerald-400"
+                    : isRefunded
+                      ? "bg-purple-600 dark:bg-purple-400"
+                      : isFailed
+                        ? "bg-rose-600 dark:bg-rose-400"
+                        : "bg-amber-600 dark:bg-amber-400"
                 }`}
                 aria-hidden
               />
-              {order.status === "COMPLETED"
+              {isCompleted
                 ? loc === "ar"
                   ? "تم التسليم بنجاح"
                   : loc === "fr"
                     ? "Commande livrée"
                     : "Delivered & Ready"
-                : t("orderPlaced")}
+                : isRefunded
+                  ? loc === "ar"
+                    ? "تم استرجاع الطلب للمحفظة"
+                    : loc === "fr"
+                      ? "Remboursé sur le portefeuille"
+                      : "Refunded to Wallet"
+                  : isFailed
+                    ? loc === "ar"
+                      ? "فشل في التنفيذ"
+                      : loc === "fr"
+                        ? "Échec de traitement"
+                        : "Fulfillment Failed"
+                    : t("orderPlaced")}
             </span>
 
-            <span className="text-xs font-mono font-medium text-[var(--fg-muted)]">
+            <span className="text-xs font-mono font-semibold text-zinc-600 dark:text-zinc-400">
               {order.createdAt.toLocaleDateString(loc)}
             </span>
           </div>
@@ -172,24 +201,73 @@ export default async function OrderPage({
             </div>
           </dl>
 
+          {/* REFUND NOTICE BANNER */}
+          {isRefunded && (
+            <div className="mt-5 rounded-2xl border-2 border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 p-4 text-xs shadow-xs space-y-1">
+              <div className="flex items-center gap-2 font-bold text-sm text-purple-950 dark:text-purple-100">
+                <span className="text-base">↩️</span>
+                <span>
+                  {loc === "ar"
+                    ? "تم استرجاع هذا الطلب بالكامل"
+                    : loc === "fr"
+                      ? "Cette commande a été intégralement remboursée"
+                      : "This order has been fully refunded"}
+                </span>
+              </div>
+              <p className="text-purple-900/90 dark:text-purple-200/90 leading-relaxed text-xs">
+                {loc === "ar"
+                  ? "تمت إعادة المبلغ لحسابك/محفظتك. بيانات التفعيل الموضحة أدناه قد تكون غير صالحة للاستخدام."
+                  : loc === "fr"
+                    ? "Le montant a été crédité sur votre portefeuille. Les identifiants ci-dessous peuvent être inactifs."
+                    : "Funds have been returned to your wallet. Any credentials shown below may no longer be active."}
+              </p>
+            </div>
+          )}
+
           {/* DELIVERED DIGITAL ASSETS / CREDENTIALS CARD */}
           {hasAnyDelivery && (
-            <div className="mt-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-5 sm:p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white">
-                    ✓
+            <div
+              className={`mt-6 rounded-3xl border-2 p-5 sm:p-6 shadow-sm ${
+                isRefunded
+                  ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/60"
+                  : "border-emerald-500/80 bg-emerald-50/70 dark:border-emerald-500/50 dark:bg-emerald-950/30"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white shadow-xs ${
+                      isRefunded ? "bg-purple-700" : "bg-emerald-600"
+                    }`}
+                  >
+                    {isRefunded ? "↺" : "✓"}
                   </span>
-                  <h2 className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
-                    {loc === "ar"
-                      ? "بيانات التفعيل والمنتج الرقمي"
-                      : loc === "fr"
-                        ? "Vos identifiants & Accès livrés"
-                        : "Your Digital Product & Credentials"}
+                  <h2 className="text-base font-bold text-zinc-950 dark:text-zinc-50">
+                    {isRefunded
+                      ? loc === "ar"
+                        ? "بيانات التفعيل المسلّمة سابقاً"
+                        : loc === "fr"
+                          ? "Identifiants délivrés (Remboursés)"
+                          : "Previously Delivered Credentials"
+                      : loc === "ar"
+                        ? "بيانات التفعيل والمنتج الرقمي"
+                        : loc === "fr"
+                          ? "Vos identifiants & Accès livrés"
+                          : "Your Digital Product & Credentials"}
                   </h2>
                 </div>
-                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-200">
-                  ⚡ {loc === "ar" ? "جاهز للاستخدام" : loc === "fr" ? "Actif" : "Ready to use"}
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-xs ${
+                    isRefunded ? "bg-purple-700" : "bg-emerald-600"
+                  }`}
+                >
+                  {isRefunded
+                    ? loc === "ar"
+                      ? "⚠️ تم الاسترجاع"
+                      : loc === "fr"
+                        ? "⚠️ Remboursé"
+                        : "⚠️ Refunded"
+                    : `⚡ ${loc === "ar" ? "جاهز للاستخدام الفوري" : loc === "fr" ? "Prêt à l'emploi" : "Ready to use"}`}
                 </span>
               </div>
 
@@ -198,7 +276,7 @@ export default async function OrderPage({
                   .filter((i) => i.hasDelivery)
                   .map((item) => (
                     <div key={item.id} className="space-y-3">
-                      <div className="text-xs font-bold text-[var(--fg)] flex items-center justify-between">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
                         <span>
                           {name(item)} · {label(item)}
                         </span>
@@ -206,9 +284,10 @@ export default async function OrderPage({
 
                       {/* Manual delivery text payload (license key / login / token) */}
                       {item.manualDelivery && (
-                        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-xs">
-                          <div className="flex items-center justify-between pb-2 text-[11px] font-semibold text-[var(--fg-muted)] border-b border-[var(--border)]/40">
+                        <div className="rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-xs">
+                          <div className="flex items-center justify-between pb-2.5 text-xs font-bold text-zinc-800 dark:text-zinc-200 border-b border-zinc-200 dark:border-zinc-800">
                             <span>
+                              🔑{" "}
                               {loc === "ar"
                                 ? "بيانات الدخول والمفتاح"
                                 : loc === "fr"
@@ -217,10 +296,11 @@ export default async function OrderPage({
                             </span>
                             <CopyButton
                               text={item.manualDelivery}
-                              label={loc === "ar" ? "نسخ" : loc === "fr" ? "Copier" : "Copy"}
+                              label={copyLabel}
+                              copiedLabel={copiedLabel}
                             />
                           </div>
-                          <div className="mt-2.5 select-all font-mono text-xs text-[var(--fg)] leading-relaxed break-all whitespace-pre-wrap bg-[var(--surface-2)]/60 rounded-xl p-3 border border-[var(--border)]/60">
+                          <div className="mt-3 select-all font-mono text-sm font-semibold text-zinc-950 dark:text-zinc-50 leading-relaxed break-all whitespace-pre-wrap bg-zinc-100 dark:bg-zinc-950 rounded-xl p-3.5 border border-zinc-300 dark:border-zinc-800 shadow-inner">
                             {item.manualDelivery}
                           </div>
                         </div>
@@ -230,33 +310,41 @@ export default async function OrderPage({
                       {item.providerAccounts.map((acc, aIdx) => (
                         <div
                           key={aIdx}
-                          className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-xs"
+                          className="space-y-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-xs"
                         >
                           {acc.login && (
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
+                                <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                                   Login / Email
                                 </span>
-                                <span className="block select-all font-mono text-xs font-bold text-[var(--fg)] break-all">
+                                <span className="block select-all font-mono text-sm font-bold text-zinc-950 dark:text-zinc-50 break-all mt-0.5">
                                   {acc.login}
                                 </span>
                               </div>
-                              <CopyButton text={acc.login} />
+                              <CopyButton
+                                text={acc.login}
+                                label={copyLabel}
+                                copiedLabel={copiedLabel}
+                              />
                             </div>
                           )}
 
                           {acc.password && (
-                            <div className="flex items-center justify-between gap-2 border-t border-[var(--border)]/40 pt-2">
+                            <div className="flex items-center justify-between gap-3 border-t border-zinc-200 dark:border-zinc-800 pt-3">
                               <div className="min-w-0">
-                                <span className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
+                                <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                                   Password
                                 </span>
-                                <span className="block select-all font-mono text-xs font-bold text-[var(--fg)] break-all">
+                                <span className="block select-all font-mono text-sm font-bold text-zinc-950 dark:text-zinc-50 break-all mt-0.5">
                                   {acc.password}
                                 </span>
                               </div>
-                              <CopyButton text={acc.password} />
+                              <CopyButton
+                                text={acc.password}
+                                label={copyLabel}
+                                copiedLabel={copiedLabel}
+                              />
                             </div>
                           )}
 
@@ -264,26 +352,30 @@ export default async function OrderPage({
                             Object.entries(acc.extra).map(([k, v]) => (
                               <div
                                 key={k}
-                                className="flex items-center justify-between gap-2 border-t border-[var(--border)]/40 pt-2"
+                                className="flex items-center justify-between gap-3 border-t border-zinc-200 dark:border-zinc-800 pt-3"
                               >
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
+                                  <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                                     {k}
                                   </span>
-                                  <span className="block select-all font-mono text-xs text-[var(--fg)] break-all">
+                                  <span className="block select-all font-mono text-sm font-bold text-zinc-950 dark:text-zinc-50 break-all mt-0.5">
                                     {v}
                                   </span>
                                 </div>
-                                <CopyButton text={v} />
+                                <CopyButton
+                                  text={v}
+                                  label={copyLabel}
+                                  copiedLabel={copiedLabel}
+                                />
                               </div>
                             ))}
                         </div>
                       ))}
 
                       {item.customerInput && (
-                        <p className="text-[11px] text-[var(--fg-muted)]">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400">
                           🎯 {loc === "ar" ? "تم التفعيل على:" : loc === "fr" ? "Activé sur :" : "Activated on:"}{" "}
-                          <span className="font-mono font-bold text-[var(--fg)]">
+                          <span className="font-mono font-bold text-zinc-950 dark:text-zinc-50">
                             {item.customerInput}
                           </span>
                         </p>
@@ -292,12 +384,12 @@ export default async function OrderPage({
                   ))}
               </div>
 
-              <p className="mt-3.5 text-[11px] leading-relaxed text-[var(--fg-muted)] border-t border-emerald-500/20 pt-2.5">
+              <p className="mt-4 text-xs font-medium leading-relaxed text-zinc-700 dark:text-zinc-300 border-t border-zinc-200 dark:border-zinc-800 pt-3">
                 {loc === "ar"
-                  ? "💡 يُرجى حفظ بياناتك. في حال واجهت أي استفسار، دعم راقمي متوفر لخدمتك."
+                  ? "💡 يُرجى حفظ بياناتك بأمان. في حال واجهت أي استفسار، دعم راقمي متوفر دائماً لخدمتك."
                   : loc === "fr"
-                    ? "💡 Veuillez sauvegarder vos identifiants. Si vous avez besoin d'aide, notre support est à votre disposition."
-                    : "💡 Please save your credentials securely. If you need any assistance, Raqmi support is here to help."}
+                    ? "💡 Veuillez sauvegarder vos identifiants en lieu sûr. Si besoin, le support Raqmi reste à votre disposition."
+                    : "💡 Please save your credentials securely. If you need any assistance, Raqmi support is always here to help."}
               </p>
             </div>
           )}

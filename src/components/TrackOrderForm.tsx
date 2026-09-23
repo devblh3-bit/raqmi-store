@@ -92,3 +92,4 @@ export function TrackOrderForm({ locale }: { locale: Locale }) {
     </form>
   );
 }
+
