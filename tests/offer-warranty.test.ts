@@ -42,11 +42,10 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     expect(element).toBeDefined();
     expect(element.type).toBe("div");
     expect(element.props.className).toContain("border-t");
-    // Child is details
     expect(element.props.children.type).toBe("details");
   });
 
-  it("renders in card mode (Option 1) with green tint and trust tags", () => {
+  it("renders in card mode (Option 1) cleanly without unverified promotional claims", () => {
     const element = OfferWarranty({
       offer: sampleOffer,
       locale: "en",
@@ -56,7 +55,6 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     expect(element).toBeDefined();
     expect(element.type).toBe("div");
     expect(element.props.className).toContain("rounded-2xl");
-    expect(element.props.className).toContain("border-emerald-500/20");
   });
 
   it("renders in accordion mode (Option 2) with details tag", () => {
@@ -71,7 +69,7 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     expect(element.props.className).toContain("group");
   });
 
-  it("falls back to default warranty when no rules are set on offer", () => {
+  it("falls back to default neutral message when no rules are set on offer", () => {
     const noRulesOffer: CatalogOffer = {
       id: "offer-2",
       label: { en: "Standard Access" },

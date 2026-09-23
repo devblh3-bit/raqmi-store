@@ -78,20 +78,20 @@ export function ProductInteractiveLayout({
                 <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
                 <span>
                   {locale === "ar"
-                    ? "تراخيص واشتراكات رقمية رسمية 100% بدون أي انقطاعات غير مصرح بها."
+                    ? "تنفيذ رقمي مباشر مع توضيح كامل لتعليمات وشروط المزود لكل باقة."
                     : locale === "fr"
-                      ? "Abonnements et licences 100% officiels avec transparence complète."
-                      : "100% official digital subscriptions and licenses with complete transparency."}
+                      ? "Exécution directe avec affichage transparent des conditions du fournisseur."
+                      : "Direct fulfillment with transparent display of supplier terms for each plan."}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
                 <span>
                   {locale === "ar"
-                    ? "ضمان الاستبدال الفوري عبر صفحة تتبع الطلب في حال واجهتك أي مشكلة."
+                    ? "متابعة فورية للطلب واستلام البيانات مباشرة عبر صفحة تتبع الطلب."
                     : locale === "fr"
-                      ? "Garantie de remplacement immédiat via le suivi de commande en cas de problème."
-                      : "Immediate replacement guarantee via Track Order if you face any issues."}
+                      ? "Suivi de commande et accès immédiat via la page de suivi."
+                      : "Real-time order tracking and immediate access via Track Order."}
                 </span>
               </li>
               <li className="flex items-start gap-2">
