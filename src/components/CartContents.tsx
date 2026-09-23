@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { buyNow, type BuyState } from "@/app/actions/buy";
@@ -18,10 +18,17 @@ const ERROR_KEY: Record<string, string> = {
   UNKNOWN: "errorGeneric",
 };
 
-export default function CartContents({ locale }: { locale: Locale }) {
+export default function CartContents({
+  locale,
+  isLoggedIn = false,
+}: {
+  locale: Locale;
+  isLoggedIn?: boolean;
+}) {
   const { items, removeItem, updateInput } = useCart();
   const t = useTranslations("cart");
   const tc = useTranslations("checkout");
+  const [guestEmail, setGuestEmail] = useState("");
   const [state, action, pending] = useActionState<BuyState, FormData>(buyNow, {});
   const errorKey = state.error ? (ERROR_KEY[state.error] ?? "errorGeneric") : null;
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -77,6 +84,32 @@ export default function CartContents({ locale }: { locale: Locale }) {
         </article>
       ))}
 
+      {!isLoggedIn && (
+        <article className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)]">
+          <label htmlFor="cart-guest-email" className="block text-sm font-semibold">
+            {locale === "ar"
+              ? "البريد الإلكتروني لاستلام الطلب"
+              : locale === "fr"
+                ? "Adresse e-mail pour recevoir la commande"
+                : "Email address for order delivery"}
+          </label>
+          <input
+            id="cart-guest-email"
+            name="email"
+            type="email"
+            required
+            value={guestEmail}
+            onChange={(event) => setGuestEmail(event.target.value)}
+            maxLength={254}
+            placeholder="you@example.com"
+            className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]"
+          />
+          <p className="mt-1.5 text-[11px] text-[var(--fg-muted)]">
+            {tc("guestEmailNotice")}
+          </p>
+        </article>
+      )}
+
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)]">
         <div className="flex items-center justify-between font-semibold"><span>{tc("total")}</span><Price cents={total} locale={locale} /></div>
         {state.error === "INSUFFICIENT_FUNDS" ? (
@@ -125,7 +158,10 @@ export default function CartContents({ locale }: { locale: Locale }) {
           </Link>
           .
         </div>
-        <button disabled={pending || missingInput} className="btn-shine mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] disabled:opacity-60">
+        <button
+          disabled={pending || missingInput || (!isLoggedIn && !guestEmail.trim())}
+          className="btn-shine mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] disabled:opacity-60"
+        >
           {pending ? tc("placing") : tc("agencyProcure")}
         </button>
       </div>

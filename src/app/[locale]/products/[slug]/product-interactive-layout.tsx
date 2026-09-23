@@ -13,12 +13,14 @@ export function ProductInteractiveLayout({
   descriptionTitle,
   resellerTier,
   wholesalePrices,
+  isLoggedIn = false,
 }: {
   product: CatalogProduct;
   locale: Locale;
   descriptionTitle: string;
   resellerTier?: { id: string; name: string; discountPercent: number } | null;
   wholesalePrices?: Record<string, { price: number; marginCents: number }>;
+  isLoggedIn?: boolean;
 }) {
   const [selectedOfferId, setSelectedOfferId] = useState<string>(
     product.offers[0]?.id ?? ""
@@ -107,6 +109,7 @@ export function ProductInteractiveLayout({
           wholesalePrices={wholesalePrices}
           selectedOfferId={selectedOfferId}
           onSelectOffer={setSelectedOfferId}
+          isLoggedIn={isLoggedIn}
         />
 
         <div className="mt-6 rounded-2xl bg-[var(--surface-2)] p-4">

@@ -28,6 +28,7 @@ export default function BuyOfferForm({
   wholesalePrices,
   selectedOfferId: controlledOfferId,
   onSelectOffer,
+  isLoggedIn = false,
 }: {
   offers: CatalogOffer[];
   locale: Locale;
@@ -36,6 +37,7 @@ export default function BuyOfferForm({
   wholesalePrices?: Record<string, { price: number; marginCents: number }>;
   selectedOfferId?: string;
   onSelectOffer?: (id: string) => void;
+  isLoggedIn?: boolean;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
@@ -44,6 +46,7 @@ export default function BuyOfferForm({
   const selected = controlledOfferId !== undefined ? controlledOfferId : internalSelected;
   const setSelected = onSelectOffer ?? setInternalSelected;
   const [customerInput, setCustomerInput] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [state, action, pending] = useActionState<BuyState, FormData>(buyNow, {});
 
   const offer = offers.find((o) => o.id === selected) ?? offers[0];
@@ -134,6 +137,32 @@ export default function BuyOfferForm({
             placeholder={offer.customerPrompt ?? "you@example.com"}
             className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-5 text-sm outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--ring)]"
           />
+        </div>
+      )}
+
+      {!isLoggedIn && (
+        <div className="mt-4">
+          <label htmlFor="guestEmail" className="block text-sm font-semibold">
+            {locale === "ar"
+              ? "البريد الإلكتروني لاستلام الطلب"
+              : locale === "fr"
+                ? "Adresse e-mail pour recevoir la commande"
+                : "Email address for order delivery"}
+          </label>
+          <input
+            id="guestEmail"
+            name="email"
+            type="email"
+            required
+            value={guestEmail}
+            onChange={(event) => setGuestEmail(event.target.value)}
+            maxLength={254}
+            placeholder="you@example.com"
+            className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-5 text-sm outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--ring)]"
+          />
+          <p className="mt-1.5 text-[11px] text-[var(--fg-muted)]">
+            {tc("guestEmailNotice")}
+          </p>
         </div>
       )}
 
@@ -241,7 +270,7 @@ export default function BuyOfferForm({
       </div>
 
       <button
-        disabled={pending || !offers.length}
+        disabled={pending || !offers.length || (!isLoggedIn && !guestEmail.trim())}
         className="btn-shine group mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-bold tracking-tight text-[var(--accent-fg)] shadow-sm transition-all duration-300 ease-[var(--ease-premium)] hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
       >
         {pending ? tc("placing") : tc("agencyProcure")}

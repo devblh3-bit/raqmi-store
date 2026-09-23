@@ -16,6 +16,15 @@ vi.mock("../src/lib/settings", () => ({
 }));
 vi.mock("../src/lib/auth/session", () => ({
   getSession: async () => session.current,
+  createSession: async (uid: string, role: string) => {
+    session.current = { userId: uid, role: role as any };
+  },
+}));
+vi.mock("../src/lib/auth/magic-link", () => ({
+  issueLoginToken: async () => "mock-login-token",
+}));
+vi.mock("../src/lib/auth/email", () => ({
+  sendLoginEmail: async () => {},
 }));
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
@@ -55,11 +64,13 @@ async function call(fd: FormData) {
   }
 }
 
+const GUEST_EMAIL = "guest-buyer@test.com";
+
 async function cleanup() {
-  await prisma.orderItem.deleteMany({ where: { order: { user: { email: EMAIL } } } });
-  await prisma.order.deleteMany({ where: { user: { email: EMAIL } } });
-  await prisma.walletTransaction.deleteMany({ where: { user: { email: EMAIL } } });
-  await prisma.wallet.deleteMany({ where: { user: { email: EMAIL } } });
+  await prisma.orderItem.deleteMany({ where: { order: { user: { email: { in: [EMAIL, GUEST_EMAIL] } } } } });
+  await prisma.order.deleteMany({ where: { user: { email: { in: [EMAIL, GUEST_EMAIL] } } } });
+  await prisma.walletTransaction.deleteMany({ where: { user: { email: { in: [EMAIL, GUEST_EMAIL] } } } });
+  await prisma.wallet.deleteMany({ where: { user: { email: { in: [EMAIL, GUEST_EMAIL] } } } });
   await prisma.offerComputedPrice.deleteMany({ where: { offer: { product: { slug: TAG } } } });
   await prisma.offerProviderLink.deleteMany({ where: { offer: { product: { slug: TAG } } } });
   await prisma.offer.deleteMany({ where: { product: { slug: TAG } } });
@@ -67,7 +78,7 @@ async function cleanup() {
   await prisma.category.deleteMany({ where: { slug: TAG } });
   await prisma.providerOffer.deleteMany({ where: { provider: { code: TAG } } });
   await prisma.provider.deleteMany({ where: { code: TAG } });
-  await prisma.user.deleteMany({ where: { email: EMAIL } });
+  await prisma.user.deleteMany({ where: { email: { in: [EMAIL, GUEST_EMAIL] } } });
 }
 
 beforeAll(async () => {
@@ -225,5 +236,34 @@ describe("buyNow action", () => {
     } finally {
       maintenanceState.active = false;
     }
+  });
+
+  it("allows anonymous buyer with email to auto-create account and session, returning INSUFFICIENT_FUNDS when empty", async () => {
+    session.current = null;
+    const { state } = await call(form({ offerId, locale: "en", email: GUEST_EMAIL }));
+    expect(state).toEqual({ error: "INSUFFICIENT_FUNDS" });
+
+    // Verifies user was auto-created and session was established
+    const guestUser = await prisma.user.findUnique({ where: { email: GUEST_EMAIL } });
+    expect(guestUser).not.toBeNull();
+    expect(session.current).toEqual({ userId: guestUser!.id, role: "CUSTOMER" });
+  });
+
+  it("allows anonymous buyer with email to place order and records guestEmail when funded", async () => {
+    session.current = null;
+    const guestUser = await prisma.user.upsert({
+      where: { email: GUEST_EMAIL },
+      update: {},
+      create: { email: GUEST_EMAIL, preferredLocale: "en" },
+    });
+    await creditWallet({ userId: guestUser.id, amountMinor: 5000, type: "DEPOSIT", reference: "seed-guest" });
+
+    const { state, redirected } = await call(form({ offerId, locale: "en", email: GUEST_EMAIL }));
+    expect(state).toBeNull();
+    expect(redirected).toMatch(/^\/en\/orders\/RQM-[0-9A-Z]+$/);
+
+    const order = await prisma.order.findFirstOrThrow({ where: { userId: guestUser.id } });
+    expect(order.guestEmail).toBe(GUEST_EMAIL);
+    expect(redirected).toBe(`/en/orders/${order.code}`);
   });
 });

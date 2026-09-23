@@ -73,6 +73,7 @@ export default async function ProductDetail({
         descriptionTitle={t("description")}
         resellerTier={resellerTier}
         wholesalePrices={wholesalePrices}
+        isLoggedIn={Boolean(session?.userId)}
       />
     </div>
   );

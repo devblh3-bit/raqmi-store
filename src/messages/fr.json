@@ -64,7 +64,10 @@
     "totalAuthorized": "Capital total mandaté",
     "tawkeelDeclaration": "En validant, vous mandatez formellement Raqmi comme votre agent automatisé pour commander et activer cet abonnement en votre nom, pour les frais d'agence convenus ci-dessus selon notre",
     "termsLink": "Contrat de Mandat et Conditions",
-    "agencyNotice": "Frais d'agence et d'exécution inclus"
+    "agencyNotice": "Frais d'agence et d'exécution inclus",
+    "guestEmailNotice": "Nous vous enverrons votre reçu et le lien d'accès à cette adresse e-mail.",
+    "accessNoticeTitle": "Accès à la commande et au compte",
+    "accessNoticeBody": "Utilisez votre e-mail pour vous connecter et vérifier votre commande ou consultez votre boîte de réception."
   },
   "track": {
     "title": "Suivi de commande",

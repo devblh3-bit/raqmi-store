@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
@@ -25,7 +25,9 @@ export default async function OrderPage({
   // but this page is the signed-in view, so scope the query by userId and 404
   // rather than 403 — a wrong guess must not confirm the code exists.
   const session = await getSession();
-  if (!session) notFound();
+  if (!session) {
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/orders/${normalized}`)}`);
+  }
 
   const order = await prisma.order.findFirst({
     where: { code: normalized, userId: session.userId },
@@ -99,6 +101,21 @@ export default async function OrderPage({
             </li>
           ))}
         </ul>
+
+        {order.guestEmail && (
+          <div className="mt-6 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+            <div className="flex items-center gap-2 font-bold text-xs text-blue-800 dark:text-blue-300">
+              <span aria-hidden>📧</span>
+              <span>{t("accessNoticeTitle")}</span>
+            </div>
+            <p className="mt-1.5 text-xs text-[var(--fg-muted)] leading-relaxed">
+              {t("accessNoticeBody")}
+            </p>
+            <p className="mt-1 font-mono text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+              {order.guestEmail}
+            </p>
+          </div>
+        )}
 
         <p className="mt-6 text-xs leading-5 text-[var(--fg-faint)]">
           {loc === "ar"

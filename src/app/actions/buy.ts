@@ -2,7 +2,10 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { prisma } from "@/lib/db";
+import { getSession, createSession } from "@/lib/auth/session";
+import { issueLoginToken } from "@/lib/auth/magic-link";
+import { sendLoginEmail } from "@/lib/auth/email";
 import { placeOrder, CheckoutError } from "@/lib/checkout";
 import { InsufficientFundsError } from "@/lib/wallet";
 import { safeNextPath } from "@/lib/auth/redirect";
@@ -22,6 +25,7 @@ const lineSchema = z.object({
 
 const schema = z.object({
   offerId: z.string().min(20).max(40).optional(),
+  email: z.string().trim().email().max(254).optional(),
   customerInput: z.string().trim().max(500).optional(),
   lines: z.array(lineSchema).min(1).max(20).optional(),
   locale: z.enum(locales),
@@ -42,22 +46,46 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
 
   const parsed = schema.safeParse({
     offerId: formData.get("offerId") || undefined,
+    email: formData.get("email") || undefined,
     customerInput: formData.get("customerInput") || undefined,
     lines: parsedLines,
     locale: formData.get("locale"),
     returnTo: formData.get("returnTo") || undefined,
   });
   if (!parsed.success) return { error: "BAD_REQUEST" };
-  const { offerId, customerInput, lines, locale, returnTo } = parsed.data;
+  const { offerId, email: rawEmail, customerInput, lines, locale, returnTo } = parsed.data;
   if (!lines?.length && !offerId) return { error: "BAD_REQUEST" };
 
-  const session = await getSession();
+  let session = await getSession();
+
   if (!session) {
-    // Send them back to the product they were buying, not to a bare login page.
-    // safeNextPath drops anything off-site, so the open-redirect guard applies
-    // to the value the browser supplied.
-    const back = safeNextPath(returnTo) ?? `/${locale}/products`;
-    redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
+    if (!rawEmail) {
+      // Send them back to the product they were buying, not to a bare login page.
+      // safeNextPath drops anything off-site, so the open-redirect guard applies
+      // to the value the browser supplied.
+      const back = safeNextPath(returnTo) ?? `/${locale}/products`;
+      redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
+    }
+
+    const email = rawEmail.toLowerCase().trim();
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email, preferredLocale: locale },
+    });
+
+    await createSession(user.id, user.role);
+
+    try {
+      const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://raqmi.store";
+      const token = await issueLoginToken(user.email);
+      const verifyUrl = `${base}/api/auth/verify?token=${token}&next=${encodeURIComponent(`/${locale}/orders`)}`;
+      await sendLoginEmail(user.email, verifyUrl);
+    } catch (e) {
+      console.error("[buy] email send failed:", e);
+    }
+
+    session = { userId: user.id, role: user.role, exp: Date.now() + 7 * 24 * 3600 * 1000 };
   }
 
   if (await isMaintenanceModeActive()) {
@@ -68,6 +96,7 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
   try {
     const order = await placeOrder({
       userId: session.userId,
+      guestEmail: rawEmail ? rawEmail.toLowerCase().trim() : undefined,
       lines: lines ?? [{ offerId: offerId!, quantity: 1, customerInput }],
       locale,
     });

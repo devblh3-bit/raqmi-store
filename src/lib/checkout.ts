@@ -60,15 +60,16 @@ const MAX_QTY = 100;
  */
 export async function placeOrder(input: {
   userId: string;
+  guestEmail?: string;
   lines: CheckoutLine[];
   locale?: string;
 }) {
-  const { userId, lines, locale = "en" } = input;
+  const { userId, lines, locale = "en", guestEmail } = input;
   if (!lines.length) throw new CheckoutError("EMPTY_CART", "no items to order");
 
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { tierId: true },
+    select: { email: true, tierId: true },
   });
 
   // Price + snapshot outside the transaction: priceForOffer writes its own
@@ -131,6 +132,7 @@ export async function placeOrder(input: {
             data: {
               code,
               userId,
+              guestEmail: guestEmail ?? user.email,
               status: "PAID",
               paymentStatus: "PAID",
               totalMinor,
