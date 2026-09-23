@@ -45,6 +45,12 @@ export function isSerializationConflict(e: unknown): boolean {
       return true;
     }
   }
+  if (
+    e instanceof Error &&
+    /40001|40P01|could not serialize|deadlock|write conflict/i.test(e.message)
+  ) {
+    return true;
+  }
   return false;
 }
 

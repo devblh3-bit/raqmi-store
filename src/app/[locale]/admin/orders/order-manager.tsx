@@ -111,11 +111,13 @@ function statusBadgeClass(status: string) {
 export function OrderManager({
   orders: initialOrders,
   dzdRate = 240,
+  initialStatus = "ALL",
 }: {
   orders: SerializedOrder[];
   dzdRate?: number;
+  initialStatus?: string;
 }) {
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeOrder, setActiveOrder] = useState<SerializedOrder | null>(null);
 
@@ -140,7 +142,9 @@ export function OrderManager({
   // Filter orders
   const filteredOrders = initialOrders.filter((o) => {
     const matchesStatus =
-      selectedStatus === "ALL" || o.status.toUpperCase() === selectedStatus.toUpperCase();
+      selectedStatus === "ALL" ||
+      o.status.toUpperCase() === selectedStatus.toUpperCase() ||
+      (selectedStatus.toUpperCase() === "FAILED" && o.items.some((it) => it.status === "FAILED"));
 
     const matchesSearch =
       !searchQuery.trim() ||

@@ -14,7 +14,15 @@ async function loadDashboardMetrics() {
     }),
     prisma.deposit.count({ where: { status: "PENDING" } }),
     prisma.orderItem.count({
-      where: { status: { in: ["FAILED", "AWAITING_FULFILLMENT"] } },
+      where: {
+        OR: [
+          { status: "FAILED" },
+          { status: "AWAITING_FULFILLMENT", attemptCount: { gte: 5 } },
+        ],
+      },
+    }),
+    prisma.orderItem.count({
+      where: { status: "AWAITING_FULFILLMENT", attemptCount: { lt: 5 } },
     }),
     prisma.user.count({ where: { role: "RESELLER_APPLICANT" } }),
     prisma.provider.findMany({
@@ -81,6 +89,7 @@ export default async function AdminDashboard({
       recentPaidOrders,
       pendingDepositsCount,
       failedItemsCount,
+      queuedItemsCount,
       pendingApplicantsCount,
       providers,
       productCount,
@@ -140,12 +149,29 @@ export default async function AdminDashboard({
           </div>
         )}
 
+        {queuedItemsCount > 0 && (
+          <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs text-sky-700 dark:text-sky-400 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-medium">
+              <span>⏳</span>
+              <span>
+                <strong>{queuedItemsCount} order item{queuedItemsCount > 1 ? "s" : ""}</strong> awaiting provider dispatch.
+              </span>
+            </div>
+            <Link
+              href={`/${locale}/admin/orders?status=PAID`}
+              className="font-bold underline hover:opacity-80"
+            >
+              View Orders →
+            </Link>
+          </div>
+        )}
+
         {failedItemsCount > 0 && (
           <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-400 flex items-center justify-between">
             <div className="flex items-center gap-2 font-medium">
               <span>⚠️</span>
               <span>
-                <strong>{failedItemsCount} order item{failedItemsCount > 1 ? "s" : ""}</strong> stalled or failed fulfillment, requiring manual keys or wallet refund.
+                <strong>{failedItemsCount} order item{failedItemsCount > 1 ? "s" : ""}</strong> failed fulfillment, requiring manual keys or wallet refund.
               </span>
             </div>
             <Link

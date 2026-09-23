@@ -1,3 +1,4 @@
+import { Prisma, type OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/admin";
 import { tryDecryptField } from "@/lib/crypto";
@@ -19,7 +20,7 @@ export default async function OrdersPage({
   await requireAdmin(locale);
   const { status } = await searchParams;
 
-  const valid = [
+  const valid: readonly OrderStatus[] = [
     "PENDING",
     "PAID",
     "PLACED_WITH_PROVIDER",
@@ -27,11 +28,19 @@ export default async function OrdersPage({
     "PARTIALLY_DELIVERED",
     "FAILED",
     "REFUNDED",
-  ] as const;
+  ];
 
-  const where =
+  const where: Prisma.OrderWhereInput =
     status && (valid as readonly string[]).includes(status)
-      ? { status: status as never }
+      ? status === "FAILED"
+        ? {
+            OR: [
+              { status: "FAILED" },
+              { items: { some: { status: "FAILED" } } },
+              { items: { some: { attemptCount: { gte: 5 } } } },
+            ],
+          }
+        : { status: status as OrderStatus }
       : {};
 
   const orders = await prisma.order.findMany({
@@ -188,7 +197,10 @@ export default async function OrdersPage({
         </p>
       </div>
 
-      <OrderManager orders={serializedOrders} />
+      <OrderManager
+        orders={serializedOrders}
+        initialStatus={status && (valid as readonly string[]).includes(status) ? status : "ALL"}
+      />
     </div>
   );
 }

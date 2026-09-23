@@ -20,6 +20,7 @@ let inputOfferId: string; // offer whose provider demands an email
 
 async function cleanup() {
   await prisma.orderItem.deleteMany({ where: { order: { user: { email: EMAIL } } } });
+  await prisma.orderItem.deleteMany({ where: { offer: { product: { slug: TAG } } } });
   await prisma.order.deleteMany({ where: { user: { email: EMAIL } } });
   await prisma.walletTransaction.deleteMany({ where: { user: { email: EMAIL } } });
   await prisma.wallet.deleteMany({ where: { user: { email: EMAIL } } });
