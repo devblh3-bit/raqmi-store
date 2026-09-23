@@ -458,7 +458,12 @@ export function OfferStudio({
                           startTransition(async () => {
                             const fd = new FormData();
                             fd.append("offerId", offer.id);
-                            await deleteOffer(fd);
+                            const res = await deleteOffer(fd);
+                            if (res && "error" in res) {
+                              alert(`Notice: ${res.error}`);
+                            } else if (res && "archived" in res && res.archived) {
+                              alert(res.message);
+                            }
                           });
                         }
                       }}

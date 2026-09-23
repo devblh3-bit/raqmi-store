@@ -329,4 +329,57 @@ describe("Admin Offer Curation & Fallback Actions", () => {
 
     await prisma.providerOffer.delete({ where: { id: richPo.id } });
   });
+
+  it("safely archives an offer when customer order items exist instead of failing with foreign key violation", async () => {
+    // 1. Create an offer
+    const offer = await prisma.offer.create({
+      data: {
+        productId,
+        labelEn: "Variant with Past Orders",
+        labelAr: "متغير مع طلبات سابقة",
+        labelFr: "Variante avec commandes",
+        markupPercent: 10,
+        isActive: true,
+      },
+    });
+
+    // 2. Create an order and orderItem referencing this offer
+    const order = await prisma.order.create({
+      data: {
+        code: "RQM-TEST-FK-SAFETY-01234",
+        totalMinor: 500n,
+      },
+    });
+
+    const orderItem = await prisma.orderItem.create({
+      data: {
+        orderId: order.id,
+        offerId: offer.id,
+        quantity: 1,
+        unitPriceMinor: 500n,
+        unitCostMinor: 400n,
+      },
+    });
+
+    // 3. Attempt deleteOffer
+    const fd = new FormData();
+    fd.append("offerId", offer.id);
+    const res = await deleteOffer(fd);
+
+    expect(res).toHaveProperty("ok", true);
+    expect(res).toHaveProperty("archived", true);
+
+    // 4. Verify the offer is deactivated & archived, NOT crashing
+    const updatedOffer = await prisma.offer.findUniqueOrThrow({
+      where: { id: offer.id },
+    });
+    expect(updatedOffer.isActive).toBe(false);
+    expect(updatedOffer.labelEn).toContain("[Archived]");
+
+    // Clean up test data
+    await prisma.orderItem.delete({ where: { id: orderItem.id } });
+    await prisma.order.delete({ where: { id: order.id } });
+    await prisma.offer.delete({ where: { id: offer.id } });
+  });
 });
+

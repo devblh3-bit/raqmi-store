@@ -604,10 +604,63 @@ export async function deleteOffer(formData: FormData) {
 
   const offer = await prisma.offer.findUnique({
     where: { id: offerId },
-    select: { id: true, productId: true },
+    select: { id: true, productId: true, labelEn: true },
   });
   if (!offer) return adminError("NOT_FOUND");
 
+  // Check if any customer order items reference this offer
+  const ordersCount = await prisma.orderItem.count({
+    where: { offerId },
+  });
+
+  if (ordersCount > 0) {
+    // Preserve DB integrity for historical customer orders.
+    // Deactivate and archive the variant so it is immediately removed from the customer storefront and cart.
+    await prisma.$transaction(async (tx) => {
+      await tx.offerProviderLink.deleteMany({ where: { offerId } });
+      await tx.offerTierPriceOverride.deleteMany({ where: { offerId } });
+      await tx.offerComputedPrice.deleteMany({ where: { offerId } });
+      await tx.offer.update({
+        where: { id: offerId },
+        data: {
+          isActive: false,
+          productPinned: false,
+          sortOrder: 9999,
+          dedupeKey: null,
+          labelEn: offer.labelEn.startsWith("[Archived]")
+            ? offer.labelEn
+            : `[Archived] ${offer.labelEn}`,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: session.userId,
+          action: "OFFER_ARCHIVED",
+          entity: "Offer",
+          entityId: offer.id,
+          detail: {
+            productId: offer.productId,
+            reason: "Preserved for historical customer orders",
+            ordersCount,
+          } as never,
+        },
+      });
+    });
+
+    revalidatePath(`/admin/catalog/${offer.productId}`);
+    revalidatePath(`/admin/catalog/${offer.productId}/offers`);
+    revalidatePath("/admin/catalog");
+    return {
+      ok: true as const,
+      archived: true,
+      message: `Variant has ${ordersCount} past order(s). It has been archived and removed from the storefront.`,
+    };
+  }
+
+  // Safe to delete completely when no orders reference it
+  await prisma.offerProviderLink.deleteMany({ where: { offerId } });
+  await prisma.offerTierPriceOverride.deleteMany({ where: { offerId } });
+  await prisma.offerComputedPrice.deleteMany({ where: { offerId } });
   await prisma.offer.delete({
     where: { id: offerId },
   });
@@ -624,6 +677,7 @@ export async function deleteOffer(formData: FormData) {
 
   revalidatePath(`/admin/catalog/${offer.productId}`);
   revalidatePath(`/admin/catalog/${offer.productId}/offers`);
+  revalidatePath("/admin/catalog");
   return { ok: true as const };
 }
 
@@ -787,22 +841,72 @@ export async function bulkDeleteProducts(productIds: string[]) {
   const session = await requireAdmin();
   if (!productIds || productIds.length === 0) return adminError("BAD_REQUEST");
 
-  await prisma.product.deleteMany({
-    where: { id: { in: productIds } },
+  // Identify products whose offers have past orders
+  const productsWithOrders = await prisma.product.findMany({
+    where: {
+      id: { in: productIds },
+      offers: { some: { orderItems: { some: {} } } },
+    },
+    select: { id: true },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.userId,
-      action: "BULK_PRODUCTS_DELETED",
-      entity: "Product",
-      entityId: "bulk",
-      detail: { count: productIds.length, productIds } as never,
-    },
+  const withOrdersIds = new Set(productsWithOrders.map((p) => p.id));
+  const safeToDeleteIds = productIds.filter((id) => !withOrdersIds.has(id));
+
+  await prisma.$transaction(async (tx) => {
+    // For products with past orders: deactivate them & their offers instead of crashing
+    if (withOrdersIds.size > 0) {
+      await tx.product.updateMany({
+        where: { id: { in: Array.from(withOrdersIds) } },
+        data: { isActive: false },
+      });
+      await tx.offer.updateMany({
+        where: { productId: { in: Array.from(withOrdersIds) } },
+        data: { isActive: false, productPinned: false },
+      });
+    }
+
+    // For products with no orders: hard delete
+    if (safeToDeleteIds.length > 0) {
+      await tx.offerProviderLink.deleteMany({
+        where: { offer: { productId: { in: safeToDeleteIds } } },
+      });
+      await tx.offerTierPriceOverride.deleteMany({
+        where: { offer: { productId: { in: safeToDeleteIds } } },
+      });
+      await tx.offerComputedPrice.deleteMany({
+        where: { offer: { productId: { in: safeToDeleteIds } } },
+      });
+      await tx.offer.deleteMany({
+        where: { productId: { in: safeToDeleteIds } },
+      });
+      await tx.product.deleteMany({
+        where: { id: { in: safeToDeleteIds } },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId: session.userId,
+        action: "BULK_PRODUCTS_DELETED",
+        entity: "Product",
+        entityId: "bulk",
+        detail: {
+          count: productIds.length,
+          hardDeleted: safeToDeleteIds.length,
+          archived: withOrdersIds.size,
+          productIds,
+        } as never,
+      },
+    });
   });
 
   revalidatePath("/admin/catalog");
-  return { ok: true as const, count: productIds.length };
+  return {
+    ok: true as const,
+    count: productIds.length,
+    archived: withOrdersIds.size,
+  };
 }
 
 export async function createProductFromProviderOffer(
