@@ -1,11 +1,16 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
-import { OfferWarranty, cleanRulesText } from "@/components/OfferWarranty";
+import {
+  OfferWarranty,
+  CardWarrantyAccordion,
+  cleanRulesText,
+} from "@/components/OfferWarranty";
 import type { CatalogOffer } from "@/lib/catalog";
 
 describe("OfferWarranty Component & Text Cleaner", () => {
   it("cleans HTML tags and excessive line breaks from provider rules", () => {
-    const raw = "<blockquote><b>⚡ Instant replacement</b></blockquote><br><br><br>Full 365 days coverage. Contact support.&nbsp;&amp;&nbsp;enjoy.";
+    const raw =
+      "<blockquote><b>⚡ Instant replacement</b></blockquote><br><br><br>Full 365 days coverage. Contact support.&nbsp;&amp;&nbsp;enjoy.";
     const cleaned = cleanRulesText(raw);
     expect(cleaned).not.toContain("<blockquote>");
     expect(cleaned).not.toContain("<b>");
@@ -27,6 +32,19 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     agencyFee: 1000,
     requiresCustomerInput: false,
   };
+
+  it("renders inline accordion for active card (Approach A)", () => {
+    const element = CardWarrantyAccordion({
+      offer: sampleOffer,
+      locale: "en",
+    });
+
+    expect(element).toBeDefined();
+    expect(element.type).toBe("div");
+    expect(element.props.className).toContain("border-t");
+    // Child is details
+    expect(element.props.children.type).toBe("details");
+  });
 
   it("renders in card mode (Option 1) with green tint and trust tags", () => {
     const element = OfferWarranty({
@@ -73,4 +91,3 @@ describe("OfferWarranty Component & Text Cleaner", () => {
     expect(element.type).toBe("div");
   });
 });
-

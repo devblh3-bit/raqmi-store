@@ -9,7 +9,9 @@ import type { CatalogOffer } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 import { Price, PriceCompact } from "./Price";
 import { formatVariantTitle } from "@/lib/variant-formatter";
-import { OfferWarranty, type WarrantyDisplayMode } from "./OfferWarranty";
+import { CardWarrantyAccordion, OfferWarranty, type WarrantyDisplayMode } from "./OfferWarranty";
+
+export type ExtendedWarrantyMode = WarrantyDisplayMode | "inline-accordion";
 
 const ERROR_KEY: Record<string, string> = {
   INSUFFICIENT_FUNDS: "errorFunds",
@@ -31,7 +33,7 @@ export default function BuyOfferForm({
   selectedOfferId: controlledOfferId,
   onSelectOffer,
   isLoggedIn = false,
-  warrantyMode = "card",
+  warrantyMode = "inline-accordion",
 }: {
   offers: CatalogOffer[];
   locale: Locale;
@@ -41,7 +43,7 @@ export default function BuyOfferForm({
   selectedOfferId?: string;
   onSelectOffer?: (id: string) => void;
   isLoggedIn?: boolean;
-  warrantyMode?: WarrantyDisplayMode;
+  warrantyMode?: ExtendedWarrantyMode;
 }) {
   const t = useTranslations("product");
   const tc = useTranslations("checkout");
@@ -126,123 +128,131 @@ export default function BuyOfferForm({
           const isSelected = selected === o.id;
 
           return (
-            <label
+            <div
               key={o.id}
-              className={`relative flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-3.5 py-2.5 transition-all duration-200 ${
+              onClick={() => setSelected(o.id)}
+              className={`relative flex flex-col cursor-pointer justify-between gap-1 rounded-2xl border px-3.5 py-2.5 transition-all duration-200 ${
                 isSelected
                   ? "border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent)]/30 shadow-xs"
                   : "border-[var(--border)] bg-[var(--surface-2)]/60 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                {/* Custom Animated Checkmark Radio Circle */}
-                <div
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-                    isSelected
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-fg)] scale-105"
-                      : "border-[var(--border-strong)] bg-[var(--surface)] text-transparent"
-                  }`}
-                  aria-hidden
-                >
-                  <svg
-                    className="h-3 w-3 stroke-[2.5]"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
+              <div className="flex items-center justify-between gap-3 w-full">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {/* Custom Animated Checkmark Radio Circle */}
+                  <div
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                      isSelected
+                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-fg)] scale-105"
+                        : "border-[var(--border-strong)] bg-[var(--surface)] text-transparent"
+                    }`}
+                    aria-hidden
                   >
-                    <path
-                      d="M3.5 8.5L6.5 11.5L12.5 4.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-
-                <input
-                  type="radio"
-                  name="offerChoice"
-                  value={o.id}
-                  checked={isSelected}
-                  onChange={() => setSelected(o.id)}
-                  className="sr-only"
-                />
-
-                <div className="flex flex-col min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm font-semibold text-[var(--fg)] truncate">
-                      {formatted.title}
-                    </span>
-                    {o.badge && (
-                      <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                        {o.badge}
-                      </span>
-                    )}
+                    <svg
+                      className="h-3 w-3 stroke-[2.5]"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path
+                        d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </div>
 
-                  {/* Subtitle Feature Tags */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                    {oInputType === "NONE" ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <span>⚡</span>
-                        <span>{tc("deliveryTypeNone")}</span>
-                      </span>
-                    ) : oInputType === "EMAIL" ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                        <span>📧</span>
-                        <span>{tc("deliveryTypeEmail")}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
-                        <span>👤</span>
-                        <span>{tc("deliveryTypeUsername")}</span>
-                      </span>
-                    )}
+                  <input
+                    type="radio"
+                    name="offerChoice"
+                    value={o.id}
+                    checked={isSelected}
+                    onChange={() => setSelected(o.id)}
+                    className="sr-only"
+                  />
 
-                    {formatted.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)]"
-                      >
-                        {tag}
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-sm font-semibold text-[var(--fg)] truncate">
+                        {formatted.title}
                       </span>
-                    ))}
-
-                    {o.stock !== undefined && o.stock <= 5 && (
-                      <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
-                        {t("stockLimited")}: {o.stock}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Price section */}
-              <div className="text-right shrink-0">
-                {itemWp ? (
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-[var(--fg-muted)] line-through">
-                        <PriceCompact cents={o.price} locale={locale} />
-                      </span>
-                      <Price cents={itemWp.price} locale={locale} size="sm" />
+                      {o.badge && (
+                        <span className="rounded-full bg-[var(--discount)] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                          {o.badge}
+                        </span>
+                      )}
                     </div>
-                    {itemWp.marginCents > 0 && (
-                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        Wholesale Rate
-                      </span>
-                    )}
+
+                    {/* Subtitle Feature Tags */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {oInputType === "NONE" ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span>⚡</span>
+                          <span>{tc("deliveryTypeNone")}</span>
+                        </span>
+                      ) : oInputType === "EMAIL" ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                          <span>📧</span>
+                          <span>{tc("deliveryTypeEmail")}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                          <span>👤</span>
+                          <span>{tc("deliveryTypeUsername")}</span>
+                        </span>
+                      )}
+
+                      {formatted.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--fg-muted)]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+
+                      {o.stock !== undefined && o.stock <= 5 && (
+                        <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300">
+                          {t("stockLimited")}: {o.stock}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
-                )}
+                </div>
+
+                {/* Price section */}
+                <div className="text-right shrink-0">
+                  {itemWp ? (
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-[var(--fg-muted)] line-through">
+                          <PriceCompact cents={o.price} locale={locale} />
+                        </span>
+                        <Price cents={itemWp.price} locale={locale} size="sm" />
+                      </div>
+                      {itemWp.marginCents > 0 && (
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          Wholesale Rate
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" />
+                  )}
+                </div>
               </div>
-            </label>
+
+              {/* INLINE COLLAPSIBLE ACCORDION ON ACTIVE CARD (Approach A) */}
+              {isSelected && warrantyMode === "inline-accordion" && (
+                <CardWarrantyAccordion offer={o} locale={locale} />
+              )}
+            </div>
           );
         })}
       </div>
 
-      {/* CONTEXTUAL WARRANTY & INSTRUCTIONS FOR SELECTED OFFER (Option 1 / Option 2) */}
-      {offer && (
+      {/* STANDALONE WARRANTY BOX (Used when warrantyMode is "card" or "accordion") */}
+      {offer && warrantyMode !== "inline-accordion" && (
         <OfferWarranty
           offer={offer}
           locale={locale}

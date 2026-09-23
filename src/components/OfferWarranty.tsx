@@ -26,6 +26,92 @@ export function cleanRulesText(text: string): string {
     .trim();
 }
 
+/**
+ * Inline Accordion directly embedded inside an active variant card (Approach A).
+ */
+export function CardWarrantyAccordion({
+  offer,
+  locale,
+  className = "",
+}: {
+  offer: CatalogOffer;
+  locale: Locale;
+  className?: string;
+}) {
+  const rawRules = offer.rules?.[locale] || offer.rules?.en || "";
+  const cleanedRules = cleanRulesText(rawRules);
+
+  const defaultWarranty =
+    locale === "ar"
+      ? "ضمان استبدال فوري طوال فترة الاشتراك المحددة. في حال حدوث أي انقطاع، يمكنك طلب الاستبدال فوراً عبر صفحة تتبع الطلب."
+      : locale === "fr"
+        ? "Garantie de remplacement immédiat pendant toute la durée spécifiée. En cas d'interruption, contactez le support via le suivi de commande."
+        : "Immediate replacement warranty throughout the specified period. In case of any disruption, contact support via Track Order for a swift replacement.";
+
+  const textToDisplay = cleanedRules || defaultWarranty;
+
+  const title =
+    locale === "ar"
+      ? "الضمان وتعليمات الاستخدام"
+      : locale === "fr"
+        ? "Garantie & Instructions"
+        : "Warranty & Instructions";
+
+  const viewRulesHint =
+    locale === "ar" ? "عرض التفاصيل" : locale === "fr" ? "Afficher" : "View rules";
+
+  const instantGuaranteeLabel =
+    locale === "ar"
+      ? "ضمان الاستبدال الفوري"
+      : locale === "fr"
+        ? "Garantie de remplacement"
+        : "Replacement Guarantee";
+
+  const genuineLabel =
+    locale === "ar"
+      ? "ترخيص أصلي 100%"
+      : locale === "fr"
+        ? "Licence 100% Officielle"
+        : "100% Genuine License";
+
+  return (
+    <div
+      className={`mt-2.5 pt-2 border-t border-[var(--border)]/70 ${className}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <details className="group">
+        <summary className="flex cursor-pointer items-center justify-between select-none py-0.5 text-xs font-semibold text-[var(--fg)] outline-none hover:text-[var(--accent)]">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm shrink-0" aria-hidden>🛡️</span>
+            <span className="truncate">{title}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-[var(--fg-muted)] shrink-0">
+            <span className="group-open:hidden">{viewRulesHint}</span>
+            <span className="transition-transform duration-200 group-open:rotate-180 text-xs">
+              ▾
+            </span>
+          </div>
+        </summary>
+        <div className="mt-2 rounded-xl bg-[var(--surface)] p-3 text-xs leading-relaxed text-[var(--fg-muted)] border border-[var(--border)]/60 whitespace-pre-line shadow-xs">
+          <p>{textToDisplay}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border)]/40 text-[10px] font-medium text-[var(--fg-muted)]">
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span>✓</span> {instantGuaranteeLabel}
+            </span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-1">
+              <span>🔒</span> {genuineLabel}
+            </span>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+/**
+ * Standalone Warranty component (used when displaying warranty as a separate block).
+ */
 export function OfferWarranty({
   offer,
   locale,
@@ -147,4 +233,3 @@ export function OfferWarranty({
     </div>
   );
 }
-

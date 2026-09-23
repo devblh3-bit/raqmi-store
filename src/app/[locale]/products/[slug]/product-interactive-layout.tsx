@@ -7,8 +7,8 @@ import BuyOfferForm from "@/components/BuyOfferForm";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { Locale } from "@/i18n";
 
-// Display mode for offer warranty: "card" (Option 1) | "accordion" (Option 2)
-const WARRANTY_MODE = "accordion" as const;
+// Display mode for offer warranty: "inline-accordion" (Approach A) | "card" (Option 1) | "accordion" (Option 2)
+const WARRANTY_MODE = "inline-accordion" as const;
 
 export function ProductInteractiveLayout({
   product,
