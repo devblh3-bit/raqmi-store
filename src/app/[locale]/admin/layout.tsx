@@ -125,7 +125,7 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 pb-20 md:pb-0">{children}</main>
+      <main className="min-w-0 flex-1 pb-28 md:pb-6">{children}</main>
       <AdminMobileNav locale={locale} />
     </div>
   );
