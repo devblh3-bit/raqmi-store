@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { ProductArt } from "@/lib/product-images";
 import {
   reviewResellerApplication,
   createResellerTier,
@@ -45,14 +46,16 @@ export function ResellerManager({
   tiers: initialTiers,
   offers: initialOffers,
   defaultProfitMargin = 15,
+  defaultTab = "applications",
 }: {
   locale?: string;
   applicants: SerializedApplicant[];
   tiers: SerializedTier[];
   offers: SerializedMatrixOffer[];
   defaultProfitMargin?: number;
+  defaultTab?: "applications" | "tiers" | "matrix";
 }) {
-  const [activeTab, setActiveTab] = useState<"applications" | "tiers" | "matrix">("applications");
+  const [activeTab, setActiveTab] = useState<"applications" | "tiers" | "matrix">(defaultTab);
   const [matrixSearch, setMatrixSearch] = useState("");
 
   // Application action state
@@ -263,19 +266,21 @@ export function ResellerManager({
       )}
 
       {/* Main Tab Navigation */}
-      <div className="flex border-b border-[var(--border)] gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+      <div className="flex p-1 rounded-xl bg-[var(--surface-2)] sm:bg-transparent sm:p-0 sm:border-b sm:border-[var(--border)] sm:rounded-none gap-1 sm:gap-6">
         <button
           type="button"
           onClick={() => setActiveTab("applications")}
-          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`flex-1 sm:flex-none justify-center sm:justify-start px-2 py-2 sm:py-0 sm:pb-3 rounded-lg sm:rounded-none text-xs sm:text-sm font-semibold sm:border-b-2 transition flex items-center gap-1.5 ${
             activeTab === "applications"
-              ? "border-purple-600 text-purple-600 dark:text-purple-400"
-              : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              ? "bg-[var(--surface)] sm:bg-transparent shadow-xs sm:shadow-none sm:border-purple-600 text-purple-600 dark:text-purple-400 font-bold"
+              : "text-[var(--fg-muted)] hover:text-[var(--fg)] sm:border-transparent"
           }`}
         >
-          <span>📥 Applications</span>
+          <span>📥</span>
+          <span className="sm:hidden">Apps</span>
+          <span className="hidden sm:inline">Applications</span>
           {initialApplicants.length > 0 && (
-            <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-xs font-bold">
+            <span className="rounded-full bg-amber-500 text-white px-1.5 py-0.2 text-[10px] sm:text-xs font-bold">
               {initialApplicants.length}
             </span>
           )}
@@ -284,14 +289,16 @@ export function ResellerManager({
         <button
           type="button"
           onClick={() => setActiveTab("tiers")}
-          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`flex-1 sm:flex-none justify-center sm:justify-start px-2 py-2 sm:py-0 sm:pb-3 rounded-lg sm:rounded-none text-xs sm:text-sm font-semibold sm:border-b-2 transition flex items-center gap-1.5 ${
             activeTab === "tiers"
-              ? "border-purple-600 text-purple-600 dark:text-purple-400"
-              : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              ? "bg-[var(--surface)] sm:bg-transparent shadow-xs sm:shadow-none sm:border-purple-600 text-purple-600 dark:text-purple-400 font-bold"
+              : "text-[var(--fg-muted)] hover:text-[var(--fg)] sm:border-transparent"
           }`}
         >
-          <span>🏷️ Reseller Tiers</span>
-          <span className="rounded-full bg-[var(--surface-2)] text-[var(--fg-muted)] px-2 py-0.5 text-xs">
+          <span>🏷️</span>
+          <span className="sm:hidden">Tiers</span>
+          <span className="hidden sm:inline">Reseller Tiers</span>
+          <span className="rounded-full bg-[var(--surface-2)] sm:bg-[var(--surface-2)] text-[var(--fg-muted)] px-1.5 py-0.2 text-[10px] sm:text-xs font-semibold">
             {initialTiers.length}
           </span>
         </button>
@@ -299,13 +306,15 @@ export function ResellerManager({
         <button
           type="button"
           onClick={() => setActiveTab("matrix")}
-          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`flex-1 sm:flex-none justify-center sm:justify-start px-2 py-2 sm:py-0 sm:pb-3 rounded-lg sm:rounded-none text-xs sm:text-sm font-semibold sm:border-b-2 transition flex items-center gap-1.5 ${
             activeTab === "matrix"
-              ? "border-purple-600 text-purple-600 dark:text-purple-400"
-              : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              ? "bg-[var(--surface)] sm:bg-transparent shadow-xs sm:shadow-none sm:border-purple-600 text-purple-600 dark:text-purple-400 font-bold"
+              : "text-[var(--fg-muted)] hover:text-[var(--fg)] sm:border-transparent"
           }`}
         >
-          <span>⚡ Wholesale Matrix</span>
+          <span>⚡</span>
+          <span className="sm:hidden">Matrix</span>
+          <span className="hidden sm:inline">Wholesale Matrix</span>
         </button>
       </div>
 
@@ -522,11 +531,11 @@ export function ResellerManager({
               <table className="w-full text-left text-sm">
                 <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
                   <tr>
-                    <th className="px-4 py-3">Product Variant</th>
-                    <th className="px-4 py-3">Wholesale Cost</th>
-                    <th className="px-4 py-3">Retail Price</th>
+                    <th className="px-3 py-2.5">Product Variant</th>
+                    <th className="px-3 py-2.5">Wholesale Cost</th>
+                    <th className="px-3 py-2.5">Retail Price</th>
                     {initialTiers.map((tier) => (
-                      <th key={tier.id} className="px-4 py-3">
+                      <th key={tier.id} className="px-3 py-2.5">
                         {tier.name} ({tier.discountPercent}% OFF)
                       </th>
                     ))}
@@ -539,14 +548,19 @@ export function ResellerManager({
 
                     return (
                       <tr key={offer.id} className="hover:bg-[var(--surface-2)]/50 transition">
-                        <td className="px-4 py-3 text-xs">
-                          <div className="font-bold text-[var(--fg)]">{offer.productNameEn}</div>
-                          <div className="text-[var(--fg-muted)] text-[11px]">{offer.labelEn}</div>
+                        <td className="px-3 py-2.5 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <ProductArt id={offer.productNameEn} size={32} />
+                            <div className="min-w-0">
+                              <div className="font-bold text-[var(--fg)] truncate max-w-[220px]">{offer.productNameEn}</div>
+                              <div className="text-[var(--fg-muted)] text-[11px] truncate max-w-[220px]">{offer.labelEn}</div>
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono text-[var(--fg-muted)]">
+                        <td className="px-3 py-2.5 text-xs font-mono text-[var(--fg-muted)] whitespace-nowrap">
                           ${costUsd.toFixed(2)}
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono font-bold text-[var(--fg)]">
+                        <td className="px-3 py-2.5 text-xs font-mono font-bold text-[var(--fg)] whitespace-nowrap">
                           <div>${retailUsd.toFixed(2)}</div>
                           {offer.markupPercent !== undefined && (
                             <span className="block text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
@@ -561,7 +575,7 @@ export function ResellerManager({
                           const formulaPrice = Math.max(costUsd, retailUsd * (1 - discount));
 
                           return (
-                            <td key={tier.id} className="px-4 py-3 text-xs">
+                            <td key={tier.id} className="px-3 py-2.5 text-xs whitespace-nowrap">
                               {overrideMinor ? (
                                 <div className="flex items-center gap-1.5">
                                   <span className="rounded border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 font-mono text-xs font-bold text-purple-600 dark:text-purple-400">
@@ -573,7 +587,7 @@ export function ResellerManager({
                                       setOverrideModal({ offer, tier });
                                       setOverridePriceDollars((Number(overrideMinor) / 100).toString());
                                     }}
-                                    className="text-[10px] text-[var(--fg-muted)] hover:text-purple-500"
+                                    className="text-[10px] text-[var(--fg-muted)] hover:text-purple-500 p-1"
                                     title="Edit Override"
                                   >
                                     ✏️
@@ -583,7 +597,7 @@ export function ResellerManager({
                                     onClick={() =>
                                       handleDeleteOverride(offer.id, tier.id, offer.labelEn, tier.name)
                                     }
-                                    className="text-[10px] text-rose-500 hover:text-rose-700 font-bold"
+                                    className="text-[10px] text-rose-500 hover:text-rose-700 font-bold p-1"
                                     title="Remove Override (Restore formula)"
                                   >
                                     ✕
@@ -644,14 +658,17 @@ export function ResellerManager({
                 return (
                   <div key={offer.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
                     
-                    {/* Header: Product & Variant */}
-                    <div className="mb-4">
-                      <div className="font-bold text-sm text-[var(--fg)] leading-tight">{offer.productNameEn}</div>
-                      <div className="text-[var(--fg-muted)] text-[11px] mt-0.5">{offer.labelEn}</div>
+                    {/* Header: Product & Variant with ProductArt */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <ProductArt id={offer.productNameEn} size={38} />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm text-[var(--fg)] leading-snug truncate">{offer.productNameEn}</div>
+                        <div className="text-[var(--fg-muted)] text-[11px] truncate">{offer.labelEn}</div>
+                      </div>
                     </div>
 
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4 rounded-xl bg-[var(--surface-2)]/40 p-3 border border-[var(--border)]">
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-3 rounded-xl bg-[var(--surface-2)]/40 p-3 border border-[var(--border)]">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Wholesale Cost</p>
                         <div className="mt-1 font-mono font-bold text-sm text-[var(--fg)]">${costUsd.toFixed(2)}</div>
@@ -668,7 +685,7 @@ export function ResellerManager({
                     </div>
 
                     {/* Tiers List */}
-                    <div className="space-y-3 pt-2 border-t border-[var(--border)]">
+                    <div className="space-y-2 pt-2 border-t border-[var(--border)]">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Reseller Tier Pricing</p>
                       
                       {initialTiers.map((tier) => {
@@ -678,27 +695,32 @@ export function ResellerManager({
 
                         return (
                           <div key={tier.id} className="flex items-center justify-between p-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-                            <div>
-                              <div className="text-xs font-bold text-[var(--fg)]">{tier.name}</div>
+                            <div className="min-w-0 pr-2">
+                              <div className="text-xs font-bold text-[var(--fg)] flex items-center gap-1.5">
+                                <span>{tier.name}</span>
+                                {overrideMinor && (
+                                  <span className="rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-bold px-1.5 py-0.5 border border-purple-500/20">
+                                    Override
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[10px] text-[var(--fg-muted)] font-medium mt-0.5">{tier.discountPercent}% OFF retail</div>
                             </div>
                             
-                            <div className="text-right">
+                            <div className="text-right shrink-0">
                               {overrideMinor ? (
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <div className="text-right">
-                                    <span className="rounded border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 font-mono text-sm font-bold text-purple-600 dark:text-purple-400">
-                                      ${(Number(overrideMinor) / 100).toFixed(2)}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 ml-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="rounded border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 font-mono text-sm font-bold text-purple-600 dark:text-purple-400">
+                                    ${(Number(overrideMinor) / 100).toFixed(2)}
+                                  </span>
+                                  <div className="flex items-center gap-1 ml-1">
                                     <button
                                       type="button"
                                       onClick={() => {
                                         setOverrideModal({ offer, tier });
                                         setOverridePriceDollars((Number(overrideMinor) / 100).toString());
                                       }}
-                                      className="rounded bg-[var(--surface-2)] p-1 text-[10px] text-[var(--fg-muted)] hover:text-purple-500 transition"
+                                      className="rounded-lg bg-[var(--surface-2)] p-1.5 text-xs text-[var(--fg-muted)] hover:text-purple-500 transition"
                                       title="Edit Override"
                                     >
                                       ✏️
@@ -706,7 +728,7 @@ export function ResellerManager({
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteOverride(offer.id, tier.id, offer.labelEn, tier.name)}
-                                      className="rounded bg-rose-500/10 p-1 text-[10px] text-rose-500 hover:text-rose-700 font-bold transition"
+                                      className="rounded-lg bg-rose-500/10 p-1.5 text-xs text-rose-500 hover:text-rose-700 font-bold transition"
                                       title="Remove Override"
                                     >
                                       ✕
@@ -714,18 +736,18 @@ export function ResellerManager({
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-end gap-3">
+                                <div className="flex items-center gap-2">
                                   <div className="text-right">
                                     <span className="block font-mono text-sm font-bold text-[var(--fg)]">
                                       ${formulaPrice.toFixed(2)}
                                     </span>
                                     {formulaPrice > costUsd ? (
                                       <span className="block text-[9px] font-medium text-purple-600 dark:text-purple-400 font-mono">
-                                        +${(formulaPrice - costUsd).toFixed(2)} profit
+                                        +${(formulaPrice - costUsd).toFixed(2)}
                                       </span>
                                     ) : (
                                       <span className="block text-[9px] font-medium text-amber-600 dark:text-amber-400">
-                                        At cost ($0 profit)
+                                        At cost
                                       </span>
                                     )}
                                   </div>
@@ -735,7 +757,7 @@ export function ResellerManager({
                                       setOverrideModal({ offer, tier });
                                       setOverridePriceDollars(formulaPrice.toFixed(2));
                                     }}
-                                    className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-[10px] font-bold hover:border-purple-500 hover:text-purple-600 transition"
+                                    className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[11px] font-semibold hover:border-purple-500 hover:text-purple-600 transition"
                                   >
                                     + Override
                                   </button>
