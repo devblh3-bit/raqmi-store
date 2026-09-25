@@ -259,9 +259,10 @@ export function UserDirectory({
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Table Container */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Desktop View (Table) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
               <tr>
@@ -377,6 +378,109 @@ export function UserDirectory({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="md:hidden divide-y divide-[var(--border)]">
+          {filteredUsers.map((user) => {
+            const balUsd = Number(user.balanceMinor) / 100;
+            const balDzd = balUsd * dzdRate;
+
+            return (
+              <div key={user.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
+                {/* Header: User & Badges */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm text-[var(--fg)] truncate">{user.email}</div>
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--fg-muted)] mt-0.5">
+                      <span>{user.id.slice(0, 10)}...</span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(user.id, `uid-${user.id}`)}
+                        className="hover:text-[var(--fg)]"
+                        title="Copy User ID"
+                      >
+                        {copiedKey === `uid-${user.id}` ? "✓" : "📋"}
+                      </button>
+                      {user.telegramUsername && (
+                        <span className="text-sky-500 font-sans">@{user.telegramUsername}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClass(
+                        user.role,
+                      )}`}
+                    >
+                      {user.role.replace(/_/g, " ")}
+                    </span>
+                    {user.tierName && (
+                      <span className="rounded border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                        {user.tierName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Grid: Balance & Orders */}
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-[var(--surface-2)]/40 p-2.5 border border-[var(--border)] text-xs">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Balance</span>
+                    <div className="font-mono font-bold text-[var(--fg)]">${balUsd.toFixed(2)}</div>
+                    <div className="text-[9px] text-[var(--fg-muted)]">≈ {Math.round(balDzd).toLocaleString()} DZD</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Orders</span>
+                    <div className="font-mono font-bold text-[var(--fg)]">{user.ordersCount}</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Joined</span>
+                    <div className="text-[11px] text-[var(--fg-muted)]">{user.createdAt.slice(0, 10)}</div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-3 grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdjustModalUser(user);
+                      setAdjustDirection("credit");
+                      setAdjustAmountDollars("");
+                      setAdjustReason("");
+                    }}
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-1.5 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition"
+                  >
+                    💰 Adjust
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleModalUser(user);
+                      setTargetRole(user.role);
+                      setTargetTierId(user.tierId ?? (tiers[0]?.id || ""));
+                    }}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-1.5 text-center text-xs font-semibold hover:border-[var(--fg-muted)] transition"
+                  >
+                    🏷️ Role
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTxnUser(user)}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-1.5 text-center text-xs font-semibold hover:border-[var(--fg-muted)] transition"
+                  >
+                    📜 Ledger
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredUsers.length === 0 && (
+            <div className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+              No users found matching this filter.
+            </div>
+          )}
         </div>
       </div>
 

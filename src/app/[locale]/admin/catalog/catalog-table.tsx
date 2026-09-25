@@ -284,7 +284,7 @@ export function CatalogTable({
 
       {/* Main Table */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xs">
-        <div className="hidden sm:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
@@ -457,7 +457,7 @@ export function CatalogTable({
         </div>
 
         {/* Mobile View (Cards) */}
-        <div className="sm:hidden divide-y divide-[var(--border)]">
+        <div className="md:hidden divide-y divide-[var(--border)]">
           {sortedProducts.map((p) => {
             const isSelected = selectedIds.has(p.id);
             return (

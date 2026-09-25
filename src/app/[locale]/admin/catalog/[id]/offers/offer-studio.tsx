@@ -541,43 +541,121 @@ export function OfferStudio({
           </select>
         </div>
 
-        {/* Pool Table */}
+        {/* Pool Table Container */}
         <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[var(--surface-2)] text-[10px] font-bold uppercase tracking-wider text-[var(--fg-muted)]">
-              <tr>
-                <th className="px-4 py-3">Supplier & SKU</th>
-                <th className="px-4 py-3">Wholesale Cost</th>
-                <th className="px-4 py-3">Stock & Status</th>
-                <th className="px-4 py-3">Specs / Warranty Notes</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {filteredPool.map((po) => {
-                const costDisplay = formatProviderCostDisplay(po.costMinor, po.currency);
-                return (
-                  <tr key={po.id} className="hover:bg-[var(--surface-2)]/40">
-                    <td className="px-4 py-3">
-                      <span className="font-bold text-[var(--fg)]">
-                        [{po.provider.displayName}]
-                      </span>{" "}
-                      <span className="font-medium text-[var(--fg)]">
-                        {po.rawName || po.rawNameEn || po.providerSku}
-                      </span>
-                      <p className="font-mono text-[10px] text-[var(--fg-muted)]">
-                        SKU: {po.providerSku}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 font-mono">
-                      <div className="font-bold text-[var(--fg)]">{costDisplay.primary}</div>
-                      {costDisplay.secondary && (
-                        <div className="text-[11px] font-normal text-[var(--fg-muted)]">
-                          {costDisplay.secondary}
+          {/* Desktop View (Table) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[var(--surface-2)] text-[10px] font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+                <tr>
+                  <th className="px-4 py-3">Supplier & SKU</th>
+                  <th className="px-4 py-3">Wholesale Cost</th>
+                  <th className="px-4 py-3">Stock & Status</th>
+                  <th className="px-4 py-3">Specs / Warranty Notes</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {filteredPool.map((po) => {
+                  const costDisplay = formatProviderCostDisplay(po.costMinor, po.currency);
+                  return (
+                    <tr key={po.id} className="hover:bg-[var(--surface-2)]/40">
+                      <td className="px-4 py-3">
+                        <span className="font-bold text-[var(--fg)]">
+                          [{po.provider.displayName}]
+                        </span>{" "}
+                        <span className="font-medium text-[var(--fg)]">
+                          {po.rawName || po.rawNameEn || po.providerSku}
+                        </span>
+                        <p className="font-mono text-[10px] text-[var(--fg-muted)]">
+                          SKU: {po.providerSku}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 font-mono">
+                        <div className="font-bold text-[var(--fg)]">{costDisplay.primary}</div>
+                        {costDisplay.secondary && (
+                          <div className="text-[11px] font-normal text-[var(--fg-muted)]">
+                            {costDisplay.secondary}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            po.availability === "AVAILABLE"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                          }`}
+                        >
+                          {po.availability}
+                        </span>
+                        {po.stockQuantity != null && (
+                          <span className="ml-1 text-[var(--fg-muted)]">
+                            ({po.stockQuantity} left)
+                          </span>
+                        )}
+                      </td>
+                      <td className="max-w-xs px-4 py-3 text-[var(--fg-muted)]">
+                        {po.rawWarranty && (
+                          <span className="mr-1 rounded bg-[var(--surface-2)] px-1.5 py-0.5 font-medium text-[var(--fg)]">
+                            {po.rawWarranty}
+                          </span>
+                        )}
+                        {po.customerInputType && (
+                          <span className="mr-1 rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px]">
+                            Requires: {po.customerInputType}
+                          </span>
+                        )}
+                        <p className="line-clamp-2 text-[10px]">
+                          {po.rawDescription || "No supplier description."}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setCreatingFromPO(po)}
+                            className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-[var(--accent-hover)]"
+                          >
+                            + Create Variant
+                          </button>
+
+                          {offers.length > 0 && (
+                            <button
+                              onClick={() => setAttachingBackupPO(po)}
+                              title="Attach this supplier as a backup fallback to an existing variant"
+                              className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
+                            >
+                              + Add as Backup
+                            </button>
+                          )}
                         </div>
-                      )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredPool.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-[var(--fg-muted)]">
+                      No supplier offers match your filter. Try adjusting your search.
                     </td>
-                    <td className="px-4 py-3">
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View (Cards) */}
+          <div className="md:hidden divide-y divide-[var(--border)]">
+            {filteredPool.map((po) => {
+              const costDisplay = formatProviderCostDisplay(po.costMinor, po.currency);
+              return (
+                <div key={po.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
+                  {/* Header: Provider & SKU */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--fg-muted)]">
+                        {po.provider.displayName}
+                      </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           po.availability === "AVAILABLE"
@@ -586,60 +664,69 @@ export function OfferStudio({
                         }`}
                       >
                         {po.availability}
+                        {po.stockQuantity != null && ` (${po.stockQuantity})`}
                       </span>
-                      {po.stockQuantity != null && (
-                        <span className="ml-1 text-[var(--fg-muted)]">
-                          ({po.stockQuantity} left)
-                        </span>
-                      )}
-                    </td>
-                    <td className="max-w-xs px-4 py-3 text-[var(--fg-muted)]">
-                      {po.rawWarranty && (
-                        <span className="mr-1 rounded bg-[var(--surface-2)] px-1.5 py-0.5 font-medium text-[var(--fg)]">
-                          {po.rawWarranty}
-                        </span>
-                      )}
-                      {po.customerInputType && (
-                        <span className="mr-1 rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px]">
-                          Requires: {po.customerInputType}
-                        </span>
-                      )}
-                      <p className="line-clamp-2 text-[10px]">
-                        {po.rawDescription || "No supplier description."}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => setCreatingFromPO(po)}
-                          className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-[var(--accent-hover)]"
-                        >
-                          + Create Variant
-                        </button>
+                    </div>
+                    <div className="font-bold text-sm text-[var(--fg)] leading-snug">
+                      {po.rawName || po.rawNameEn || po.providerSku}
+                    </div>
+                    <p className="font-mono text-[10px] text-[var(--fg-muted)]">
+                      SKU: {po.providerSku}
+                    </p>
+                  </div>
 
-                        {offers.length > 0 && (
-                          <button
-                            onClick={() => setAttachingBackupPO(po)}
-                            title="Attach this supplier as a backup fallback to an existing variant"
-                            className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
-                          >
-                            + Add as Backup
-                          </button>
-                        )}
+                  {/* Body: Cost & Specs */}
+                  <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-[var(--surface-2)]/40 p-2.5 border border-[var(--border)]">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Cost</span>
+                      <div className="font-mono font-bold text-sm text-[var(--fg)]">{costDisplay.primary}</div>
+                      {costDisplay.secondary && (
+                        <div className="text-[10px] font-mono text-[var(--fg-muted)]">{costDisplay.secondary}</div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Specs / Warranty</span>
+                      <div className="text-[11px] font-medium text-[var(--fg)]">
+                        {po.rawWarranty || "Standard"}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredPool.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-[var(--fg-muted)]">
-                    No supplier offers match your filter. Try adjusting your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      {po.customerInputType && (
+                        <div className="text-[10px] text-[var(--fg-muted)]">Requires: {po.customerInputType}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {po.rawDescription && (
+                    <p className="mt-2 text-[11px] text-[var(--fg-muted)] line-clamp-2">
+                      {po.rawDescription}
+                    </p>
+                  )}
+
+                  {/* Actions */}
+                  <div className="mt-3 flex gap-2 pt-2 border-t border-[var(--border)]">
+                    <button
+                      onClick={() => setCreatingFromPO(po)}
+                      className="flex-1 rounded-xl bg-[var(--accent)] py-2 text-center text-xs font-bold text-white shadow-xs hover:bg-[var(--accent-hover)] transition"
+                    >
+                      + Create Variant
+                    </button>
+                    {offers.length > 0 && (
+                      <button
+                        onClick={() => setAttachingBackupPO(po)}
+                        className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)] transition"
+                      >
+                        + Backup
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredPool.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-[var(--fg-muted)]">
+                No supplier offers match your filter. Try adjusting your search.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

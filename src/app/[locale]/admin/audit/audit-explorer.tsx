@@ -111,9 +111,10 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table Container */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Desktop View (Table) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
               <tr>
@@ -194,6 +195,78 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="md:hidden divide-y divide-[var(--border)]">
+          {filteredLogs.map((log) => (
+            <div key={log.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
+              {/* Header: Action & Timestamp */}
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-mono font-semibold ${actionBadgeClass(
+                    log.action,
+                  )}`}
+                >
+                  {log.action}
+                </span>
+                <span className="font-mono text-[11px] text-[var(--fg-muted)]">
+                  {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+
+              {/* Grid: Actor & Target Entity */}
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-[var(--surface-2)]/40 p-2.5 border border-[var(--border)] text-xs">
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Actor</span>
+                  <div className="font-bold text-[var(--fg)] truncate mt-0.5">
+                    {log.actorEmail ?? "System Worker"}
+                  </div>
+                  {log.actorRole && (
+                    <span className="text-[10px] text-[var(--fg-muted)] font-mono">
+                      {log.actorRole}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Entity</span>
+                  <div className="font-medium text-[var(--fg)] mt-0.5 truncate">
+                    {log.entity}
+                  </div>
+                  <div className="flex items-center gap-1 font-mono text-[10px] text-[var(--fg-muted)] mt-0.5">
+                    <span>{log.entityId.slice(0, 10)}...</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(log.entityId, log.id)}
+                      className="hover:text-[var(--fg)]"
+                      title="Copy Entity ID"
+                    >
+                      {copiedId === log.id ? "✓" : "📋"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer: Detail button */}
+              {Boolean(log.detail) && (
+                <div className="mt-3 pt-2 border-t border-[var(--border)]">
+                  <button
+                    type="button"
+                    onClick={() => setInspectLog(log)}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-1.5 text-center text-xs font-semibold hover:border-purple-500 transition"
+                  >
+                    View JSON Payload 🔍
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {filteredLogs.length === 0 && (
+            <div className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+              No audit records match this filter.
+            </div>
+          )}
         </div>
       </div>
 

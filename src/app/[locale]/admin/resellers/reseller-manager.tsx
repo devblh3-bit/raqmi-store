@@ -263,11 +263,11 @@ export function ResellerManager({
       )}
 
       {/* Main Tab Navigation */}
-      <div className="flex border-b border-[var(--border)] gap-6">
+      <div className="flex border-b border-[var(--border)] gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveTab("applications")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
             activeTab === "applications"
               ? "border-purple-600 text-purple-600 dark:text-purple-400"
               : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
@@ -284,7 +284,7 @@ export function ResellerManager({
         <button
           type="button"
           onClick={() => setActiveTab("tiers")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
             activeTab === "tiers"
               ? "border-purple-600 text-purple-600 dark:text-purple-400"
               : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
@@ -299,7 +299,7 @@ export function ResellerManager({
         <button
           type="button"
           onClick={() => setActiveTab("matrix")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
+          className={`shrink-0 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 ${
             activeTab === "matrix"
               ? "border-purple-600 text-purple-600 dark:text-purple-400"
               : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg)]"
@@ -491,7 +491,7 @@ export function ResellerManager({
               <div className="text-[11px] text-[var(--fg-muted)] mt-0.5">
                 Fixed price overrides take absolute precedence over percentage discount formulas.
               </div>
-              <div className="flex items-center gap-2 pt-1.5">
+              <div className="flex flex-wrap items-center gap-2 pt-1.5">
                 <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 font-bold px-2.5 py-0.5 text-[11px]">
                   📈 Baseline Profit Margin: +{defaultProfitMargin}%
                 </span>
@@ -518,7 +518,7 @@ export function ResellerManager({
           <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
             
             {/* Desktop View (Table) */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
                   <tr>
@@ -636,7 +636,7 @@ export function ResellerManager({
             </div>
 
             {/* Mobile View (Cards) */}
-            <div className="sm:hidden divide-y divide-[var(--border)]">
+            <div className="md:hidden divide-y divide-[var(--border)]">
               {filteredOffers.map((offer) => {
                 const costUsd = Number(offer.costMinor) / 100;
                 const retailUsd = Number(offer.retailPriceMinor) / 100;
