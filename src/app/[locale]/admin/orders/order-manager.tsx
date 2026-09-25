@@ -294,9 +294,11 @@ export function OrderManager({
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Table Container */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-        <div className="overflow-x-auto">
+        
+        {/* Desktop View (Table) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
               <tr>
@@ -402,6 +404,113 @@ export function OrderManager({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="sm:hidden divide-y divide-[var(--border)]">
+          {filteredOrders.map((order) => {
+            const totalUsd = Number(order.totalMinor) / 100;
+            const totalDzd = totalUsd * dzdRate;
+            const totalCost = order.items.reduce(
+              (acc, it) => acc + (Number(it.unitCostMinor) / 100) * it.quantity,
+              0,
+            );
+            const grossProfit = totalUsd - totalCost;
+            const marginPercent = totalUsd > 0 ? (grossProfit / totalUsd) * 100 : 0;
+
+            return (
+              <div
+                key={order.id}
+                className="p-4 transition-colors hover:bg-[var(--surface-2)]/50 cursor-pointer"
+                onClick={() => setActiveOrder(order)}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    {order.code}
+                  </span>
+                  <span
+                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadgeClass(
+                      order.status,
+                    )}`}
+                  >
+                    {order.status}
+                  </span>
+                </div>
+
+                {/* Grid */}
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Customer</p>
+                    <div className="mt-0.5 text-xs font-medium text-[var(--fg)]">
+                      {order.userEmail ?? order.guestEmail ?? "Guest"}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Date</p>
+                    <div className="mt-0.5 text-xs text-[var(--fg-muted)]">
+                      {order.createdAt.slice(0, 10)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Total Amount</p>
+                    <div className="mt-0.5 text-sm font-mono font-bold text-[var(--fg)]">
+                      ${totalUsd.toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Profit</p>
+                    <div className="mt-0.5 text-[11px] font-mono">
+                      {grossProfit !== 0 ? (
+                        <span className={`font-bold ${grossProfit > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                          {grossProfit > 0 ? "+" : ""}${grossProfit.toFixed(2)} ({marginPercent.toFixed(0)}%)
+                        </span>
+                      ) : (
+                        <span className="text-[var(--fg-muted)]">N/A</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="pt-3 border-t border-[var(--border)]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] mb-2">Order Items</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {order.items.map((it) => (
+                      <span
+                        key={it.id}
+                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusBadgeClass(
+                          it.status,
+                        )}`}
+                      >
+                        <span>{it.offerLabelEn}</span>
+                        <span className="opacity-70">×{it.quantity}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Inspect Button */}
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveOrder(order);
+                    }}
+                    className="w-full rounded-xl bg-[var(--surface-2)] py-2 text-center text-xs font-bold text-[var(--fg)] shadow-sm hover:border-emerald-500 hover:text-emerald-500 transition"
+                  >
+                    Inspect Order 🔍
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredOrders.length === 0 && (
+            <div className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+              No orders found matching this filter.
+            </div>
+          )}
         </div>
       </div>
 

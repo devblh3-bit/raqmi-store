@@ -489,9 +489,11 @@ export function UnlinkedOffersInbox({
         </div>
       </div>
 
-      {/* Offers Table */}
+      {/* Offers Table Container */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xs">
-        <div className="overflow-x-auto">
+        
+        {/* Desktop View (Table) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
@@ -595,6 +597,82 @@ export function UnlinkedOffersInbox({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="sm:hidden divide-y divide-[var(--border)]">
+          {paginatedOffers.map((o) => {
+            const isAvailable = o.availability?.toUpperCase() === "AVAILABLE";
+            const costDisplay = formatProviderCostDisplay(o.costMinor, o.currency);
+
+            return (
+              <div key={o.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
+                {/* Header: Identity */}
+                <div className="flex flex-col gap-1">
+                  <div className="font-bold text-[var(--fg)] leading-tight">{o.rawNameEn || o.rawName}</div>
+                  <div className="font-mono text-[10px] text-[var(--fg-muted)]">SKU: {o.providerSku}</div>
+                </div>
+
+                {/* Body: Stats Grid */}
+                <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-4">
+                  {/* Provider */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Provider</p>
+                    <div className="mt-1 flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-2.5 py-0.5 text-xs font-bold text-[var(--fg-muted)] w-fit">
+                      <span className={`h-2 w-2 rounded-full ${o.provider.isActive !== false ? "bg-emerald-500" : "bg-amber-500"}`} />
+                      <span>{o.provider.displayName}</span>
+                      {o.provider.isActive === false && <span className="text-[10px] text-amber-500 font-normal">(Paused)</span>}
+                    </div>
+                  </div>
+                  {/* Cost */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Wholesale Cost</p>
+                    <div className="mt-1 flex flex-col leading-tight">
+                      <span className="text-sm font-mono font-bold text-[var(--fg)]">{costDisplay.primary}</span>
+                      {costDisplay.secondary && <span className="text-[10px] font-mono text-[var(--fg-muted)]">{costDisplay.secondary}</span>}
+                    </div>
+                  </div>
+                  {/* Availability */}
+                  <div className="col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Availability</p>
+                    <div className="mt-1">
+                      {isAvailable ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          🟢 In Stock {o.stockQuantity != null && o.stockQuantity > 0 && <span className="text-[10px] opacity-80">({o.stockQuantity})</span>}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                          🔴 Out of Stock
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer: Actions */}
+                <div className="mt-4 flex gap-3 pt-3 border-t border-[var(--border)]">
+                  <button
+                    onClick={() => openCreateModal(o)}
+                    className="flex-1 rounded-xl bg-[var(--accent)] py-2.5 text-center text-xs font-bold text-white shadow-xs transition hover:bg-[var(--accent-hover)]"
+                  >
+                    + Create Product
+                  </button>
+                  <button
+                    onClick={() => openLinkModal(o)}
+                    className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] py-2.5 text-center text-xs font-semibold transition hover:bg-[var(--surface-2)]"
+                  >
+                    🔗 Add to Existing
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {paginatedOffers.length === 0 && (
+            <div className="px-4 py-12 text-center text-[var(--fg-muted)]">
+              <p className="text-base font-semibold">No unlinked supplier offers matching filters</p>
+              <p className="text-xs mt-1">Try clearing the search query or selecting a different provider/stock filter.</p>
+            </div>
+          )}
         </div>
 
         {/* Pagination Footer */}
