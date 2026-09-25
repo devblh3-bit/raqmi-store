@@ -22,7 +22,7 @@ export function CatalogView({
   existingProductOptions: ExistingProductOption[];
   locale: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"PRODUCTS" | "UNLINKED">("PRODUCTS");
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -36,11 +36,22 @@ export function CatalogView({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsInboxOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition"
+          >
+            <span>Inbox 📥</span>
+            {unlinkedOffers.length > 0 && (
+              <span className="flex h-5 items-center justify-center rounded-full bg-amber-500/20 px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                {unlinkedOffers.length} new
+              </span>
+            )}
+          </button>
           <Link
             href={`/${locale}/admin/sync`}
             className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition"
           >
-            Sync Suppliers 🔄
+            Sync 🔄
           </Link>
           <Link
             href={`/${locale}/admin/catalog/new`}
@@ -51,55 +62,35 @@ export function CatalogView({
         </div>
       </div>
 
-      {/* Main Tabs */}
-      <div className="flex border-b border-[var(--border)]">
-        <button
-          onClick={() => setActiveTab("PRODUCTS")}
-          className={`relative pb-3 text-sm font-semibold transition ${
-            activeTab === "PRODUCTS"
-              ? "text-[var(--accent)]"
-              : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
-          }`}
-        >
-          Store Products ({products.length})
-          {activeTab === "PRODUCTS" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-          )}
-        </button>
+      {/* Main Table Content */}
+      <CatalogTable products={products} categories={categories} locale={locale} />
 
-        <button
-          onClick={() => setActiveTab("UNLINKED")}
-          className={`relative ml-6 pb-3 text-sm font-semibold transition flex items-center gap-2 ${
-            activeTab === "UNLINKED"
-              ? "text-[var(--accent)]"
-              : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
-          }`}
-        >
-          <span>Unlinked Supplier Offers</span>
-          {unlinkedOffers.length > 0 ? (
-            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400 animate-pulse">
-              {unlinkedOffers.length} new
-            </span>
-          ) : (
-            <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs text-[var(--fg-muted)]">
-              0
-            </span>
-          )}
-          {activeTab === "UNLINKED" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]" />
-          )}
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === "PRODUCTS" ? (
-        <CatalogTable products={products} categories={categories} locale={locale} />
-      ) : (
-        <UnlinkedOffersInbox
-          offers={unlinkedOffers}
-          categories={categories}
-          existingProducts={existingProductOptions}
-        />
+      {/* Inbox Slide-over Drawer */}
+      {isInboxOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity">
+          {/* Click away overlay */}
+          <div className="absolute inset-0" onClick={() => setIsInboxOpen(false)} />
+          
+          {/* Drawer panel */}
+          <div className="relative flex w-full max-w-4xl flex-col bg-[var(--surface)] shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+              <h2 className="text-lg font-bold">Supplier Offers Inbox</h2>
+              <button
+                onClick={() => setIsInboxOpen(false)}
+                className="rounded-full p-2 text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)] transition"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <UnlinkedOffersInbox
+                offers={unlinkedOffers}
+                categories={categories}
+                existingProducts={existingProductOptions}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
