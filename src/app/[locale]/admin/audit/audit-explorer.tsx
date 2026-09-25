@@ -118,25 +118,24 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
               <tr>
-                <th className="px-4 py-3">Timestamp</th>
-                <th className="px-4 py-3">Actor</th>
-                <th className="px-4 py-3">Action</th>
-                <th className="px-4 py-3">Target Entity</th>
-                <th className="px-4 py-3">Entity ID</th>
-                <th className="px-4 py-3 text-right">Details</th>
+                <th className="px-3 py-2.5">Timestamp</th>
+                <th className="px-3 py-2.5">Actor</th>
+                <th className="px-3 py-2.5">Action</th>
+                <th className="px-3 py-2.5">Target Entity</th>
+                <th className="px-3 py-2.5 text-right">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-[var(--surface-2)]/50 transition">
-                  <td className="px-4 py-3 text-xs font-mono text-[var(--fg-muted)]">
+                  <td className="px-3 py-2 text-xs font-mono text-[var(--fg-muted)] whitespace-nowrap">
                     <div>{new Date(log.createdAt).toLocaleDateString()}</div>
-                    <div className="text-[11px]">
-                      {new Date(log.createdAt).toLocaleTimeString()}
+                    <div className="text-[10px]">
+                      {new Date(log.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs">
-                    <div className="font-bold text-[var(--fg)]">
+                  <td className="px-3 py-2 text-xs">
+                    <div className="font-bold text-[var(--fg)] truncate max-w-[150px]" title={log.actorEmail ?? "System Worker"}>
                       {log.actorEmail ?? "System Worker"}
                     </div>
                     {log.actorRole && (
@@ -145,21 +144,19 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 whitespace-nowrap">
                     <span
-                      className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-mono font-semibold ${actionBadgeClass(
+                      className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-mono font-semibold ${actionBadgeClass(
                         log.action,
                       )}`}
                     >
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs font-medium text-[var(--fg)]">
-                    {log.entity}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-mono text-[var(--fg-muted)]">
-                    <div className="flex items-center gap-1.5">
-                      <span>{log.entityId.slice(0, 14)}...</span>
+                  <td className="px-3 py-2 text-xs">
+                    <div className="font-semibold text-[var(--fg)]">{log.entity}</div>
+                    <div className="flex items-center gap-1 font-mono text-[10px] text-[var(--fg-muted)]">
+                      <span>{log.entityId.slice(0, 10)}...</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(log.entityId, log.id)}
@@ -170,12 +167,12 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
                     {log.detail ? (
                       <button
                         type="button"
                         onClick={() => setInspectLog(log)}
-                        className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold hover:border-purple-500 transition"
+                        className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs font-semibold hover:border-purple-500 transition"
                       >
                         View JSON 🔍
                       </button>
@@ -188,7 +185,7 @@ export function AuditExplorer({ logs }: { logs: SerializedAuditLog[] }) {
 
               {filteredLogs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
                     No audit records match this filter.
                   </td>
                 </tr>

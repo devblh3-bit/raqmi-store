@@ -35,27 +35,27 @@ export function CatalogView({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsInboxOpen(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition shadow-2xs"
+            className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition"
           >
             <span>Inbox 📥</span>
             {unlinkedOffers.length > 0 && (
-              <span className="flex h-5 items-center justify-center rounded-full bg-amber-500/15 px-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                {unlinkedOffers.length}
+              <span className="flex h-5 items-center justify-center rounded-full bg-amber-500/20 px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                {unlinkedOffers.length} new
               </span>
             )}
           </button>
           <Link
             href={`/${locale}/admin/sync`}
-            className="inline-flex h-9 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition shadow-2xs"
+            className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-2)] transition"
           >
             Sync 🔄
           </Link>
           <Link
             href={`/${locale}/admin/catalog/new`}
-            className="inline-flex h-9 items-center rounded-full bg-[var(--accent)] px-4 text-xs font-bold text-white shadow-xs hover:bg-[var(--accent-hover)] transition"
+            className="rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[var(--accent-hover)] transition"
           >
             + New Product
           </Link>

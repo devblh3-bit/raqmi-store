@@ -264,15 +264,14 @@ export function UserDirectory({
         {/* Desktop View (Table) */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
+            <thead className="bg-[var(--surface-2)] text-[11px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Tier</th>
-                <th className="px-4 py-3">Wallet Balance</th>
-                <th className="px-4 py-3">Orders</th>
-                <th className="px-4 py-3">Joined</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-2.5 py-2">Customer</th>
+                <th className="px-2.5 py-2">Role & Tier</th>
+                <th className="px-2 py-2 whitespace-nowrap">Wallet Balance</th>
+                <th className="px-2 py-2 text-center whitespace-nowrap">Orders</th>
+                <th className="hidden xl:table-cell px-2.5 py-2 whitespace-nowrap">Joined</th>
+                <th className="px-2.5 py-2 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -282,10 +281,10 @@ export function UserDirectory({
 
                 return (
                   <tr key={user.id} className="hover:bg-[var(--surface-2)]/50 transition">
-                    <td className="px-4 py-3 text-xs">
-                      <div className="font-bold text-[var(--fg)]">{user.email}</div>
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--fg-muted)] mt-0.5">
-                        <span>{user.id.slice(0, 12)}...</span>
+                    <td className="px-2.5 py-2 text-xs">
+                      <div className="font-bold text-[var(--fg)] truncate max-w-[160px]">{user.email}</div>
+                      <div className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--fg-muted)] mt-0.5">
+                        <span>{user.id.slice(0, 10)}...</span>
                         <button
                           type="button"
                           onClick={() => copyToClipboard(user.id, `uid-${user.id}`)}
@@ -295,42 +294,41 @@ export function UserDirectory({
                           {copiedKey === `uid-${user.id}` ? "✓" : "📋"}
                         </button>
                         {user.telegramUsername && (
-                          <span className="text-sky-500 font-sans">@{user.telegramUsername}</span>
+                          <span className="text-sky-500 font-sans truncate max-w-[80px]">@{user.telegramUsername}</span>
+                        )}
+                        <span className="xl:hidden text-[10px] text-[var(--fg-muted)]">· {user.createdAt.slice(0, 10)}</span>
+                      </div>
+                    </td>
+                    <td className="px-2.5 py-2">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClass(
+                            user.role,
+                          )}`}
+                        >
+                          {user.role.replace(/_/g, " ")}
+                        </span>
+                        {user.tierName && (
+                          <span className="rounded border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                            {user.tierName}
+                          </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${roleBadgeClass(
-                          user.role,
-                        )}`}
-                      >
-                        {user.role.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {user.tierName ? (
-                        <span className="rounded border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[11px] font-bold text-purple-600 dark:text-purple-400">
-                          {user.tierName}
-                        </span>
-                      ) : (
-                        <span className="text-[var(--fg-muted)]">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
+                    <td className="px-2 py-2 text-xs whitespace-nowrap">
                       <div className="font-mono font-bold text-[var(--fg)]">${balUsd.toFixed(2)}</div>
                       <div className="text-[10px] text-[var(--fg-muted)]">
                         ≈ {Math.round(balDzd).toLocaleString()} DZD
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs font-mono font-medium">
+                    <td className="px-2 py-2 text-xs font-mono font-medium text-center">
                       {user.ordersCount}
                     </td>
-                    <td className="px-4 py-3 text-xs text-[var(--fg-muted)]">
+                    <td className="hidden xl:table-cell px-2.5 py-2 text-xs text-[var(--fg-muted)] whitespace-nowrap">
                       {user.createdAt.slice(0, 10)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -339,7 +337,7 @@ export function UserDirectory({
                             setAdjustAmountDollars("");
                             setAdjustReason("");
                           }}
-                          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition"
+                          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition"
                           title="Credit or Debit Balance"
                         >
                           💰 Adjust
@@ -351,7 +349,7 @@ export function UserDirectory({
                             setTargetRole(user.role);
                             setTargetTierId(user.tierId ?? (tiers[0]?.id || ""));
                           }}
-                          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold hover:border-[var(--fg-muted)] transition"
+                          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-xs font-semibold hover:border-[var(--fg-muted)] transition"
                           title="Change Role or Tier"
                         >
                           🏷️ Role
@@ -359,7 +357,7 @@ export function UserDirectory({
                         <button
                           type="button"
                           onClick={() => setActiveTxnUser(user)}
-                          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold hover:border-[var(--fg-muted)] transition"
+                          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-xs font-semibold hover:border-[var(--fg-muted)] transition"
                           title="View Ledger History"
                         >
                           📜 Ledger
@@ -371,7 +369,7 @@ export function UserDirectory({
               })}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
                     No users found matching this filter.
                   </td>
                 </tr>

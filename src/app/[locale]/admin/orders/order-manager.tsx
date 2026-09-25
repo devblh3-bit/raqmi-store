@@ -299,15 +299,15 @@ export function OrderManager({
         {/* Desktop View (Table) */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
+            <thead className="bg-[var(--surface-2)] text-[11px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
-                <th className="px-4 py-3">Order Code</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Items</th>
-                <th className="px-4 py-3">Total & Profit</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3 text-right">Action</th>
+                <th className="px-2.5 py-2">Order Code</th>
+                <th className="px-2.5 py-2">Customer</th>
+                <th className="px-2 py-2">Items</th>
+                <th className="px-2 py-2 whitespace-nowrap">Total & Profit</th>
+                <th className="px-2 py-2 text-center whitespace-nowrap">Status</th>
+                <th className="hidden xl:table-cell px-2.5 py-2 whitespace-nowrap">Created</th>
+                <th className="px-2.5 py-2 text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -327,66 +327,69 @@ export function OrderManager({
                     className="hover:bg-[var(--surface-2)]/50 transition cursor-pointer"
                     onClick={() => setActiveOrder(order)}
                   >
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="px-2.5 py-2">
+                      <div className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         {order.code}
-                      </span>
+                      </div>
+                      <div className="xl:hidden font-mono text-[10px] text-[var(--fg-muted)] mt-0.5">
+                        {order.createdAt.slice(0, 10)}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div className="font-medium text-[var(--fg)]">
+                    <td className="px-2.5 py-2 text-xs">
+                      <div className="font-medium text-[var(--fg)] truncate max-w-[140px] xl:max-w-[180px]">
                         {order.userEmail ?? order.guestEmail ?? "Guest"}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="px-2 py-2 text-xs">
+                      <div className="flex flex-wrap gap-1 max-w-[150px] xl:max-w-[200px]">
                         {order.items.map((it) => (
                           <span
                             key={it.id}
-                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusBadgeClass(
+                            className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[10px] font-medium ${statusBadgeClass(
                               it.status,
                             )}`}
                           >
-                            <span>{it.offerLabelEn}</span>
+                            <span className="truncate max-w-[80px]">{it.offerLabelEn}</span>
                             <span className="opacity-70">×{it.quantity}</span>
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs">
+                    <td className="px-2 py-2 text-xs whitespace-nowrap">
                       <div className="font-mono font-bold">${totalUsd.toFixed(2)}</div>
                       <div className="text-[10px] text-[var(--fg-muted)]">
                         ≈ {Math.round(totalDzd).toLocaleString()} DZD
                         {grossProfit !== 0 && (
                           <span
-                            className={`ml-1.5 font-semibold ${
+                            className={`ml-1 font-semibold ${
                               grossProfit > 0 ? "text-emerald-500" : "text-rose-500"
                             }`}
                           >
-                            ({grossProfit > 0 ? "+" : ""}${grossProfit.toFixed(2)}, {marginPercent.toFixed(0)}%)
+                            ({grossProfit > 0 ? "+" : ""}${grossProfit.toFixed(2)})
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-2 text-center whitespace-nowrap">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadgeClass(
                           order.status,
                         )}`}
                       >
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[var(--fg-muted)]">
+                    <td className="hidden xl:table-cell px-2.5 py-2 text-xs text-[var(--fg-muted)] whitespace-nowrap">
                       {order.createdAt.slice(0, 10)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2.5 py-2 text-right whitespace-nowrap">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveOrder(order);
                         }}
-                        className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold hover:border-emerald-500 transition"
+                        className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold hover:border-emerald-500 transition"
                       >
                         Inspect 🔍
                       </button>
@@ -396,7 +399,7 @@ export function OrderManager({
               })}
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
                     No orders found matching this filter.
                   </td>
                 </tr>

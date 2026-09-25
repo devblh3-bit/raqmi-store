@@ -529,14 +529,14 @@ export function ResellerManager({
             {/* Desktop View (Table) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
+                <thead className="bg-[var(--surface-2)] text-[11px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
                   <tr>
-                    <th className="px-3 py-2.5">Product Variant</th>
-                    <th className="px-3 py-2.5">Wholesale Cost</th>
-                    <th className="px-3 py-2.5">Retail Price</th>
+                    <th className="px-2.5 py-2">Product</th>
+                    <th className="px-2 py-2 whitespace-nowrap">Cost</th>
+                    <th className="px-2 py-2 whitespace-nowrap">Retail</th>
                     {initialTiers.map((tier) => (
-                      <th key={tier.id} className="px-3 py-2.5">
-                        {tier.name} ({tier.discountPercent}% OFF)
+                      <th key={tier.id} className="px-2 py-2 whitespace-nowrap">
+                        {tier.name} ({tier.discountPercent}%)
                       </th>
                     ))}
                   </tr>
@@ -548,23 +548,23 @@ export function ResellerManager({
 
                     return (
                       <tr key={offer.id} className="hover:bg-[var(--surface-2)]/50 transition">
-                        <td className="px-3 py-2.5 text-xs">
-                          <div className="flex items-center gap-2.5">
-                            <ProductArt id={offer.productNameEn} size={32} />
+                        <td className="px-2.5 py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <ProductArt id={offer.productNameEn} size={30} />
                             <div className="min-w-0">
-                              <div className="font-bold text-[var(--fg)] truncate max-w-[220px]">{offer.productNameEn}</div>
-                              <div className="text-[var(--fg-muted)] text-[11px] truncate max-w-[220px]">{offer.labelEn}</div>
+                              <div className="font-bold text-[var(--fg)] truncate max-w-[150px] lg:max-w-[180px] xl:max-w-[240px]">{offer.productNameEn}</div>
+                              <div className="text-[var(--fg-muted)] text-[10px] truncate max-w-[150px] lg:max-w-[180px] xl:max-w-[240px]">{offer.labelEn}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-2.5 text-xs font-mono text-[var(--fg-muted)] whitespace-nowrap">
+                        <td className="px-2 py-2 text-xs font-mono text-[var(--fg-muted)] whitespace-nowrap">
                           ${costUsd.toFixed(2)}
                         </td>
-                        <td className="px-3 py-2.5 text-xs font-mono font-bold text-[var(--fg)] whitespace-nowrap">
+                        <td className="px-2 py-2 text-xs font-mono font-bold text-[var(--fg)] whitespace-nowrap">
                           <div>${retailUsd.toFixed(2)}</div>
                           {offer.markupPercent !== undefined && (
-                            <span className="block text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                              +{offer.markupPercent}% margin
+                            <span className="block text-[9px] font-medium text-emerald-600 dark:text-emerald-400">
+                              +{offer.markupPercent}%
                             </span>
                           )}
                         </td>
@@ -575,10 +575,10 @@ export function ResellerManager({
                           const formulaPrice = Math.max(costUsd, retailUsd * (1 - discount));
 
                           return (
-                            <td key={tier.id} className="px-3 py-2.5 text-xs whitespace-nowrap">
+                            <td key={tier.id} className="px-2 py-2 text-xs whitespace-nowrap">
                               {overrideMinor ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="rounded border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 font-mono text-xs font-bold text-purple-600 dark:text-purple-400">
+                                <div className="flex items-center gap-1">
+                                  <span className="rounded border border-purple-500/40 bg-purple-500/10 px-1.5 py-0.5 font-mono text-xs font-bold text-purple-600 dark:text-purple-400">
                                     ${(Number(overrideMinor) / 100).toFixed(2)}
                                   </span>
                                   <button
@@ -587,7 +587,7 @@ export function ResellerManager({
                                       setOverrideModal({ offer, tier });
                                       setOverridePriceDollars((Number(overrideMinor) / 100).toString());
                                     }}
-                                    className="text-[10px] text-[var(--fg-muted)] hover:text-purple-500 p-1"
+                                    className="text-[10px] text-[var(--fg-muted)] hover:text-purple-500 p-0.5"
                                     title="Edit Override"
                                   >
                                     ✏️
@@ -597,25 +597,25 @@ export function ResellerManager({
                                     onClick={() =>
                                       handleDeleteOverride(offer.id, tier.id, offer.labelEn, tier.name)
                                     }
-                                    className="text-[10px] text-rose-500 hover:text-rose-700 font-bold p-1"
+                                    className="text-[10px] text-rose-500 hover:text-rose-700 font-bold p-0.5"
                                     title="Remove Override (Restore formula)"
                                   >
                                     ✕
                                   </button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                   <div>
                                     <span className="font-mono text-xs font-bold text-[var(--fg)]">
                                       ${formulaPrice.toFixed(2)}
                                     </span>
                                     {formulaPrice > costUsd ? (
-                                      <span className="block text-[10px] font-medium text-purple-600 dark:text-purple-400 font-mono">
-                                        +${(formulaPrice - costUsd).toFixed(2)} profit
+                                      <span className="block text-[9px] font-medium text-purple-600 dark:text-purple-400 font-mono">
+                                        +${(formulaPrice - costUsd).toFixed(2)}
                                       </span>
                                     ) : (
-                                      <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                        At cost ($0 profit)
+                                      <span className="block text-[9px] font-medium text-amber-600 dark:text-amber-400">
+                                        At cost
                                       </span>
                                     )}
                                   </div>
@@ -625,9 +625,9 @@ export function ResellerManager({
                                       setOverrideModal({ offer, tier });
                                       setOverridePriceDollars(formulaPrice.toFixed(2));
                                     }}
-                                    className="rounded border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] font-semibold hover:border-purple-500 hover:text-purple-600 transition"
+                                    className="rounded border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-semibold hover:border-purple-500 hover:text-purple-600 transition"
                                   >
-                                    + Override
+                                    Override
                                   </button>
                                 </div>
                               )}

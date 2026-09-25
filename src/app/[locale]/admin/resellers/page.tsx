@@ -12,16 +12,11 @@ import {
 
 export default async function ResellersPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams?: Promise<{ tab?: string }>;
 }) {
   const { locale } = await params;
   await requireAdmin(locale);
-
-  const sp = searchParams ? await searchParams : {};
-  const defaultTab = sp.tab === "matrix" ? "matrix" : sp.tab === "tiers" ? "tiers" : "applications";
 
   const [applicants, tiers, offers, settings] = await Promise.all([
     prisma.user.findMany({
@@ -129,7 +124,6 @@ export default async function ResellersPage({
         tiers={serializedTiers}
         offers={serializedOffers}
         defaultProfitMargin={defaultProfitMargin}
-        defaultTab={defaultTab}
       />
     </div>
   );
