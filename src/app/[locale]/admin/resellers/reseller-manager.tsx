@@ -516,7 +516,9 @@ export function ResellerManager({
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-            <div className="overflow-x-auto">
+            
+            {/* Desktop View (Table) */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
                   <tr>
@@ -631,6 +633,128 @@ export function ResellerManager({
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile View (Cards) */}
+            <div className="sm:hidden divide-y divide-[var(--border)]">
+              {filteredOffers.map((offer) => {
+                const costUsd = Number(offer.costMinor) / 100;
+                const retailUsd = Number(offer.retailPriceMinor) / 100;
+
+                return (
+                  <div key={offer.id} className="p-4 transition-colors hover:bg-[var(--surface-2)]/50">
+                    
+                    {/* Header: Product & Variant */}
+                    <div className="mb-4">
+                      <div className="font-bold text-sm text-[var(--fg)] leading-tight">{offer.productNameEn}</div>
+                      <div className="text-[var(--fg-muted)] text-[11px] mt-0.5">{offer.labelEn}</div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-4 rounded-xl bg-[var(--surface-2)]/40 p-3 border border-[var(--border)]">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Wholesale Cost</p>
+                        <div className="mt-1 font-mono font-bold text-sm text-[var(--fg)]">${costUsd.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Retail Price</p>
+                        <div className="mt-1 font-mono font-bold text-sm text-[var(--fg)]">${retailUsd.toFixed(2)}</div>
+                        {offer.markupPercent !== undefined && (
+                          <span className="block text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
+                            +{offer.markupPercent}% margin
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tiers List */}
+                    <div className="space-y-3 pt-2 border-t border-[var(--border)]">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Reseller Tier Pricing</p>
+                      
+                      {initialTiers.map((tier) => {
+                        const overrideMinor = offer.overrides[tier.id];
+                        const discount = parseFloat(tier.discountPercent) / 100;
+                        const formulaPrice = Math.max(costUsd, retailUsd * (1 - discount));
+
+                        return (
+                          <div key={tier.id} className="flex items-center justify-between p-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                            <div>
+                              <div className="text-xs font-bold text-[var(--fg)]">{tier.name}</div>
+                              <div className="text-[10px] text-[var(--fg-muted)] font-medium mt-0.5">{tier.discountPercent}% OFF retail</div>
+                            </div>
+                            
+                            <div className="text-right">
+                              {overrideMinor ? (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <div className="text-right">
+                                    <span className="rounded border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 font-mono text-sm font-bold text-purple-600 dark:text-purple-400">
+                                      ${(Number(overrideMinor) / 100).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOverrideModal({ offer, tier });
+                                        setOverridePriceDollars((Number(overrideMinor) / 100).toString());
+                                      }}
+                                      className="rounded bg-[var(--surface-2)] p-1 text-[10px] text-[var(--fg-muted)] hover:text-purple-500 transition"
+                                      title="Edit Override"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteOverride(offer.id, tier.id, offer.labelEn, tier.name)}
+                                      className="rounded bg-rose-500/10 p-1 text-[10px] text-rose-500 hover:text-rose-700 font-bold transition"
+                                      title="Remove Override"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-end gap-3">
+                                  <div className="text-right">
+                                    <span className="block font-mono text-sm font-bold text-[var(--fg)]">
+                                      ${formulaPrice.toFixed(2)}
+                                    </span>
+                                    {formulaPrice > costUsd ? (
+                                      <span className="block text-[9px] font-medium text-purple-600 dark:text-purple-400 font-mono">
+                                        +${(formulaPrice - costUsd).toFixed(2)} profit
+                                      </span>
+                                    ) : (
+                                      <span className="block text-[9px] font-medium text-amber-600 dark:text-amber-400">
+                                        At cost ($0 profit)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOverrideModal({ offer, tier });
+                                      setOverridePriceDollars(formulaPrice.toFixed(2));
+                                    }}
+                                    className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-[10px] font-bold hover:border-purple-500 hover:text-purple-600 transition"
+                                  >
+                                    + Override
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredOffers.length === 0 && (
+                <div className="px-4 py-12 text-center text-sm text-[var(--fg-muted)]">
+                  No offers found matching this filter.
+                </div>
+              )}
             </div>
           </div>
         </div>
