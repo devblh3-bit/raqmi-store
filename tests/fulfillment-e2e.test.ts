@@ -103,6 +103,7 @@ describe("purchase to delivery", () => {
     const products = await getProducts("en");
     let targetOffer: { id: string; price: number } | null = null;
     for (const p of products) {
+      if (p.slug.startsWith("test-") || p.slug.includes("test")) continue;
       for (const o of p.offers) {
         const pr = await priceForOffer(o.id);
         if (pr.available) {

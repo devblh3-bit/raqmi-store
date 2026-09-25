@@ -17,7 +17,7 @@ vi.mock("../src/lib/settings", () => ({
 vi.mock("../src/lib/auth/session", () => ({
   getSession: async () => session.current,
   createSession: async (uid: string, role: string) => {
-    session.current = { userId: uid, role: role as any };
+    session.current = { userId: uid, role: role as "CUSTOMER" };
   },
 }));
 vi.mock("../src/lib/auth/magic-link", () => ({

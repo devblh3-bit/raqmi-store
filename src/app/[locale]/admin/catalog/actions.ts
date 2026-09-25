@@ -274,6 +274,8 @@ export async function createOfferFromProvider(formData: FormData) {
     markupPercent,
     compareAtMinor,
     badge,
+    fulfillmentType,
+    warrantyTier,
   } = parsed.data;
 
   const [product, providerOffer] = await Promise.all([
@@ -310,6 +312,8 @@ export async function createOfferFromProvider(formData: FormData) {
         markupPercent: new Prisma.Decimal(markupPercent),
         compareAtMinor: compareAtMinor != null ? BigInt(compareAtMinor) : null,
         badge: badge || null,
+        fulfillmentType,
+        warrantyTier,
         productPinned: true,
         dedupeKey,
         isActive: true,
@@ -445,6 +449,8 @@ export async function updateOfferFull(formData: FormData) {
     markupPercent,
     compareAtMinor,
     badge,
+    fulfillmentType,
+    warrantyTier,
   } = parsed.data;
 
   const offer = await prisma.offer.findUnique({
@@ -468,6 +474,8 @@ export async function updateOfferFull(formData: FormData) {
         markupPercent: new Prisma.Decimal(markupPercent),
         compareAtMinor: compareAtMinor != null ? BigInt(compareAtMinor) : null,
         badge: badge || null,
+        fulfillmentType,
+        warrantyTier,
         dedupeKey,
       },
     });
@@ -597,6 +605,54 @@ export async function reorderLink(formData: FormData) {
   return { ok: true as const };
 }
 
+function inferFulfillmentAndWarranty(providerOffer?: {
+  rawName?: string | null;
+  rawNameEn?: string | null;
+  customerInputType?: string | null;
+  rawDescription?: string | null;
+  rawWarranty?: string | null;
+} | null): {
+  fulfillmentType: "KEY" | "INVITE" | "PRE_ACTIVATED";
+  warrantyTier: "FULL_TERM" | "ACTIVATION_24H" | "LIFETIME_OEM";
+} {
+  if (!providerOffer) {
+    return { fulfillmentType: "KEY", warrantyTier: "FULL_TERM" };
+  }
+  const text = `${providerOffer.rawNameEn || ""} ${providerOffer.rawName || ""} ${providerOffer.rawDescription || ""} ${providerOffer.rawWarranty || ""}`.toLowerCase();
+
+  let fulfillmentType: "KEY" | "INVITE" | "PRE_ACTIVATED" = "KEY";
+  if (
+    providerOffer.customerInputType === "EMAIL" ||
+    text.includes("invite") ||
+    text.includes("email") ||
+    text.includes("invitation")
+  ) {
+    fulfillmentType = "INVITE";
+  } else if (
+    text.includes("account") ||
+    text.includes("profile") ||
+    text.includes("shared") ||
+    text.includes("private") ||
+    text.includes("credential")
+  ) {
+    fulfillmentType = "PRE_ACTIVATED";
+  }
+
+  let warrantyTier: "FULL_TERM" | "ACTIVATION_24H" | "LIFETIME_OEM" = "FULL_TERM";
+  if (text.includes("lifetime") || text.includes("oem") || text.includes("permanent")) {
+    warrantyTier = "LIFETIME_OEM";
+  } else if (
+    text.includes("24h") ||
+    text.includes("24 hours") ||
+    text.includes("instant key") ||
+    text.includes("activation only")
+  ) {
+    warrantyTier = "ACTIVATION_24H";
+  }
+
+  return { fulfillmentType, warrantyTier };
+}
+
 export async function deleteOffer(formData: FormData) {
   const session = await requireAdmin();
   const offerId = String(formData.get("offerId") ?? "");
@@ -608,71 +664,21 @@ export async function deleteOffer(formData: FormData) {
   });
   if (!offer) return adminError("NOT_FOUND");
 
-  // Check if any customer order items reference this offer
-  const ordersCount = await prisma.orderItem.count({
-    where: { offerId },
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.offerProviderLink.deleteMany({ where: { offerId } });
+    await tx.offerTierPriceOverride.deleteMany({ where: { offerId } });
+    await tx.offerComputedPrice.deleteMany({ where: { offerId } });
+    await tx.offer.delete({ where: { id: offerId } });
 
-  if (ordersCount > 0) {
-    // Preserve DB integrity for historical customer orders.
-    // Deactivate and archive the variant so it is immediately removed from the customer storefront and cart.
-    await prisma.$transaction(async (tx) => {
-      await tx.offerProviderLink.deleteMany({ where: { offerId } });
-      await tx.offerTierPriceOverride.deleteMany({ where: { offerId } });
-      await tx.offerComputedPrice.deleteMany({ where: { offerId } });
-      await tx.offer.update({
-        where: { id: offerId },
-        data: {
-          isActive: false,
-          productPinned: false,
-          sortOrder: 9999,
-          dedupeKey: null,
-          labelEn: offer.labelEn.startsWith("[Archived]")
-            ? offer.labelEn
-            : `[Archived] ${offer.labelEn}`,
-        },
-      });
-      await tx.auditLog.create({
-        data: {
-          actorId: session.userId,
-          action: "OFFER_ARCHIVED",
-          entity: "Offer",
-          entityId: offer.id,
-          detail: {
-            productId: offer.productId,
-            reason: "Preserved for historical customer orders",
-            ordersCount,
-          } as never,
-        },
-      });
+    await tx.auditLog.create({
+      data: {
+        actorId: session.userId,
+        action: "OFFER_DELETED",
+        entity: "Offer",
+        entityId: offer.id,
+        detail: { productId: offer.productId, labelEn: offer.labelEn } as never,
+      },
     });
-
-    revalidatePath(`/admin/catalog/${offer.productId}`);
-    revalidatePath(`/admin/catalog/${offer.productId}/offers`);
-    revalidatePath("/admin/catalog");
-    return {
-      ok: true as const,
-      archived: true,
-      message: `Variant has ${ordersCount} past order(s). It has been archived and removed from the storefront.`,
-    };
-  }
-
-  // Safe to delete completely when no orders reference it
-  await prisma.offerProviderLink.deleteMany({ where: { offerId } });
-  await prisma.offerTierPriceOverride.deleteMany({ where: { offerId } });
-  await prisma.offerComputedPrice.deleteMany({ where: { offerId } });
-  await prisma.offer.delete({
-    where: { id: offerId },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.userId,
-      action: "OFFER_DELETED",
-      entity: "Offer",
-      entityId: offer.id,
-      detail: { productId: offer.productId } as never,
-    },
   });
 
   revalidatePath(`/admin/catalog/${offer.productId}`);
@@ -930,7 +936,7 @@ export async function bulkDeleteProducts(productIds: string[]) {
     await tx.auditLog.create({
       data: {
         actorId: session.userId,
-        action: "BULK_PRODUCTS_DELETED",
+        action: "PRODUCTS_BULK_DELETED",
         entity: "Product",
         entityId: "bulk",
         detail: {
@@ -1013,6 +1019,8 @@ export async function createProductFromProviderOffer(
       },
     });
 
+    const { fulfillmentType, warrantyTier } = inferFulfillmentAndWarranty(providerOffer);
+
     const offer = await tx.offer.create({
       data: {
         productId: product.id,
@@ -1023,6 +1031,8 @@ export async function createProductFromProviderOffer(
         rulesAr: descAuto.ar || rawDesc,
         rulesFr: descAuto.fr || rawDesc,
         markupPercent: new Prisma.Decimal(markupPercent),
+        fulfillmentType,
+        warrantyTier,
         productPinned: true,
         dedupeKey,
         isActive: true,
@@ -1089,6 +1099,8 @@ export async function linkProviderOfferToExistingProduct(
   const finalRulesFr = (rulesFr?.trim() || descAuto.fr || finalRulesEn).trim();
 
   const result = await prisma.$transaction(async (tx) => {
+    const { fulfillmentType, warrantyTier } = inferFulfillmentAndWarranty(providerOffer);
+
     const offer = await tx.offer.create({
       data: {
         productId: product.id,
@@ -1099,6 +1111,8 @@ export async function linkProviderOfferToExistingProduct(
         rulesAr: finalRulesAr,
         rulesFr: finalRulesFr,
         markupPercent: new Prisma.Decimal(markupPercent),
+        fulfillmentType,
+        warrantyTier,
         productPinned: true,
         dedupeKey,
         isActive: true,
@@ -1199,11 +1213,12 @@ export async function createProductWithInitialOffer(formData: FormData) {
       let rulesAr = String(raw.variantRulesAr || "").trim();
       let rulesFr = String(raw.variantRulesFr || "").trim();
 
-      if (providerOfferId && (!rulesEn || !rulesAr || !rulesFr)) {
-        const po = await tx.providerOffer.findUnique({ where: { id: providerOfferId } });
-        if (po) {
+      let poForInference = null;
+      if (providerOfferId) {
+        poForInference = await tx.providerOffer.findUnique({ where: { id: providerOfferId } });
+        if (poForInference && (!rulesEn || !rulesAr || !rulesFr)) {
           const poDesc = cleanProviderDescription(
-            po.rawDescriptionEn || po.rawDescription || po.rawWarranty || ""
+            poForInference.rawDescriptionEn || poForInference.rawDescription || poForInference.rawWarranty || ""
           );
           const poAuto = autoTranslateStoreText(poDesc);
           if (!rulesEn) rulesEn = poDesc;
@@ -1211,6 +1226,8 @@ export async function createProductWithInitialOffer(formData: FormData) {
           if (!rulesFr) rulesFr = poAuto.fr || poDesc;
         }
       }
+
+      const { fulfillmentType, warrantyTier } = inferFulfillmentAndWarranty(poForInference);
 
       const offer = await tx.offer.create({
         data: {
@@ -1222,6 +1239,8 @@ export async function createProductWithInitialOffer(formData: FormData) {
           rulesAr,
           rulesFr,
           markupPercent: new Prisma.Decimal(variantMarkup),
+          fulfillmentType,
+          warrantyTier,
           productPinned: true,
           dedupeKey,
           isActive: true,

@@ -330,7 +330,7 @@ describe("Admin Offer Curation & Fallback Actions", () => {
     await prisma.providerOffer.delete({ where: { id: richPo.id } });
   });
 
-  it("safely archives an offer when customer order items exist instead of failing with foreign key violation", async () => {
+  it("safely deletes an offer when customer order items exist instead of failing with foreign key violation", async () => {
     // 1. Create an offer
     const offer = await prisma.offer.create({
       data: {
@@ -355,6 +355,8 @@ describe("Admin Offer Curation & Fallback Actions", () => {
       data: {
         orderId: order.id,
         offerId: offer.id,
+        productNameEn: "Snapshot Product Name",
+        offerLabelEn: "Variant with Past Orders",
         quantity: 1,
         unitPriceMinor: 500n,
         unitCostMinor: 400n,
@@ -366,20 +368,24 @@ describe("Admin Offer Curation & Fallback Actions", () => {
     fd.append("offerId", offer.id);
     const res = await deleteOffer(fd);
 
-    expect(res).toHaveProperty("ok", true);
-    expect(res).toHaveProperty("archived", true);
+    expect(res).toEqual({ ok: true });
 
-    // 4. Verify the offer is deactivated & archived, NOT crashing
-    const updatedOffer = await prisma.offer.findUniqueOrThrow({
+    // 4. Verify the offer is permanently deleted, NOT crashing
+    const deletedOffer = await prisma.offer.findUnique({
       where: { id: offer.id },
     });
-    expect(updatedOffer.isActive).toBe(false);
-    expect(updatedOffer.labelEn).toContain("[Archived]");
+    expect(deletedOffer).toBeNull();
+
+    // 5. Verify the orderItem has offerId set to null via DB foreign key onDelete: SetNull
+    const updatedOrderItem = await prisma.orderItem.findUniqueOrThrow({
+      where: { id: orderItem.id },
+    });
+    expect(updatedOrderItem.offerId).toBeNull();
+    expect(updatedOrderItem.offerLabelEn).toBe("Variant with Past Orders");
 
     // Clean up test data
     await prisma.orderItem.delete({ where: { id: orderItem.id } });
     await prisma.order.delete({ where: { id: order.id } });
-    await prisma.offer.delete({ where: { id: offer.id } });
   });
 });
 

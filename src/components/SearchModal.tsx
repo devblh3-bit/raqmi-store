@@ -59,17 +59,19 @@ export function SearchModal({
     }
   }, [locale]);
 
-  // Initial fetch when opened
+  const handleClose = useCallback(() => {
+    setQuery("");
+    setSelectedIndex(-1);
+    onClose();
+  }, [onClose]);
+
+  // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      fetchResults(query);
       const timer = setTimeout(() => inputRef.current?.focus(), 50);
       return () => clearTimeout(timer);
-    } else {
-      setQuery("");
-      setSelectedIndex(-1);
     }
-  }, [isOpen, fetchResults, query]);
+  }, [isOpen]);
 
   // Handle query typing with debounce
   useEffect(() => {
@@ -87,7 +89,7 @@ export function SearchModal({
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleClose();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
@@ -98,17 +100,17 @@ export function SearchModal({
         e.preventDefault();
         if (selectedIndex >= 0 && results[selectedIndex]) {
           router.push(`/${locale}/products/${results[selectedIndex].slug}`);
-          onClose();
+          handleClose();
         } else if (query.trim()) {
           router.push(`/${locale}/products?q=${encodeURIComponent(query.trim())}`);
-          onClose();
+          handleClose();
         }
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, results, selectedIndex, query, locale, router, onClose]);
+  }, [isOpen, results, selectedIndex, query, locale, router, handleClose]);
 
   if (!isOpen) return null;
 
@@ -121,7 +123,7 @@ export function SearchModal({
     >
       {/* Backdrop */}
       <div
-        onClick={onClose}
+        onClick={handleClose}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in"
       />
 
@@ -163,7 +165,7 @@ export function SearchModal({
           )}
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-mono text-[var(--fg-muted)] hover:bg-[var(--surface-3)]"
           >
             ESC

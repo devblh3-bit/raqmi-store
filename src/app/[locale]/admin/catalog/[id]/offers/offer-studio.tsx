@@ -55,6 +55,8 @@ export type SerializedOffer = {
   markupPercent: number;
   compareAtMinor: string | null;
   badge: string | null;
+  fulfillmentType?: string;
+  warrantyTier?: string;
   productPinned: boolean;
   stockQty: number | null;
   isActive: boolean;
@@ -240,6 +242,20 @@ export function OfferStudio({
                             {offer.badge}
                           </span>
                         )}
+                        <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                          {offer.fulfillmentType === "INVITE"
+                            ? "✉️ Invite"
+                            : offer.fulfillmentType === "PRE_ACTIVATED"
+                            ? "👤 Account"
+                            : "🔑 Key"}
+                        </span>
+                        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                          {offer.warrantyTier === "LIFETIME_OEM"
+                            ? "♾️ Lifetime"
+                            : offer.warrantyTier === "ACTIVATION_24H"
+                            ? "⚡ 24h"
+                            : "🛡️ Full Term"}
+                        </span>
                         {offer.productPinned && (
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                             Pinned
@@ -480,8 +496,6 @@ export function OfferStudio({
                             const res = await deleteOffer(fd);
                             if (res && "error" in res) {
                               alert(`Notice: ${res.error}`);
-                            } else if (res && "archived" in res && res.archived) {
-                              alert(res.message);
                             }
                           });
                         }
@@ -707,6 +721,31 @@ function CreateVariantModal({
   );
   const autoRules = autoTranslateStoreText(defaultRulesEn);
 
+  const inferredDelivery = () => {
+    const text = `${providerOffer.rawNameEn || ""} ${providerOffer.rawName || ""} ${providerOffer.rawDescription || ""} ${providerOffer.rawWarranty || ""}`.toLowerCase();
+    if (providerOffer.customerInputType === "EMAIL" || text.includes("invite") || text.includes("email") || text.includes("invitation")) {
+      return "INVITE";
+    }
+    if (text.includes("account") || text.includes("profile") || text.includes("shared") || text.includes("private") || text.includes("credential")) {
+      return "PRE_ACTIVATED";
+    }
+    return "KEY";
+  };
+
+  const inferredWarranty = () => {
+    const text = `${providerOffer.rawNameEn || ""} ${providerOffer.rawName || ""} ${providerOffer.rawDescription || ""} ${providerOffer.rawWarranty || ""}`.toLowerCase();
+    if (text.includes("lifetime") || text.includes("oem") || text.includes("permanent")) {
+      return "LIFETIME_OEM";
+    }
+    if (text.includes("24h") || text.includes("24 hours") || text.includes("instant key") || text.includes("activation only")) {
+      return "ACTIVATION_24H";
+    }
+    return "FULL_TERM";
+  };
+
+  const [fulfillmentType, setFulfillmentType] = useState<string>(inferredDelivery());
+  const [warrantyTier, setWarrantyTier] = useState<string>(inferredWarranty());
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
@@ -839,10 +878,60 @@ function CreateVariantModal({
             </div>
           </div>
 
-          {/* 3. Pricing, Margins & Badges */}
+          {/* 3. Delivery & Warranty Policy */}
           <div className="space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
-              3. Pricing, Markup & Badging
+              3. Delivery & Warranty Policy
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-[11px] text-[var(--fg-muted)]">Fulfillment Type</label>
+                <select
+                  name="fulfillmentType"
+                  value={fulfillmentType}
+                  onChange={(e) => setFulfillmentType(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="KEY">🔑 Instant Key / License Code</option>
+                  <option value="INVITE">✉️ Email Invitation / Direct Upgrade</option>
+                  <option value="PRE_ACTIVATED">👤 Pre-activated Account Credentials</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[var(--fg-muted)]">
+                  {fulfillmentType === "INVITE"
+                    ? "Requires buyer email on checkout; supplier sends workspace invite."
+                    : fulfillmentType === "PRE_ACTIVATED"
+                    ? "Delivers login credentials via customer dashboard/orders."
+                    : "Delivers digital activation key or code directly."}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[var(--fg-muted)]">Warranty Guarantee Tier</label>
+                <select
+                  name="warrantyTier"
+                  value={warrantyTier}
+                  onChange={(e) => setWarrantyTier(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="FULL_TERM">🛡️ Full Term Guarantee</option>
+                  <option value="ACTIVATION_24H">⚡ 24h Activation Guarantee</option>
+                  <option value="LIFETIME_OEM">♾️ Lifetime OEM Guarantee</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[var(--fg-muted)]">
+                  {warrantyTier === "LIFETIME_OEM"
+                    ? "Permanent OEM device binding guarantee."
+                    : warrantyTier === "ACTIVATION_24H"
+                    ? "Immediate activation verification window."
+                    : "Protected for the entire duration of the subscription."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Pricing, Margins & Badges */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+              4. Pricing, Markup & Badging
             </label>
 
             <div className="grid gap-3 sm:grid-cols-3">
@@ -1075,6 +1164,8 @@ function EditOfferModal({
     offer.compareAtMinor ? (Number(offer.compareAtMinor) / 100).toFixed(2) : ""
   );
   const [badge, setBadge] = useState<string>(offer.badge || "");
+  const [fulfillmentType, setFulfillmentType] = useState<string>(offer.fulfillmentType || "KEY");
+  const [warrantyTier, setWarrantyTier] = useState<string>(offer.warrantyTier || "FULL_TERM");
 
   const retailFloat = costFloat * (1 + markupPercent / 100);
   const profitFloat = retailFloat - costFloat;
@@ -1180,10 +1271,60 @@ function EditOfferModal({
             </div>
           </div>
 
-          {/* 3. Pricing */}
+          {/* 3. Delivery & Warranty Policy */}
           <div className="space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
-              3. Markup & Badges
+              3. Delivery & Warranty Policy
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-[11px] text-[var(--fg-muted)]">Fulfillment Type</label>
+                <select
+                  name="fulfillmentType"
+                  value={fulfillmentType}
+                  onChange={(e) => setFulfillmentType(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="KEY">🔑 Instant Key / License Code</option>
+                  <option value="INVITE">✉️ Email Invitation / Direct Upgrade</option>
+                  <option value="PRE_ACTIVATED">👤 Pre-activated Account Credentials</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[var(--fg-muted)]">
+                  {fulfillmentType === "INVITE"
+                    ? "Requires buyer email on checkout; supplier sends workspace invite."
+                    : fulfillmentType === "PRE_ACTIVATED"
+                    ? "Delivers login credentials via customer dashboard/orders."
+                    : "Delivers digital activation key or code directly."}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[var(--fg-muted)]">Warranty Guarantee Tier</label>
+                <select
+                  name="warrantyTier"
+                  value={warrantyTier}
+                  onChange={(e) => setWarrantyTier(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="FULL_TERM">🛡️ Full Term Guarantee</option>
+                  <option value="ACTIVATION_24H">⚡ 24h Activation Guarantee</option>
+                  <option value="LIFETIME_OEM">♾️ Lifetime OEM Guarantee</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[var(--fg-muted)]">
+                  {warrantyTier === "LIFETIME_OEM"
+                    ? "Permanent OEM device binding guarantee."
+                    : warrantyTier === "ACTIVATION_24H"
+                    ? "Immediate activation verification window."
+                    : "Protected for the entire duration of the subscription."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Pricing */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--fg-muted)]">
+              4. Markup & Badges
             </label>
 
             <div className="grid gap-3 sm:grid-cols-3">

@@ -133,10 +133,10 @@ export default async function OrdersPage({
 
       return {
         id: it.id,
-        offerId: it.offerId,
-        offerLabelEn: it.offer.labelEn,
-        offerLabelAr: it.offer.labelAr,
-        offerLabelFr: it.offer.labelFr,
+        offerId: it.offerId ?? "",
+        offerLabelEn: it.offer?.labelEn ?? it.offerLabelEn,
+        offerLabelAr: it.offer?.labelAr ?? it.offerLabelAr,
+        offerLabelFr: it.offer?.labelFr ?? it.offerLabelFr,
         quantity: it.quantity,
         unitPriceMinor: it.unitPriceMinor.toString(),
         unitCostMinor: it.unitCostMinor.toString(),

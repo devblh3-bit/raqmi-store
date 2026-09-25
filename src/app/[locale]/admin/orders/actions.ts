@@ -133,7 +133,7 @@ export async function manualFulfillItem(formData: FormData) {
       },
     });
 
-    const providerOfferId = item.attempts[0]?.providerOfferId ?? item.offer.links[0]?.providerOfferId;
+    const providerOfferId = item.attempts[0]?.providerOfferId ?? item.offer?.links[0]?.providerOfferId;
     if (providerOfferId) {
       await tx.fulfillmentAttempt.create({
         data: {

@@ -34,20 +34,22 @@ export function CurrencyProvider({
 
   // Synchronize with client storage (localStorage / cookie) on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY) as Currency | null;
-      if (stored === "DZD" || stored === "USD") {
-        setCurrencyState(stored);
-        return;
+    queueMicrotask(() => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY) as Currency | null;
+        if (stored === "DZD" || stored === "USD") {
+          setCurrencyState(stored);
+          return;
+        }
+        // Check document.cookie
+        const match = document.cookie.match(/(?:^|; )store_currency=(DZD|USD)(?:;|$)/);
+        if (match && (match[1] === "DZD" || match[1] === "USD")) {
+          setCurrencyState(match[1] as Currency);
+        }
+      } catch {
+        // Ignore storage access errors in restricted environments
       }
-      // Check document.cookie
-      const match = document.cookie.match(/(?:^|; )store_currency=(DZD|USD)(?:;|$)/);
-      if (match && (match[1] === "DZD" || match[1] === "USD")) {
-        setCurrencyState(match[1] as Currency);
-      }
-    } catch {
-      // Ignore storage access errors in restricted environments
-    }
+    });
   }, []);
 
   const setCurrency = (c: Currency) => {

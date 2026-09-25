@@ -8,6 +8,20 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
+## Agent skills
+
+### Issue tracker
+
+GitHub issues tracked at `devblh3-bit/raqmi-store` using `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

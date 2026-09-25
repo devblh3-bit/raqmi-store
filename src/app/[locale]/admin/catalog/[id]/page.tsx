@@ -79,6 +79,8 @@ export default async function EditProductPage({
     markupPercent: Number(o.markupPercent),
     compareAtMinor: o.compareAtMinor ? o.compareAtMinor.toString() : null,
     badge: o.badge,
+    fulfillmentType: o.fulfillmentType ?? "KEY",
+    warrantyTier: o.warrantyTier ?? "FULL_TERM",
     productPinned: o.productPinned,
     stockQty: o.stockQty,
     isActive: o.isActive,

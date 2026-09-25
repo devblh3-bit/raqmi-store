@@ -237,7 +237,29 @@ export default function BuyOfferForm({
                       )}
                     </div>
                   ) : (
-                    <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" compactSecondary />
+                    <div className="flex flex-col items-end">
+                      <Price cents={o.price} locale={locale} compareAt={o.compareAt} size="sm" compactSecondary />
+                      {o.baseCost > 0 && o.price > o.baseCost && (
+                        <div
+                          className="group/pill relative mt-0.5 inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:opacity-90 cursor-help"
+                          tabIndex={0}
+                          aria-label={`${tc("baseCost")}: ${(o.baseCost / 100).toFixed(2)} + ${tc("agencyFee")}: ${((o.price - o.baseCost) / 100).toFixed(2)}`}
+                        >
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/80 shrink-0"></span>
+                          <span>{tc("agencyNoticeBadge")}</span>
+                          <div className="pointer-events-none absolute bottom-full end-0 mb-1.5 hidden w-48 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover/pill:block group-focus/pill:block z-20 text-start">
+                            <div className="flex justify-between py-0.5">
+                              <span className="text-[var(--fg-muted)]">{tc("baseCost")}:</span>
+                              <span className="font-semibold"><Price cents={o.baseCost} locale={locale} size="sm" /></span>
+                            </div>
+                            <div className="flex justify-between py-0.5">
+                              <span className="text-[var(--fg-muted)]">{tc("agencyFee")}:</span>
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400"><Price cents={Math.max(0, o.price - o.baseCost)} locale={locale} size="sm" /></span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -505,6 +527,7 @@ export default function BuyOfferForm({
             offerId: offer.id,
             label: offer.label[locale] ?? offer.label.en,
             price: offer.price,
+            baseCost: offer.baseCost,
             locale,
             requiresCustomerInput: offer.requiresCustomerInput,
             customerPrompt: offer.customerPrompt,
@@ -519,16 +542,38 @@ export default function BuyOfferForm({
       {offer && (
         <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-3.5 text-xs space-y-2">
           <div className="flex items-center justify-between text-[var(--fg-muted)]">
-            <span>{tc("baseCost")}</span>
+            <span className="flex items-center gap-1.5">
+              <span>{tc("baseCost")}</span>
+              <span
+                className="group relative inline-flex cursor-help text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                tabIndex={0}
+                aria-label={tc("wholesaleBaseTooltip")}
+              >
+                <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-3)] text-[9px] font-bold">?</span>
+                <span className="pointer-events-none absolute bottom-full start-0 mb-1.5 hidden w-52 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover:block group-focus:block z-20">
+                  {tc("wholesaleBaseTooltip")}
+                </span>
+              </span>
+            </span>
             <span className="font-medium text-[var(--fg)]">
               <Price cents={offer.baseCost} locale={locale} size="sm" />
             </span>
           </div>
           <div className="flex items-center justify-between text-[var(--fg-muted)]">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span>{tc("agencyFee")}</span>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
                 {locale === "ar" ? "أجرة الوكالة" : "Brokerage"}
+              </span>
+              <span
+                className="group relative inline-flex cursor-help text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                tabIndex={0}
+                aria-label={tc("agencyFeeTooltip")}
+              >
+                <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-3)] text-[9px] font-bold">?</span>
+                <span className="pointer-events-none absolute bottom-full start-0 mb-1.5 hidden w-52 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover:block group-focus:block z-20">
+                  {tc("agencyFeeTooltip")}
+                </span>
               </span>
             </span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">

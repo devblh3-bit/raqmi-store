@@ -114,6 +114,7 @@ export async function submitDeposit(
         currency: "USD",
         method,
         reference: txHash,
+        proofUrl,
         withActions: true,
       },
       // Every deposit needs its own decision, so never collapse these.

@@ -331,8 +331,14 @@ model OrderItem {
   id                    String               @id @default(cuid())
   orderId               String
   order                 Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  offerId               String
-  offer                 Offer                @relation(fields: [offerId], references: [id])
+  offerId               String?
+  offer                 Offer?               @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  productNameEn         String               @default("")
+  productNameAr         String               @default("")
+  productNameFr         String               @default("")
+  offerLabelEn          String               @default("")
+  offerLabelAr          String               @default("")
+  offerLabelFr          String               @default("")
   quantity              Int                  @default(1)
   unitPriceMinor        BigInt // USD minor, snapshotted
   unitCostMinor         BigInt // provider currency minor, snapshotted

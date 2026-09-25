@@ -8,6 +8,7 @@ import { Price } from "@/components/Price";
 import { ClearCartAfterCheckout } from "@/components/ClearCartAfterCheckout";
 import { CopyButton } from "@/components/CopyButton";
 import { tryDecryptField } from "@/lib/crypto";
+import { dispatchPendingOrders } from "@/lib/fulfillment";
 import type { Locale } from "@/i18n";
 
 export default async function OrderPage({
@@ -53,14 +54,58 @@ export default async function OrderPage({
       .catch(() => null);
   }
 
-  const label = (o: (typeof order.items)[number]) =>
-    loc === "ar" ? o.offer.labelAr : loc === "fr" ? o.offer.labelFr : o.offer.labelEn;
-  const name = (o: (typeof order.items)[number]) =>
-    loc === "ar"
-      ? o.offer.product.nameAr
+  // Auto-dispatch pending items on page view if not yet dispatched
+  const pendingItemIds = order.items
+    .filter((i) => i.status === "AWAITING_FULFILLMENT")
+    .map((i) => i.id);
+
+  if (pendingItemIds.length > 0) {
+    try {
+      await dispatchPendingOrders(5, { onlyItemIds: pendingItemIds });
+      const refreshed = await prisma.orderItem.findMany({
+        where: { id: { in: pendingItemIds } },
+        include: {
+          offer: { include: { product: true } },
+          providerOrders: {
+            where: { deliveryAvailable: true },
+            select: { id: true, clientOrderId: true, deliveryEnc: true },
+          },
+        },
+      });
+      for (const ref of refreshed) {
+        const idx = order.items.findIndex((it) => it.id === ref.id);
+        if (idx !== -1) order.items[idx] = ref as never;
+      }
+    } catch (e) {
+      console.error("[order-page] auto-dispatch error:", e);
+    }
+  }
+
+  const label = (o: (typeof order.items)[number]) => {
+    if (o.offer) {
+      return loc === "ar" ? o.offer.labelAr : loc === "fr" ? o.offer.labelFr : o.offer.labelEn;
+    }
+    return loc === "ar"
+      ? (o.offerLabelAr || o.offerLabelEn)
       : loc === "fr"
-        ? o.offer.product.nameFr
-        : o.offer.product.nameEn;
+        ? (o.offerLabelFr || o.offerLabelEn)
+        : o.offerLabelEn;
+  };
+
+  const name = (o: (typeof order.items)[number]) => {
+    if (o.offer?.product) {
+      return loc === "ar"
+        ? o.offer.product.nameAr
+        : loc === "fr"
+          ? o.offer.product.nameFr
+          : o.offer.product.nameEn;
+    }
+    return loc === "ar"
+      ? (o.productNameAr || o.productNameEn)
+      : loc === "fr"
+        ? (o.productNameFr || o.productNameEn)
+        : o.productNameEn;
+  };
 
   // Decrypt delivered assets for all items
   const decryptedItems = order.items.map((item) => {
@@ -77,6 +122,7 @@ export default async function OrderPage({
     const providerAccounts: Array<{
       login?: string;
       password?: string;
+      credentialBlob?: string;
       extra?: Record<string, string>;
       raw?: unknown;
     }> = [];
@@ -93,7 +139,15 @@ export default async function OrderPage({
           try {
             const parsed = JSON.parse(dec.value);
             if (Array.isArray(parsed?.accounts)) {
-              providerAccounts.push(...parsed.accounts);
+              for (const acc of parsed.accounts) {
+                providerAccounts.push({
+                  login: acc.login || acc.user || undefined,
+                  password: acc.password || undefined,
+                  credentialBlob: acc.credentialBlob || acc.account_data || undefined,
+                  extra: acc.extra || undefined,
+                  raw: acc.raw ?? acc,
+                });
+              }
             }
           } catch {}
         }
@@ -110,12 +164,17 @@ export default async function OrderPage({
       if (dec.ok) customerInput = dec.value;
     }
 
+    const fType = item.offer?.fulfillmentType || "KEY";
+    const isInviteCompleted = fType === "INVITE" && item.status === "COMPLETED";
+
     return {
       ...item,
       manualDelivery,
       providerAccounts,
       customerInput,
-      hasDelivery: Boolean(manualDelivery || providerAccounts.length > 0),
+      fType,
+      isInviteCompleted,
+      hasDelivery: Boolean(manualDelivery || providerAccounts.length > 0 || isInviteCompleted),
     };
   });
 
@@ -287,17 +346,41 @@ export default async function OrderPage({
                         </span>
                       </div>
 
+                      {/* Invite fulfillment completed status */}
+                      {item.fType === "INVITE" && item.isInviteCompleted && !item.manualDelivery && item.providerAccounts.length === 0 && (
+                        <div className="rounded-2xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 p-4 shadow-xs space-y-3">
+                           <div className="flex items-center gap-2 font-bold text-sm text-blue-900 dark:text-blue-100">
+                             <span>✉️</span>
+                             <span>
+                               {loc === "ar"
+                                 ? "تم إرسال الدعوة بنجاح"
+                                 : loc === "fr"
+                                   ? "Invitation envoyée avec succès"
+                                   : "Invitation Sent Successfully"}
+                             </span>
+                           </div>
+                           <p className="text-xs leading-relaxed text-blue-800/90 dark:text-blue-200/90">
+                             {loc === "ar"
+                               ? "تم تفعيل الاشتراك وإرسال دعوة الانضمام إلى بريدك الإلكتروني. يُرجى التحقق من صندوق الوارد (أو مجلد الرسائل غير المرغوب فيها) وقبول الدعوة."
+                               : loc === "fr"
+                                 ? "L'abonnement a été activé et une invitation a été envoyée à votre adresse e-mail. Veuillez vérifier votre boîte de réception (ou dossier spam) et accepter l'invitation."
+                                 : "The subscription has been activated and an invitation has been sent to your email. Please check your inbox (or spam folder) and accept the invite."}
+                           </p>
+                        </div>
+                      )}
+
                       {/* Manual delivery text payload (license key / login / token) */}
                       {item.manualDelivery && (
                         <div className="rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-xs">
                           <div className="flex items-center justify-between pb-2.5 text-xs font-bold text-zinc-800 dark:text-zinc-200 border-b border-zinc-200 dark:border-zinc-800">
                             <span>
-                              🔑{" "}
-                              {loc === "ar"
-                                ? "بيانات الدخول والمفتاح"
-                                : loc === "fr"
-                                  ? "Identifiants / Clé"
-                                  : "License Key / Login"}
+                              {item.fType === "PRE_ACTIVATED" ? "👤 " : item.fType === "INVITE" ? "✉️ " : "🔑 "}
+                              {item.fType === "PRE_ACTIVATED" 
+                                ? (loc === "ar" ? "بيانات الحساب الجاهز" : loc === "fr" ? "Identifiants du compte" : "Account Credentials")
+                                : item.fType === "INVITE"
+                                  ? (loc === "ar" ? "رابط / تفاصيل الدعوة" : loc === "fr" ? "Détails de l'invitation" : "Invite Details / Link")
+                                  : (loc === "ar" ? "مفتاح الترخيص" : loc === "fr" ? "Clé de licence" : "License Key")
+                              }
                             </span>
                             <CopyButton
                               text={item.manualDelivery}
@@ -311,12 +394,73 @@ export default async function OrderPage({
                         </div>
                       )}
 
-                      {/* Automated provider structured accounts */}
+                      {/* Automated provider structured accounts & activation links */}
                       {item.providerAccounts.map((acc, aIdx) => (
                         <div
                           key={aIdx}
                           className="space-y-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-xs"
                         >
+                          {acc.credentialBlob && (
+                            <div className="space-y-3">
+                              {acc.credentialBlob.startsWith("http://") ||
+                              acc.credentialBlob.startsWith("https://") ? (
+                                <div className="rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 p-4 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                                      <span>🔗</span>
+                                      <span>
+                                        {loc === "ar"
+                                          ? "رابط التفعيل الفوري"
+                                          : loc === "fr"
+                                            ? "Lien d'activation officiel"
+                                            : "Official Activation Link"}
+                                      </span>
+                                    </span>
+                                    <CopyButton
+                                      text={acc.credentialBlob}
+                                      label={copyLabel}
+                                      copiedLabel={copiedLabel}
+                                    />
+                                  </div>
+                                  <div className="select-all font-mono text-xs font-semibold text-zinc-950 dark:text-zinc-50 break-all bg-white dark:bg-zinc-900 p-3 rounded-lg border border-blue-100 dark:border-blue-900/40 shadow-xs">
+                                    {acc.credentialBlob}
+                                  </div>
+                                  <a
+                                    href={acc.credentialBlob}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 shadow-sm transition-all"
+                                  >
+                                    <span>⚡</span>
+                                    <span>
+                                      {loc === "ar"
+                                        ? "تفعيل الاشتراك الآن على جوجل ➔"
+                                        : loc === "fr"
+                                          ? "Activer l'abonnement sur Google ➔"
+                                          : "Activate Subscription on Google ➔"}
+                                    </span>
+                                  </a>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="flex items-center justify-between gap-3 pb-2 border-b border-zinc-200 dark:border-zinc-800">
+                                    <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                                      {loc === "ar" ? "بيانات الحساب" : loc === "fr" ? "Données de compte" : "Account Data"}
+                                    </span>
+                                    <CopyButton
+                                      text={acc.credentialBlob}
+                                      label={copyLabel}
+                                      copiedLabel={copiedLabel}
+                                    />
+                                  </div>
+                                  <div className="mt-2 select-all font-mono text-xs font-semibold text-zinc-950 dark:text-zinc-50 break-all bg-zinc-100 dark:bg-zinc-950 p-3 rounded-lg whitespace-pre-wrap">
+                                    {acc.credentialBlob}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {acc.login && (
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">

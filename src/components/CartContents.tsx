@@ -32,6 +32,11 @@ export default function CartContents({
   const [state, action, pending] = useActionState<BuyState, FormData>(buyNow, {});
   const errorKey = state.error ? (ERROR_KEY[state.error] ?? "errorGeneric") : null;
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalBaseCost = items.reduce(
+    (sum, item) => sum + (item.baseCost ?? item.price) * item.quantity,
+    0,
+  );
+  const totalAgencyFee = Math.max(0, total - totalBaseCost);
 
   if (!items.length) {
     return (
@@ -56,7 +61,29 @@ export default function CartContents({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-semibold">{item.label}</h2>
-              <p className="mt-1 text-sm text-[var(--fg-muted)]">{item.quantity} × <Price cents={item.price} locale={locale} size="sm" /></p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-[var(--fg-muted)]">
+                <span>{item.quantity} × <Price cents={item.price} locale={locale} size="sm" /></span>
+                {item.baseCost !== undefined && item.baseCost > 0 && item.price > item.baseCost && (
+                  <div
+                    className="group/pill relative inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:opacity-90 cursor-help"
+                    tabIndex={0}
+                    aria-label={`${tc("baseCost")}: ${(item.baseCost / 100).toFixed(2)} + ${tc("agencyFee")}: ${((item.price - item.baseCost) / 100).toFixed(2)}`}
+                  >
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500/80 shrink-0" />
+                    <span>{tc("agencyNoticeBadge")}</span>
+                    <div className="pointer-events-none absolute bottom-full start-0 mb-1.5 hidden w-48 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover/pill:block group-focus/pill:block z-20 text-start">
+                      <div className="flex justify-between py-0.5">
+                        <span className="text-[var(--fg-muted)]">{tc("baseCost")}:</span>
+                        <span className="font-semibold"><Price cents={item.baseCost} locale={locale} size="sm" /></span>
+                      </div>
+                      <div className="flex justify-between py-0.5">
+                        <span className="text-[var(--fg-muted)]">{tc("agencyFee")}:</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400"><Price cents={Math.max(0, item.price - item.baseCost)} locale={locale} size="sm" /></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <button
               type="button"
@@ -112,6 +139,54 @@ export default function CartContents({
 
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)]">
         <div className="flex items-center justify-between font-semibold"><span>{tc("total")}</span><Price cents={total} locale={locale} /></div>
+
+        {totalAgencyFee > 0 && (
+          <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/50 p-3 text-xs space-y-1.5">
+            <div className="flex items-center justify-between text-[var(--fg-muted)]">
+              <span className="flex items-center gap-1.5">
+                <span>{tc("baseCost")}</span>
+                <span
+                  className="group relative inline-flex cursor-help text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                  tabIndex={0}
+                  aria-label={tc("wholesaleBaseTooltip")}
+                >
+                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-3)] text-[9px] font-bold">?</span>
+                  <span className="pointer-events-none absolute bottom-full start-0 mb-1.5 hidden w-52 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover:block group-focus:block z-20">
+                    {tc("wholesaleBaseTooltip")}
+                  </span>
+                </span>
+              </span>
+              <span className="font-medium text-[var(--fg)]">
+                <Price cents={totalBaseCost} locale={locale} size="sm" />
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[var(--fg-muted)]">
+              <span className="flex items-center gap-1.5">
+                <span>{tc("agencyFee")}</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                  {locale === "ar" ? "أجرة الوكالة" : "Brokerage"}
+                </span>
+                <span
+                  className="group relative inline-flex cursor-help text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                  tabIndex={0}
+                  aria-label={tc("agencyFeeTooltip")}
+                >
+                  <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-3)] text-[9px] font-bold">?</span>
+                  <span className="pointer-events-none absolute bottom-full start-0 mb-1.5 hidden w-52 rounded-xl bg-[var(--surface)] p-2 text-[11px] shadow-lg border border-[var(--border)] text-[var(--fg)] group-hover:block group-focus:block z-20">
+                    {tc("agencyFeeTooltip")}
+                  </span>
+                </span>
+              </span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <Price cents={totalAgencyFee} locale={locale} size="sm" />
+              </span>
+            </div>
+            <div className="border-t border-[var(--border)] pt-1.5 flex items-center justify-between font-bold text-[var(--fg)]">
+              <span>{tc("totalAuthorized")}</span>
+              <Price cents={total} locale={locale} size="sm" />
+            </div>
+          </div>
+        )}
         {state.error === "INSUFFICIENT_FUNDS" ? (
           <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
             <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold text-xs">

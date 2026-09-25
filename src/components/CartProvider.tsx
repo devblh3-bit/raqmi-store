@@ -6,6 +6,7 @@ export type CartItem = {
   offerId: string;
   label: string;
   price: number;
+  baseCost?: number;
   locale: string;
   requiresCustomerInput: boolean;
   customerPrompt?: string;
@@ -37,6 +38,8 @@ function readCart(): CartItem[] {
         typeof item.price === "number" &&
         Number.isFinite(item.price) &&
         item.price >= 0 &&
+        (item.baseCost === undefined ||
+          (typeof item.baseCost === "number" && Number.isFinite(item.baseCost) && item.baseCost >= 0)) &&
         typeof item.locale === "string" &&
         typeof item.requiresCustomerInput === "boolean" &&
         typeof item.quantity === "number" &&

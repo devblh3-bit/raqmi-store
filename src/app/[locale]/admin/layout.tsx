@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getSession, isSessionIdle } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import AdminMobileNav from "@/components/nav/AdminMobileNav";
 
@@ -15,6 +15,11 @@ export default async function AdminLayout({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login?next=/${locale}/admin`);
   if (session.role !== "ADMIN") redirect(`/${locale}/login?next=/${locale}/admin`);
+
+  // Enforce strict idle timeout on admin panel regardless of "Stay logged in"
+  if (isSessionIdle(session)) {
+    redirect(`/${locale}/login?next=/${locale}/admin&error=inactive`);
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },

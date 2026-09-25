@@ -52,6 +52,8 @@ export const createOfferFromProviderSchema = z.object({
   markupPercent: z.coerce.number().min(0).max(1000).default(0),
   compareAtMinor: z.coerce.number().int().min(0).optional().nullable(),
   badge: z.string().trim().max(40).optional().nullable(),
+  fulfillmentType: z.enum(["KEY", "INVITE", "PRE_ACTIVATED"]).optional().default("KEY"),
+  warrantyTier: z.enum(["FULL_TERM", "ACTIVATION_24H", "LIFETIME_OEM"]).optional().default("FULL_TERM"),
 });
 
 export const attachBackupProviderSchema = z.object({
@@ -70,6 +72,8 @@ export const updateOfferFullSchema = z.object({
   markupPercent: z.coerce.number().min(0).max(1000).default(0),
   compareAtMinor: z.coerce.number().int().min(0).optional().nullable(),
   badge: z.string().trim().max(40).optional().nullable(),
+  fulfillmentType: z.enum(["KEY", "INVITE", "PRE_ACTIVATED"]).optional().default("KEY"),
+  warrantyTier: z.enum(["FULL_TERM", "ACTIVATION_24H", "LIFETIME_OEM"]).optional().default("FULL_TERM"),
 });
 
 export const toggleLinkSchema = z.object({

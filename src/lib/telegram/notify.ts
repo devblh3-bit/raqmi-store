@@ -222,8 +222,12 @@ interface AlertSpec {
 /**
  * `info` alerts arrive silently; `warning`/`critical` buzz the phone.
  * An OOS storm at 3am should not wake anyone for an `info`.
+ * Financial deposit alerts always notify audibly.
  */
-function isSilent(severity: AlertSeverity): boolean {
+function isSilent(severity: AlertSeverity, type?: AlertType): boolean {
+  if (type === "pending_deposit" || type === "provider_failure" || type === "margin_violation") {
+    return false;
+  }
   return severity === "info";
 }
 
@@ -231,6 +235,17 @@ const SEVERITY_PREFIX: Record<AlertSeverity, string> = {
   info: "INFO",
   warning: "WARNING",
   critical: "CRITICAL",
+};
+
+export const ALERT_CLASSIFICATION: Record<AlertType, { emoji: string; badge: string }> = {
+  provider_failure: { emoji: "🚨", badge: "URGENT" },
+  margin_violation: { emoji: "🚨", badge: "URGENT" },
+  pending_deposit: { emoji: "💰", badge: "FINANCIAL" },
+  low_provider_balance: { emoji: "⚠️", badge: "WARNING" },
+  out_of_stock: { emoji: "⚠️", badge: "WARNING" },
+  cost_drift: { emoji: "⚠️", badge: "WARNING" },
+  fallback_used: { emoji: "ℹ️", badge: "INFO" },
+  reseller_application: { emoji: "📋", badge: "INFO" },
 };
 
 async function dispatch(spec: AlertSpec, options: NotifyOptions = {}): Promise<AlertRecord> {
@@ -267,16 +282,21 @@ async function dispatch(spec: AlertSpec, options: NotifyOptions = {}): Promise<A
     });
   }
 
+  const classification = ALERT_CLASSIFICATION[spec.type] ?? {
+    emoji: spec.severity === "critical" ? "🚨" : spec.severity === "warning" ? "⚠️" : "ℹ️",
+    badge: SEVERITY_PREFIX[spec.severity],
+  };
+
   const text = renderPlaintext({
-    // Title and labels are trusted static strings written here.
-    title: `[${SEVERITY_PREFIX[spec.severity]}] ${spec.title.en}`,
+    // High-contrast classification tag according to ADR 0002: 🚨 URGENT, 💰 FINANCIAL, ⚠️ WARNING
+    title: `${classification.emoji} [${classification.badge}] ${spec.title.en}`,
     fields,
     notes: spec.link ? [`Admin: ${spec.link}`] : [],
   });
 
   const result: BotApiResult<TelegramMessage> = await sendMessageToAdmin(text, {
     // No parseMode: the body contains provider/customer content.
-    disableNotification: isSilent(spec.severity),
+    disableNotification: isSilent(spec.severity, spec.type),
     replyMarkup: spec.buttons,
   });
 
@@ -390,7 +410,7 @@ export interface ProviderFailureInput {
   orderId?: string;
 }
 
-/** A provider API call failed. Critical once failures are consecutive. */
+/** A provider API call failed. Critical once failures are consecutive or upon order dispatch failure. */
 export function notifyProviderFailure(
   input: ProviderFailureInput,
   options?: NotifyOptions,
@@ -399,30 +419,35 @@ export function notifyProviderFailure(
   const operation = toSafePlaintext(input.operation, { maxLength: 80 });
   const message = toSafePlaintext(input.message, { maxLength: 300 }) || "no details returned";
   const streak = input.consecutiveFailures ?? 1;
-  const severity: AlertSeverity = streak >= 3 ? "critical" : "warning";
+  const isDispatchFailure = input.operation === "createOrder" || input.operation === "reconcileOrder" || Boolean(input.orderId);
+  const severity: AlertSeverity = isDispatchFailure || streak >= 3 ? "critical" : "warning";
+  const titleEn = isDispatchFailure ? "Automated dispatch failed" : "Provider failure";
+  const titleAr = isDispatchFailure ? "فشل التنفيذ الآلي للطلب" : "فشل في الاتصال بالمورد";
+  const titleFr = isDispatchFailure ? "Échec de la livraison automatisée" : "Échec du fournisseur";
+  const link = input.orderId ? "/admin/orders" : `/admin/providers/${encodeURIComponent(input.providerId)}`;
 
   return dispatch(
     {
       type: "provider_failure",
       severity,
-      entityId: `${input.providerId}:${input.operation}`,
+      entityId: `${input.providerId}:${input.operation}${input.orderId ? `:${input.orderId}` : ""}`,
       title: {
-        en: "Provider failure",
-        ar: "فشل في الاتصال بالمورد",
-        fr: "Échec du fournisseur",
+        en: titleEn,
+        ar: titleAr,
+        fr: titleFr,
       },
       body: {
-        en: `${provider} failed during ${operation}: ${message}. Consecutive failures: ${streak}.`,
-        ar: `فشل المورد ${provider} أثناء ${operation}: ${message}. عدد الأعطال المتتالية: ${streak}.`,
-        fr: `${provider} a échoué lors de ${operation} : ${message}. Échecs consécutifs : ${streak}.`,
+        en: `${provider} failed during ${operation}: ${message}.${streak > 1 ? ` Consecutive failures: ${streak}.` : ""}${input.orderId ? " Immediate manual intervention required." : ""}`,
+        ar: `فشل المورد ${provider} أثناء ${operation}: ${message}.${streak > 1 ? ` عدد الأعطال المتتالية: ${streak}.` : ""}${input.orderId ? " يتطلب تدخلاً يدوياً عاجلاً." : ""}`,
+        fr: `${provider} a échoué lors de ${operation} : ${message}.${streak > 1 ? ` Échecs consécutifs : ${streak}.` : ""}${input.orderId ? " Intervention manuelle immédiate requise." : ""}`,
       },
-      link: `/admin/providers/${encodeURIComponent(input.providerId)}`,
+      link,
       fields: [
         { label: "Provider", value: input.providerName },
         { label: "Operation", value: input.operation },
-        { label: "HTTP status", value: input.statusCode },
-        { label: "Consecutive failures", value: streak },
-        { label: "Order", value: input.orderId },
+        ...(input.statusCode ? [{ label: "HTTP status", value: input.statusCode }] : []),
+        ...(streak > 1 ? [{ label: "Consecutive failures", value: streak }] : []),
+        ...(input.orderId ? [{ label: "Order ID", value: input.orderId }] : []),
         { label: "Message", value: input.message },
       ],
     },
@@ -465,7 +490,7 @@ export function notifyLowProviderBalance(
         ar: `رصيد المورد ${provider} هو ${balance} ${currency}، أي أقل من الحد المحدد ${threshold} ${currency}. قم بشحن الرصيد لتجنّب فشل الطلبات.`,
         fr: `Le solde de ${provider} est de ${balance} ${currency}, sous le seuil de ${threshold} ${currency}. Rechargez-le pour éviter des commandes en échec.`,
       },
-      link: `/admin/providers/${encodeURIComponent(input.providerId)}`,
+      link: "/admin/sync",
       fields: [
         { label: "Provider", value: input.providerName },
         { label: "Balance", value: `${balance} ${currency}` },
@@ -527,6 +552,7 @@ export interface PendingDepositInput {
   currency: string;
   method: string;
   reference?: string;
+  proofUrl?: string;
   waitingMinutes?: number;
   /**
    * Attach Approve/Reject buttons. callback_data carries only the deposit id
@@ -546,6 +572,7 @@ export function notifyPendingDeposit(
   const currency = toSafePlaintext(input.currency, { maxLength: 12 });
   const method = toSafePlaintext(input.method, { maxLength: 60 });
   const reference = toSafePlaintext(input.reference, { maxLength: 80 });
+  const proofUrl = input.proofUrl ? toSafePlaintext(input.proofUrl, { maxLength: 500 }) : undefined;
   const waited = input.waitingMinutes ?? 0;
   const severity: AlertSeverity = waited >= 60 ? "warning" : "info";
 
@@ -580,6 +607,7 @@ export function notifyPendingDeposit(
         { label: "Customer", value: input.customerLabel },
         { label: "Method", value: input.method },
         { label: "Reference", value: input.reference },
+        ...(proofUrl ? [{ label: "Receipt Proof", value: proofUrl }] : []),
         { label: "Waiting", value: waited ? `${waited} min` : undefined },
       ],
     },

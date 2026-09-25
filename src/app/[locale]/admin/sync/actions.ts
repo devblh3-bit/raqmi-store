@@ -195,7 +195,11 @@ export async function deleteProductsOfDisabledProvider(formData: FormData): Prom
     where: { offer: { productId: { in: exclusiveProductIds } } },
     select: { offer: { select: { productId: true } } },
   });
-  const orderProductIds = new Set(productsWithOrders.map((oi) => oi.offer.productId));
+  const orderProductIds = new Set(
+    productsWithOrders
+      .map((oi) => oi.offer?.productId)
+      .filter((id): id is string => Boolean(id)),
+  );
 
   const safeToDelete = exclusiveProductIds.filter((id) => !orderProductIds.has(id));
   const mustOnlyDeactivate = exclusiveProductIds.filter((id) => orderProductIds.has(id));

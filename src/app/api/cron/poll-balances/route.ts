@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAdapter } from "@/lib/providers";
+import { notifyLowProviderBalance } from "@/lib/telegram/notify";
 
 /**
  * Low-balance poll. Point a cron at it every 5 minutes with the secret in
@@ -51,17 +52,27 @@ export async function POST(request: Request) {
       },
     });
 
-    const threshold = p.lowBalanceThresholdMinor;
-    if (threshold != null && BigInt(res.value.availableMinor) < threshold) {
+    // Enforce default $20.00 safety buffer (2000 minor units) per ADR 0002 unless explicitly set
+    const threshold = p.lowBalanceThresholdMinor ?? 2000n;
+    if (BigInt(res.value.availableMinor) < threshold) {
       await prisma.provider.update({ where: { id: p.id }, data: { isActive: false } });
       await prisma.notification.create({
         data: {
           type: "LOW_BALANCE",
           severity: "critical",
           titleEn: `${p.displayName} auto-paused: low balance`,
-          bodyEn: `Available ${res.value.availableMinor} ${res.value.currency} < threshold ${threshold.toString()}. Provider disabled for new orders.`,
+          bodyEn: `Available ${(Number(res.value.availableMinor) / 100).toFixed(2)} ${res.value.currency} < threshold ${(Number(threshold) / 100).toFixed(2)} ${res.value.currency}. Provider disabled for new orders.`,
           link: "/admin/sync",
         },
+      });
+      await notifyLowProviderBalance({
+        providerId: p.id,
+        providerName: p.displayName,
+        balance: (Number(res.value.availableMinor) / 100).toFixed(2),
+        threshold: (Number(threshold) / 100).toFixed(2),
+        currency: res.value.currency,
+      }).catch((err) => {
+        console.error(`[poll-balances] telegram alert failed for ${p.code}:`, err);
       });
       results.push({ code: p.code, ok: true, paused: true });
     } else {

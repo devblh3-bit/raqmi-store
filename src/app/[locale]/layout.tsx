@@ -8,6 +8,7 @@ import StoreMobileNav from "@/components/nav/StoreMobileNav";
 import { CartProvider } from "@/components/CartProvider";
 import { CurrencyProvider } from "@/components/CurrencyProvider";
 import { getSystemSettings } from "@/lib/settings";
+import SessionActivityWatcher from "@/components/SessionActivityWatcher";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -37,6 +38,7 @@ export default async function LocaleLayout({
       <NextIntlClientProvider messages={messages} locale={locale}>
         <CurrencyProvider dzdRate={settings.dzdRate}>
           <CartProvider>
+            <SessionActivityWatcher locale={locale} />
             <Header locale={locale as Locale} />
             <main className="flex-1 pb-24 md:pb-8">{children}</main>
             <Footer locale={locale as Locale} />

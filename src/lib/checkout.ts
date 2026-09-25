@@ -35,6 +35,12 @@ export type CheckoutLine = {
 type PricedLine = {
   id: string;
   offerId: string;
+  productNameEn: string;
+  productNameAr: string;
+  productNameFr: string;
+  offerLabelEn: string;
+  offerLabelAr: string;
+  offerLabelFr: string;
   quantity: number;
   unitPriceMinor: bigint;
   unitCostMinor: bigint;
@@ -81,6 +87,25 @@ export async function placeOrder(input: {
       throw new CheckoutError("BAD_QUANTITY", `quantity must be 1..${MAX_QTY}`, line.offerId);
     }
 
+    const offer = await prisma.offer.findUnique({
+      where: { id: line.offerId },
+      select: {
+        labelEn: true,
+        labelAr: true,
+        labelFr: true,
+        product: {
+          select: {
+            nameEn: true,
+            nameAr: true,
+            nameFr: true,
+          },
+        },
+      },
+    });
+    if (!offer) {
+      throw new CheckoutError("OFFER_UNAVAILABLE", "offer not found", line.offerId);
+    }
+
     const price = await priceForOffer(line.offerId, user.tierId);
     if (!price.available) {
       throw new CheckoutError("OFFER_UNAVAILABLE", `offer unavailable: ${price.reason}`, line.offerId);
@@ -114,6 +139,12 @@ export async function placeOrder(input: {
     priced.push({
       id: randomUUID(), // known up front so the encryption AAD binds to the real row id
       offerId: line.offerId,
+      productNameEn: offer.product.nameEn,
+      productNameAr: offer.product.nameAr,
+      productNameFr: offer.product.nameFr,
+      offerLabelEn: offer.labelEn,
+      offerLabelAr: offer.labelAr,
+      offerLabelFr: offer.labelFr,
       quantity,
       unitPriceMinor: BigInt(price.priceMinor),
       unitCostMinor: providerOffer.costMinor,
@@ -152,6 +183,12 @@ export async function placeOrder(input: {
                 create: priced.map((l) => ({
                   id: l.id,
                   offerId: l.offerId,
+                  productNameEn: l.productNameEn,
+                  productNameAr: l.productNameAr,
+                  productNameFr: l.productNameFr,
+                  offerLabelEn: l.offerLabelEn,
+                  offerLabelAr: l.offerLabelAr,
+                  offerLabelFr: l.offerLabelFr,
                   quantity: l.quantity,
                   unitPriceMinor: l.unitPriceMinor,
                   unitCostMinor: l.unitCostMinor,

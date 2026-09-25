@@ -385,6 +385,7 @@ export async function reconcilePendingOrders(
       orderItem: {
         select: {
           id: true,
+          orderId: true,
           status: true,
           offer: {
             select: {
@@ -452,7 +453,7 @@ export async function reconcilePendingOrders(
       const deliveryAvailable = !!order.delivery?.available;
       const done = deliveryAvailable || order.status === "COMPLETED";
       const terminalFailure = order.status === "FAILED" || order.status === "CANCELLED";
-      const link = candidate.orderItem.offer.links.find((entry) => entry.providerOffer.providerId === candidate.providerId);
+      const link = candidate.orderItem.offer?.links.find((entry) => entry.providerOffer.providerId === candidate.providerId);
       const deliveryEnc = deliveryAvailable && link ? deliveryEncFor(candidate.orderItemId, link.providerOfferId, order.delivery) : undefined;
       const provisional = PROVISIONAL.has(order.status);
       await prisma.$transaction(async (tx) => {
@@ -477,7 +478,15 @@ export async function reconcilePendingOrders(
         }
       });
       if (terminalFailure) {
-        outcomes.push({ kind: "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, reason: order.providerError?.detail ?? order.providerError?.code ?? order.status });
+        const failureReason = order.providerError?.detail ?? order.providerError?.code ?? order.status;
+        outcomes.push({ kind: "failed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId, reason: failureReason });
+        await notifyProviderFailure({
+          providerId: candidate.providerId,
+          providerName: candidate.provider.code,
+          operation: "reconcileOrder",
+          orderId: candidate.orderItem.orderId,
+          message: failureReason,
+        }).catch(() => {});
       } else {
         outcomes.push(done
           ? { kind: "completed", providerOrderId: candidate.providerOrderId, itemId: candidate.orderItemId }
@@ -532,7 +541,7 @@ export async function dispatchPendingOrders(
       },
     });
 
-    if (!item) continue;
+    if (!item || !item.offer) continue;
 
     const links = item.offer.links
       .filter((l) => l.providerOffer.provider.isActive)

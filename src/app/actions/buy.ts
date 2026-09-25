@@ -7,6 +7,7 @@ import { getSession, createSession } from "@/lib/auth/session";
 import { issueLoginToken } from "@/lib/auth/magic-link";
 import { sendLoginEmail } from "@/lib/auth/email";
 import { placeOrder, CheckoutError } from "@/lib/checkout";
+import { dispatchPendingOrders } from "@/lib/fulfillment";
 import { InsufficientFundsError } from "@/lib/wallet";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { locales } from "@/i18n";
@@ -101,6 +102,11 @@ export async function buyNow(_prev: BuyState, formData: FormData): Promise<BuySt
       locale,
     });
     code = order.code;
+
+    // Trigger immediate supplier fulfillment dispatch so instant items deliver without waiting for cron
+    dispatchPendingOrders(5, { onlyItemIds: order.items.map((i) => i.id) }).catch((err) => {
+      console.error("[buy] immediate fulfillment dispatch failed:", err);
+    });
   } catch (e) {
     if (e instanceof InsufficientFundsError) return { error: "INSUFFICIENT_FUNDS" };
     if (e instanceof CheckoutError) return { error: e.code };

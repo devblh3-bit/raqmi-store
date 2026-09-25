@@ -64,7 +64,7 @@ export function computeOfferPrice(input: {
   const enabled = input.links.filter((l) => l.isEnabled);
   if (enabled.length === 0) return { available: false, reason: "NO_ENABLED_LINK" };
 
-  const inStock = enabled.filter((l) => l.availability === "AVAILABLE");
+  const inStock = enabled.filter((l) => l.availability?.toUpperCase() === "AVAILABLE");
   if (inStock.length === 0) return { available: false, reason: "OUT_OF_STOCK" };
 
   const quotes: Array<{ link: LinkQuote; usdCost: number; fxRate: number | null }> = [];
