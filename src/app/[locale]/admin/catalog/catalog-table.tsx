@@ -284,7 +284,7 @@ export function CatalogTable({
 
       {/* Main Table */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xs">
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
@@ -454,6 +454,132 @@ export function CatalogTable({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="sm:hidden divide-y divide-[var(--border)]">
+          {sortedProducts.map((p) => {
+            const isSelected = selectedIds.has(p.id);
+            return (
+              <div key={p.id} className={`p-4 transition-colors hover:bg-[var(--surface-2)]/60 ${isSelected ? "bg-[var(--accent)]/5" : ""}`}>
+                {/* Header: Checkbox + Identity + Star */}
+                <div className="flex items-start gap-3">
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelectOne(p.id)}
+                      className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
+                    />
+                  </div>
+                  <div className="flex flex-1 gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 font-bold text-white shadow-sm dark:border dark:border-[var(--border)]">
+                      {p.nameEn.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-[var(--fg)] leading-tight">{p.nameEn}</div>
+                        <button
+                          onClick={(e) => handleToggleFeatured(p.id, e)}
+                          className={`text-lg ml-2 transition ${p.isFeatured ? "text-amber-500 drop-shadow-xs" : "text-zinc-300 dark:text-zinc-700 hover:text-amber-400"}`}
+                        >
+                          {p.isFeatured ? "★" : "☆"}
+                        </button>
+                      </div>
+                      <div className="font-mono text-[10px] text-[var(--fg-muted)] mt-0.5">{p.slug}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body: Stats Grid */}
+                <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-4">
+                  {/* Category */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Category</p>
+                    <div className="mt-1">
+                      <span className="inline-flex rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--fg)]">
+                        {p.category.nameEn}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Pricing */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Pricing</p>
+                    {p.offerCount > 0 ? (
+                      <div className="mt-1 flex flex-col leading-tight">
+                        <span className="text-sm font-bold text-[var(--fg)]">
+                          {p.priceSummary}
+                        </span>
+                        <span className="text-[10px] text-[var(--fg-muted)]">{p.offerCount} variant{p.offerCount === 1 ? "" : "s"}</span>
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-xs font-semibold text-[var(--fg-muted)]">No Variants</div>
+                    )}
+                  </div>
+                  {/* Stock */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Supplier Stock</p>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold">
+                      {p.health === "HEALTHY" && (
+                        <><span className="h-2 w-2 rounded-full bg-emerald-500" /> <span className="text-emerald-700 dark:text-emerald-400">In Stock</span></>
+                      )}
+                      {p.health === "PARTIAL" && (
+                        <><span className="h-2 w-2 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Low Stock</span></>
+                      )}
+                      {p.health === "OUT_OF_STOCK" && (
+                        <><span className="h-2 w-2 rounded-full bg-rose-500" /> <span className="text-rose-700 dark:text-rose-400">Out of Stock</span></>
+                      )}
+                      {p.health === "PROVIDER_PAUSED" && (
+                        <><span className="h-2 w-2 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Paused</span></>
+                      )}
+                      {p.health === "MANUAL" && (
+                        <><span className="h-2 w-2 rounded-full bg-sky-500" /> <span className="text-sky-700 dark:text-sky-400">Direct</span></>
+                      )}
+                      {p.health === "EMPTY" && (
+                        <><span className="h-2 w-2 rounded-full bg-zinc-400" /> <span className="text-[var(--fg-muted)]">Empty</span></>
+                      )}
+                    </div>
+                  </div>
+                  {/* Status */}
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Status</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleToggleActive(p.id, e)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${p.isActive ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"}`}
+                      >
+                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${p.isActive ? "translate-x-4" : "translate-x-0"}`} />
+                      </button>
+                      <span className="text-xs font-medium text-[var(--fg-muted)]">{p.isActive ? "Active" : "Paused"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer: Actions */}
+                <div className="mt-4 flex gap-3 pt-1">
+                  <Link
+                    href={`/${locale}/admin/catalog/${p.id}`}
+                    className="flex-1 rounded-xl bg-[var(--surface-2)] py-2 text-center text-sm font-bold text-[var(--fg)] hover:bg-[var(--border)] transition"
+                  >
+                    Studio ⚙️
+                  </Link>
+                  <Link
+                    href={`/${locale}/products/${p.slug}`}
+                    target="_blank"
+                    className="flex-1 rounded-xl border border-[var(--border)] py-2 text-center text-sm font-bold text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)] transition"
+                  >
+                    View Store ↗
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+          {sortedProducts.length === 0 && (
+            <div className="px-4 py-12 text-center text-[var(--fg-muted)]">
+              <p className="text-base font-semibold">No products found</p>
+              <p className="text-xs mt-1">Try adjusting your search query or category filter</p>
+            </div>
+          )}
         </div>
       </div>
 
