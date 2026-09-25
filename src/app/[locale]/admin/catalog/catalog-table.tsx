@@ -286,9 +286,9 @@ export function CatalogTable({
       <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xs">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-xs font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-[11px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
               <tr>
-                <th className="w-10 px-4 py-3 text-center">
+                <th className="w-9 px-2.5 py-2.5 text-center">
                   <input
                     type="checkbox"
                     checked={allVisibleSelected}
@@ -297,13 +297,13 @@ export function CatalogTable({
                     className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                   />
                 </th>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Variants & Pricing</th>
-                <th className="px-4 py-3 text-center">Supplier Stock</th>
-                <th className="px-4 py-3 text-center">Featured</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-3 py-2.5">Product</th>
+                <th className="px-2.5 py-2.5 whitespace-nowrap">Category</th>
+                <th className="px-2.5 py-2.5 whitespace-nowrap">Pricing</th>
+                <th className="px-2 py-2.5 text-center whitespace-nowrap">Stock</th>
+                <th className="w-10 px-1 py-2.5 text-center" title="Featured">★</th>
+                <th className="w-14 px-1 py-2.5 text-center">Status</th>
+                <th className="px-3 py-2.5 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -317,7 +317,7 @@ export function CatalogTable({
                     }`}
                   >
                     {/* Checkbox */}
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2.5 py-2 text-center">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -328,17 +328,17 @@ export function CatalogTable({
                     </td>
 
                     {/* Product Art + Name + Slug */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <ProductArt id={p.slug} size={42} />
-                        <div className="min-w-0">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2.5">
+                        <ProductArt id={p.slug} size={34} />
+                        <div className="min-w-0 max-w-[200px] xl:max-w-[280px]">
                           <Link
                             href={`/${locale}/admin/catalog/${p.id}`}
-                            className="font-semibold text-[var(--fg)] hover:text-[var(--accent)] hover:underline"
+                            className="font-semibold text-xs text-[var(--fg)] hover:text-[var(--accent)] hover:underline truncate block"
                           >
                             {p.nameEn}
                           </Link>
-                          <p className="font-mono text-xs text-[var(--fg-muted)] truncate max-w-[200px]">
+                          <p className="font-mono text-[10px] text-[var(--fg-muted)] truncate">
                             {p.slug}
                           </p>
                         </div>
@@ -346,56 +346,52 @@ export function CatalogTable({
                     </td>
 
                     {/* Category */}
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded-full bg-[var(--surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--fg-muted)]">
+                    <td className="px-2.5 py-2 whitespace-nowrap">
+                      <span className="inline-flex rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-medium text-[var(--fg-muted)]">
                         {p.category.nameEn}
                       </span>
                     </td>
 
                     {/* Variants & Pricing */}
-                    <td className="px-4 py-3">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-[var(--fg)]">
-                            {p.priceSummary}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[var(--fg-muted)]">
-                          {p.offerCount} {p.offerCount === 1 ? "variant" : "variants"}
-                        </p>
+                    <td className="px-2.5 py-2 whitespace-nowrap">
+                      <div className="font-semibold text-xs text-[var(--fg)]">
+                        {p.priceSummary}
                       </div>
+                      <p className="text-[10px] text-[var(--fg-muted)]">
+                        {p.offerCount} {p.offerCount === 1 ? "offer" : "offers"}
+                      </p>
                     </td>
 
                     {/* Supplier Stock Indicator */}
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-xs font-medium">
+                    <td className="px-2 py-2 text-center whitespace-nowrap">
+                      <div className="inline-flex items-center justify-center gap-1 text-[11px] font-medium">
                         {p.health === "HEALTHY" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> <span className="text-emerald-700 dark:text-emerald-400">In Stock</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" /> <span className="text-emerald-700 dark:text-emerald-400">In Stock</span></>
                         )}
                         {p.health === "PARTIAL" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Partial</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" /> <span className="text-amber-700 dark:text-amber-400">Partial</span></>
                         )}
                         {p.health === "OUT_OF_STOCK" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> <span className="text-rose-700 dark:text-rose-400">Stockout</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" /> <span className="text-rose-700 dark:text-rose-400">Stockout</span></>
                         )}
                         {p.health === "PROVIDER_PAUSED" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Provider Paused</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" /> <span className="text-amber-700 dark:text-amber-400">Paused</span></>
                         )}
                         {p.health === "MANUAL" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> <span className="text-sky-700 dark:text-sky-400">Direct / Keys</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-sky-500 shrink-0" /> <span className="text-sky-700 dark:text-sky-400">Keys</span></>
                         )}
                         {p.health === "EMPTY" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-zinc-400" /> <span className="text-[var(--fg-muted)]">No Variants</span></>
+                          <><span className="h-1.5 w-1.5 rounded-full bg-zinc-400 shrink-0" /> <span className="text-[var(--fg-muted)]">Empty</span></>
                         )}
                       </div>
                     </td>
 
                     {/* Featured Star 0-Click */}
-                    <td className="px-4 py-3 text-center">
+                    <td className="w-10 px-1 py-2 text-center">
                       <button
                         onClick={(e) => handleToggleFeatured(p.id, e)}
                         title={p.isFeatured ? "Click to unfeature" : "Click to feature on homepage"}
-                        className={`text-base transition hover:scale-125 ${
+                        className={`text-sm transition hover:scale-125 ${
                           p.isFeatured ? "text-amber-500 drop-shadow-xs" : "text-zinc-300 dark:text-zinc-700 hover:text-amber-400"
                         }`}
                       >
@@ -404,28 +400,28 @@ export function CatalogTable({
                     </td>
 
                     {/* Active Toggle Switch 0-Click */}
-                    <td className="px-4 py-3 text-center">
+                    <td className="w-14 px-1 py-2 text-center">
                       <button
                         onClick={(e) => handleToggleActive(p.id, e)}
                         title={p.isActive ? "Click to pause product" : "Click to activate product"}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                           p.isActive ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"
                         }`}
                       >
                         <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                            p.isActive ? "translate-x-5" : "translate-x-0"
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            p.isActive ? "translate-x-4" : "translate-x-0"
                           }`}
                         />
                       </button>
                     </td>
 
                     {/* Action Links */}
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/${locale}/admin/catalog/${p.id}`}
-                          className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs font-semibold hover:bg-[var(--surface-2)]"
+                          className="rounded-md border border-[var(--border)] px-2 py-0.5 text-xs font-semibold hover:bg-[var(--surface-2)]"
                         >
                           Studio ⚙️
                         </Link>
@@ -434,9 +430,9 @@ export function CatalogTable({
                           target="_blank"
                           rel="noreferrer"
                           title="View on storefront"
-                          className="text-xs text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                          className="rounded-md p-1 text-xs text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
                         >
-                          Store ↗
+                          ↗
                         </Link>
                       </div>
                     </td>
