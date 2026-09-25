@@ -7,6 +7,7 @@ import { Price } from "@/components/Price";
 import { getResellerOrdersWithKeys } from "@/lib/reseller";
 import { getSystemSettings } from "@/lib/settings";
 import { CopyButton } from "@/components/CopyButton";
+import { ProductArt } from "@/lib/product-images";
 import type { Locale } from "@/i18n";
 
 export default async function ResellerDashboardPage({
@@ -171,22 +172,31 @@ export default async function ResellerDashboardPage({
             {recentOrders.map((o) => (
               <li
                 key={o.id}
-                className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4 transition-all hover:border-[var(--border-strong)]"
+                className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4 transition-all hover:border-[var(--border-strong)]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[var(--fg)]" dir="ltr">
-                      {o.orderCode}
-                    </span>
-                    <span className="text-xs font-medium text-[var(--fg-muted)]">
-                      · {o.productName} ({o.variantLabel})
-                      {o.quantity > 1 && ` × ${o.quantity}`}
-                    </span>
+                  <div className="flex items-center gap-2.5">
+                    {o.productSlug && (
+                      <div className="shrink-0">
+                        <ProductArt id={o.productSlug} size={28} />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-[var(--fg)]" dir="ltr">
+                          {o.orderCode}
+                        </span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {o.status}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 text-xs text-[var(--fg-muted)]">
+                        {o.productName} ({o.variantLabel})
+                        {o.quantity > 1 && ` × ${o.quantity}`}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                      {o.status}
-                    </span>
+                  <div className="text-right">
                     <span className="text-xs font-bold">
                       <Price cents={o.totalMinor} locale={loc} size="sm" />
                     </span>

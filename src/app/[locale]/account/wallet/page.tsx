@@ -83,12 +83,29 @@ export default async function AccountWalletPage({
             {deposits.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-2)] px-4 py-3 text-sm transition-colors hover:bg-[var(--surface-2)]/80"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 px-4 py-3 text-sm transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
               >
-                <span className="font-semibold">
-                  <Price cents={Number(d.amountMinor)} locale={loc} size="sm" />
-                </span>
-                <span className="rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-xs font-semibold text-[var(--fg-muted)]">
+                <div>
+                  <span className="font-bold text-[var(--fg)]">
+                    <Price cents={Number(d.amountMinor)} locale={loc} size="sm" />
+                  </span>
+                  <span className="block text-[11px] text-[var(--fg-muted)]">
+                    {new Date(d.createdAt).toLocaleDateString(loc, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    d.status === "APPROVED"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : d.status === "REJECTED"
+                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  }`}
+                >
                   {t(`status${d.status}`)}
                 </span>
               </li>

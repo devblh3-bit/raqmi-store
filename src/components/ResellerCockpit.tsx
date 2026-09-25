@@ -30,6 +30,7 @@ export type DeliveredOrderItem = {
   createdAt: string;
   status: string;
   productName: string;
+  productSlug?: string;
   variantLabel: string;
   quantity: number;
   totalMinor: number;

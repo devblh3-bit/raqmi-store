@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Price } from "@/components/Price";
 import { CopyButton } from "@/components/CopyButton";
+import { ProductArt } from "@/lib/product-images";
 import type { DeliveredOrderItem } from "@/components/ResellerCockpit";
 import type { Locale } from "@/i18n";
 
@@ -27,15 +28,32 @@ export function ResellerOrdersExplorer({
     return matchesStatus && matchesSearch;
   });
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "COMPLETED":
+      case "PAID":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+      case "FAILED":
+      case "CANCELLED":
+        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      case "AWAITING_FULFILLMENT":
+      case "PROCESSING":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      default:
+        return "bg-[var(--surface-2)] text-[var(--fg-muted)] border-[var(--border)]";
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
+      {/* Header & Filter Card */}
+      <div className="flex flex-col gap-4 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)] sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
               📦 Fulfillment History
             </span>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--fg)]">
+            <h1 className="mt-1.5 text-xl font-bold tracking-tight text-[var(--fg)] sm:text-2xl">
               Wholesale Orders & Key Deliveries
             </h1>
             <p className="mt-1 text-xs text-[var(--fg-muted)]">
@@ -43,36 +61,36 @@ export function ResellerOrdersExplorer({
             </p>
           </div>
 
-          <div className="text-right">
-            <span className="text-xs font-semibold text-[var(--fg-faint)]">
+          <div className="shrink-0">
+            <span className="inline-flex rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-[var(--fg-muted)]">
               {filtered.length} Orders
             </span>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by order code (#RQ-...) or product name..."
-            className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-sm text-[var(--fg)] placeholder:text-[var(--fg-faint)] focus:border-[var(--accent)] focus:outline-none"
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--fg)] placeholder:text-[var(--fg-faint)] focus:border-emerald-500 focus:outline-none sm:text-sm"
           />
 
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs sm:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
             {["ALL", "COMPLETED", "AWAITING_FULFILLMENT", "FAILED"].map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setFilterStatus(s)}
-                className={`rounded-full px-3 py-1.5 font-semibold transition-all ${
+                className={`shrink-0 rounded-full px-3 py-1 font-semibold transition-all whitespace-nowrap ${
                   filterStatus === s
-                    ? "bg-[var(--accent)] text-white shadow-xs"
+                    ? "bg-emerald-600 text-white shadow-xs"
                     : "bg-[var(--surface-2)] text-[var(--fg-muted)] hover:bg-[var(--surface-3,var(--surface-2))] hover:text-[var(--fg)]"
                 }`}
               >
-                {s === "ALL" ? "All Statuses" : s}
+                {s === "ALL" ? "All Statuses" : s.replace(/_/g, " ")}
               </button>
             ))}
           </div>
@@ -80,15 +98,19 @@ export function ResellerOrdersExplorer({
       </div>
 
       {/* Orders List */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--elev-1)] sm:p-8">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-1)] sm:p-7">
         {filtered.length === 0 ? (
           <div className="py-12 text-center">
-            <p className="text-sm text-[var(--fg-muted)]">No orders found matching your criteria.</p>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-2)] text-2xl">
+              📦
+            </div>
+            <p className="mt-3 text-sm font-semibold text-[var(--fg)]">No orders found matching your criteria</p>
+            <p className="mt-1 text-xs text-[var(--fg-muted)]">Place a new wholesale order from our catalog to get started.</p>
             <Link
               href={`/${locale}/products`}
-              className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent)] px-5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)]"
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-full bg-emerald-600 px-5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-500 active:scale-95"
             >
-              Place Wholesale Order
+              Browse Catalog with Wholesale Rates
             </Link>
           </div>
         ) : (
@@ -96,32 +118,41 @@ export function ResellerOrdersExplorer({
             {filtered.map((o) => (
               <li
                 key={o.id}
-                className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4 transition-all hover:border-[var(--border-strong)]"
+                className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4 transition-all hover:border-[var(--border-strong)]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[var(--fg)]" dir="ltr">
-                      {o.orderCode}
-                    </span>
-                    <span className="text-xs font-medium text-[var(--fg-muted)]">
-                      · {o.productName} ({o.variantLabel})
-                      {o.quantity > 1 && ` × ${o.quantity}`}
-                    </span>
+                  <div className="flex items-center gap-2.5">
+                    {o.productSlug && (
+                      <div className="shrink-0">
+                        <ProductArt id={o.productSlug} size={28} />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-[var(--fg)]" dir="ltr">
+                          {o.orderCode}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                            o.status,
+                          )}`}
+                        >
+                          {o.status.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 text-xs text-[var(--fg-muted)]">
+                        {o.productName} ({o.variantLabel})
+                        {o.quantity > 1 && ` × ${o.quantity}`}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        o.status === "COMPLETED"
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : o.status === "FAILED"
-                          ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                      }`}
-                    >
-                      {o.status}
-                    </span>
-                    <span className="text-xs font-bold">
+
+                  <div className="text-right">
+                    <div className="text-xs font-bold">
                       <Price cents={o.totalMinor} locale={locale} size="sm" />
+                    </div>
+                    <span className="text-[10px] text-[var(--fg-faint)]">
+                      {o.createdAt.slice(0, 10)}
                     </span>
                   </div>
                 </div>
@@ -144,4 +175,3 @@ export function ResellerOrdersExplorer({
     </div>
   );
 }
-

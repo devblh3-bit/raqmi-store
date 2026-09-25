@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import ResellerMobileNav from "@/components/nav/ResellerMobileNav";
+import { ResellerSidebarNav } from "@/components/nav/ResellerSidebarNav";
 
 export default async function ResellerLayout({
   children,
@@ -27,13 +28,6 @@ export default async function ResellerLayout({
   });
 
   const tierLabel = user?.tier?.name ?? "Wholesale";
-
-  const nav = [
-    { href: `/${locale}/reseller`, label: "Overview" },
-    { href: `/${locale}/reseller/rates`, label: "Wholesale Rates" },
-    { href: `/${locale}/reseller/orders`, label: "Orders & Keys" },
-    { href: `/${locale}/reseller/wallet`, label: "Wallet & Top-up" },
-  ] as const;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 md:flex-row">
@@ -90,17 +84,7 @@ export default async function ResellerLayout({
             </p>
           )}
 
-          <nav className="mt-3 flex flex-col gap-1">
-            {nav.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="rounded-xl px-3 py-2 text-sm font-medium text-[var(--fg-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
+          <ResellerSidebarNav locale={locale} />
 
           <div className="mt-4 border-t border-[var(--border)] pt-3">
             <form action="/api/auth/logout" method="post">

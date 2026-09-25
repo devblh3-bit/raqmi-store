@@ -107,6 +107,7 @@ export async function getResellerOrdersWithKeys(userId: string): Promise<Deliver
         createdAt: o.createdAt.toISOString(),
         status: item.status,
         productName: item.offer?.product?.nameEn ?? item.productNameEn,
+        productSlug: item.offer?.product?.slug,
         variantLabel: item.offer?.labelEn ?? item.offerLabelEn,
         quantity: item.quantity,
         totalMinor: Number(item.unitPriceMinor) * item.quantity,

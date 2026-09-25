@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import AccountMobileNav from "@/components/nav/AccountMobileNav";
+import { AccountSidebarNav } from "@/components/nav/AccountSidebarNav";
 
 export default async function AccountLayout({
   children,
@@ -25,13 +26,6 @@ export default async function AccountLayout({
       role: true,
     },
   });
-
-  const nav = [
-    { href: `/${locale}/account`, label: "Overview", icon: "📊" },
-    { href: `/${locale}/account/wallet`, label: "Wallet & Top-up", icon: "💳" },
-    { href: `/${locale}/account#orders`, label: "My Orders", icon: "📦" },
-    { href: `/${locale}/account#reseller`, label: "Become a Reseller", icon: "🚀" },
-  ] as const;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 md:flex-row">
@@ -88,18 +82,7 @@ export default async function AccountLayout({
             </p>
           )}
 
-          <nav className="mt-4 flex flex-col gap-1">
-            {nav.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--fg-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
-              >
-                <span>{n.icon}</span>
-                <span>{n.label}</span>
-              </Link>
-            ))}
-          </nav>
+          <AccountSidebarNav locale={locale} />
 
           <div className="mt-5 border-t border-[var(--border)] pt-3">
             <form action="/api/auth/logout" method="post">
