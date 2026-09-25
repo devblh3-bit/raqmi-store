@@ -11,7 +11,7 @@ import {
   reorderLink,
   deleteOffer,
   toggleOfferActive,
-  reorderOffer,
+  setOfferPosition,
 } from "../../actions";
 import { autoTranslateStoreText, cleanProviderDescription } from "@/lib/catalog/translation";
 import { formatProviderCostDisplay } from "@/lib/money";
@@ -199,39 +199,28 @@ export function OfferStudio({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Variant Reorder buttons */}
-                        <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5 text-xs">
-                          <button
-                            disabled={isPending || offerIdx === 0}
-                            onClick={() => {
+                        {/* Variant Position Selector */}
+                        <div className="flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs">
+                          <span className="pl-2 pr-1 text-[10px] text-[var(--fg-muted)]">Pos</span>
+                          <select
+                            disabled={isPending}
+                            value={offerIdx}
+                            onChange={(e) => {
                               startTransition(async () => {
                                 const fd = new FormData();
                                 fd.append("offerId", offer.id);
-                                fd.append("direction", "up");
-                                await reorderOffer(fd);
+                                fd.append("position", e.target.value);
+                                await setOfferPosition(fd);
                               });
                             }}
-                            title="Move Variant Up"
-                            className="px-1 hover:text-[var(--accent)] disabled:opacity-25"
+                            className="bg-transparent py-1 pr-2 pl-1 text-[11px] font-bold outline-none cursor-pointer hover:text-[var(--accent)] disabled:opacity-50"
                           >
-                            ▲
-                          </button>
-                          <span className="text-[10px] text-[var(--fg-muted)]">#{offerIdx + 1}</span>
-                          <button
-                            disabled={isPending || offerIdx === offers.length - 1}
-                            onClick={() => {
-                              startTransition(async () => {
-                                const fd = new FormData();
-                                fd.append("offerId", offer.id);
-                                fd.append("direction", "down");
-                                await reorderOffer(fd);
-                              });
-                            }}
-                            title="Move Variant Down"
-                            className="px-1 hover:text-[var(--accent)] disabled:opacity-25"
-                          >
-                            ▼
-                          </button>
+                            {offers.map((_, i) => (
+                              <option key={i} value={i}>
+                                #{i + 1}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <span className="text-base font-bold text-[var(--fg)]">

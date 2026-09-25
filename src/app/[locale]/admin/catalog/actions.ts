@@ -729,11 +729,13 @@ export async function toggleOfferActive(formData: FormData) {
   return { ok: true as const, isActive: nextActive };
 }
 
-export async function reorderOffer(formData: FormData) {
+export async function setOfferPosition(formData: FormData) {
   await requireAdmin();
   const offerId = String(formData.get("offerId") ?? "");
-  const direction = String(formData.get("direction") ?? "");
-  if (!offerId || (direction !== "up" && direction !== "down")) {
+  const positionStr = String(formData.get("position") ?? "");
+  const newIndex = parseInt(positionStr, 10);
+
+  if (!offerId || isNaN(newIndex)) {
     return adminError("BAD_REQUEST");
   }
 
@@ -751,27 +753,25 @@ export async function reorderOffer(formData: FormData) {
   });
   if (!offer) return adminError("NOT_FOUND");
 
-  const offers = offer.product.offers;
+  let offers = offer.product.offers;
   const currentIndex = offers.findIndex((o) => o.id === offerId);
   if (currentIndex === -1) return adminError("NOT_FOUND");
+  if (currentIndex === newIndex) return { ok: true as const };
+  
+  // Remove from old position
+  const [removed] = offers.splice(currentIndex, 1);
+  // Insert at new position
+  offers.splice(newIndex, 0, removed);
 
-  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-  if (targetIndex < 0 || targetIndex >= offers.length) {
-    return { ok: true as const };
-  }
-
-  const targetOffer = offers[targetIndex];
-
-  await prisma.$transaction([
-    prisma.offer.update({
-      where: { id: offer.id },
-      data: { sortOrder: targetIndex },
-    }),
-    prisma.offer.update({
-      where: { id: targetOffer.id },
-      data: { sortOrder: currentIndex },
-    }),
-  ]);
+  // Update all sortOrders to reflect the new array order
+  await prisma.$transaction(
+    offers.map((o, idx) =>
+      prisma.offer.update({
+        where: { id: o.id },
+        data: { sortOrder: idx },
+      })
+    )
+  );
 
   revalidatePath(`/admin/catalog/${offer.productId}`);
   revalidatePath(`/admin/catalog/${offer.productId}/offers`);

@@ -226,59 +226,104 @@ export function CatalogTable({
 
   return (
     <div className="space-y-4">
-      {/* Search & Category Filter Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--fg-muted)]">
-            🔍
-          </span>
-          <input
-            type="text"
-            placeholder="Filter by product name, slug, or category…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] py-2.5 pl-9 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
-          />
-          {searchQuery && (
+      {/* Search & Category Filter Chips */}
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--fg-muted)]">
+              🔍
+            </span>
+            <input
+              type="text"
+              placeholder="Filter by product name, slug, or category…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] py-2 pl-9 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-3 flex items-center text-xs text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 text-xs font-semibold">
             <button
-              onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-3 flex items-center text-xs text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              onClick={() => setStatusFilter("ALL")}
+              className={`rounded-full px-3 py-1 transition ${
+                statusFilter === "ALL" ? "bg-[var(--accent)] text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              }`}
             >
-              ✕
+              All ({products.length})
             </button>
-          )}
+            <button
+              onClick={() => setStatusFilter("ACTIVE")}
+              className={`rounded-full px-3 py-1 transition ${
+                statusFilter === "ACTIVE" ? "bg-emerald-600 text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              }`}
+            >
+              Active ({products.filter((p) => p.isActive).length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("INACTIVE")}
+              className={`rounded-full px-3 py-1 transition ${
+                statusFilter === "INACTIVE" ? "bg-zinc-600 text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              }`}
+            >
+              Paused ({products.filter((p) => !p.isActive).length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("FEATURED")}
+              className={`rounded-full px-3 py-1 transition ${
+                statusFilter === "FEATURED" ? "bg-amber-600 text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+              }`}
+            >
+              ⭐ Featured ({products.filter((p) => p.isFeatured).length})
+            </button>
+            {products.some((p) => p.health === "PROVIDER_PAUSED") && (
+              <button
+                onClick={() => setStatusFilter("PROVIDER_PAUSED")}
+                className={`rounded-full px-3 py-1 transition ${
+                  statusFilter === "PROVIDER_PAUSED" ? "bg-amber-600 text-white" : "text-[var(--fg-muted)] hover:text-[var(--fg)]"
+                }`}
+              >
+                ⏸️ Provider Paused ({products.filter((p) => p.health === "PROVIDER_PAUSED").length})
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium outline-none transition focus:border-[var(--accent)]"
+        {/* Category Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <button
+            onClick={() => setSelectedCategory("ALL")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              selectedCategory === "ALL"
+                ? "bg-[var(--accent)] text-white shadow-xs"
+                : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"
+            }`}
           >
-            <option value="ALL">All Status ({products.length})</option>
-            <option value="ACTIVE">Active ({products.filter((p) => p.isActive).length})</option>
-            <option value="INACTIVE">Paused ({products.filter((p) => !p.isActive).length})</option>
-            <option value="FEATURED">⭐ Featured ({products.filter((p) => p.isFeatured).length})</option>
-            {products.some((p) => p.health === "PROVIDER_PAUSED") && (
-              <option value="PROVIDER_PAUSED">⏸️ Provider Paused ({products.filter((p) => p.health === "PROVIDER_PAUSED").length})</option>
-            )}
-          </select>
-
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium outline-none transition focus:border-[var(--accent)]"
-          >
-            <option value="ALL">All Categories</option>
-            {categories.map((cat) => {
-              const count = products.filter((p) => p.category.id === cat.id).length;
-              return (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nameEn} ({count})
-                </option>
-              );
-            })}
-          </select>
+            All Categories
+          </button>
+          {categories.map((cat) => {
+            const count = products.filter((p) => p.category.id === cat.id).length;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  selectedCategory === cat.id
+                    ? "bg-[var(--accent)] text-white shadow-xs"
+                    : "border border-[var(--border)] bg-[var(--surface)] text-[var(--fg-muted)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                {cat.nameEn} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -366,28 +411,38 @@ export function CatalogTable({
                       </div>
                     </td>
 
-                    {/* Supplier Stock Indicator */}
+                    {/* Supplier Stock Badge */}
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-xs font-medium">
-                        {p.health === "HEALTHY" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> <span className="text-emerald-700 dark:text-emerald-400">In Stock</span></>
-                        )}
-                        {p.health === "PARTIAL" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Partial</span></>
-                        )}
-                        {p.health === "OUT_OF_STOCK" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> <span className="text-rose-700 dark:text-rose-400">Stockout</span></>
-                        )}
-                        {p.health === "PROVIDER_PAUSED" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> <span className="text-amber-700 dark:text-amber-400">Provider Paused</span></>
-                        )}
-                        {p.health === "MANUAL" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> <span className="text-sky-700 dark:text-sky-400">Direct / Keys</span></>
-                        )}
-                        {p.health === "EMPTY" && (
-                          <><span className="h-1.5 w-1.5 rounded-full bg-zinc-400" /> <span className="text-[var(--fg-muted)]">No Variants</span></>
-                        )}
-                      </div>
+                      {p.health === "HEALTHY" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          🟢 In Stock
+                        </span>
+                      )}
+                      {p.health === "PARTIAL" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          🟡 Partial Stock
+                        </span>
+                      )}
+                      {p.health === "OUT_OF_STOCK" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                          🔴 Stockout
+                        </span>
+                      )}
+                      {p.health === "PROVIDER_PAUSED" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          ⏸️ Provider Paused
+                        </span>
+                      )}
+                      {p.health === "MANUAL" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-600 dark:text-sky-400">
+                          ⚪ Direct / Keys
+                        </span>
+                      )}
+                      {p.health === "EMPTY" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-xs font-semibold text-zinc-500">
+                          ⚠️ Needs Variants
+                        </span>
+                      )}
                     </td>
 
                     {/* Featured Star 0-Click */}
