@@ -294,22 +294,7 @@ export function UnlinkedOffersInbox({
         </div>
       )}
 
-      {/* Intro info box */}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xs">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold tracking-tight">
-              Incoming Supplier Offers ({offers.length})
-            </h2>
-            <p className="text-xs text-[var(--fg-muted)]">
-              These items were synced from your connected upstream digital providers but haven&apos;t been added to your storefront yet.
-            </p>
-          </div>
-          <span className="shrink-0 rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-[var(--fg-muted)]">
-            💡 1-Click to publish or attach as variants
-          </span>
-        </div>
-      </div>
+
 
       {/* Filters Toolbar */}
       <div className="space-y-3">
